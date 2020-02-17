@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from torch.autograd import grad
-from schnetpack.data import Structure
+from schnetpack import Properties
 from schnetpack.atomistic import Atomwise
 
 import schnarc
@@ -36,7 +36,7 @@ class StateModel(nn.Module):
     def forward(self, inputs):
 
         if self.requires_dr:
-            inputs[Structure.R].requires_grad_()
+            inputs[Properties.R].requires_grad_()
 
         inputs['representation'] = self.representation(inputs)
 
@@ -210,12 +210,12 @@ class MultiState(Atomwise):
         if self.requires_dr:
             if self.n_states==int(1):
                 i=0
-                dydr = torch.stack([grad(result["y"][:, i], inputs[Structure.R],
+                dydr = torch.stack([grad(result["y"][:, i], inputs[Properties.R],
                                      grad_outputs=torch.ones_like(result["y"][:, i]),
                                      create_graph=self.create_graph,
                                      retain_graph=True)[0]], dim=1)
             if self.n_states > int(1):
-                dydr = torch.stack([grad(result["y"][:, i], inputs[Structure.R],
+                dydr = torch.stack([grad(result["y"][:, i], inputs[Properties.R],
                                      grad_outputs=torch.ones_like(result["y"][:, i]),
                                      create_graph=self.create_graph,
                                      retain_graph=True)[0] for i in range(self.n_states)], dim=1)
@@ -249,7 +249,7 @@ class MultiState(Atomwise):
                 batch, states, natoms, _ = dydr.shape
                 # BEWARE: detach makes learning of hessians impossible, but saves a LOT of memory for prediction
                 if compute_hessian==True:
-                    d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[Structure.R],
+                    d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[Properties.R],
                                            grad_outputs=torch.ones_like(dydr.view(batch, -1)[:, i]),
                                            create_graph=self.create_graph)[0].detach() for i in
                                       range(self.n_states * natoms * 3)], dim=1)
@@ -258,7 +258,7 @@ class MultiState(Atomwise):
                     result['d2ydx2'] = d2ydr2
                 else:
                     #for scan enable those lines
-                    #d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[Structure.R],
+                    #d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[Properties.R],
                     #                      grad_outputs=torch.ones_like(dydr.view(batch, -1)[:, i]),
                     #                      create_graph=self.create_graph)[0].detach() for i in
                     #                 range(self.n_states * natoms * 3)], dim=1)
@@ -355,7 +355,7 @@ class MultiDipole(MultiState):
         uses a mask that values where no dipoles exist (e.g. singlet - triplets) are zero
         """
         result = super(MultiDipole, self).forward(inputs)
-        dipole_moments = torch.sum(result["yi"][:, :, :, None] * inputs[Structure.R][:, :, None, :], 1)
+        dipole_moments = torch.sum(result["yi"][:, :, :, None] * inputs[Properties.R][:, :, None, :], 1)
 
         result['y'] = dipole_moments #self.output_mask(dipole_moments)
 
@@ -524,7 +524,7 @@ class HiddenStatesEnergy(Atomwise):
         """
         result = super(HiddenStatesEnergy, self).forward(inputs)
 
-        B, A, _ = inputs[Structure.R].shape
+        B, A, _ = inputs[Properties.R].shape
 
         global_representation = self.globalrep(inputs['representation'])
 
@@ -577,7 +577,7 @@ class HiddenStatesEnergy(Atomwise):
         result['c_states'] = states
 
         if self.requires_dr:
-            nonadiabatic_couplings = torch.stack([-grad(result["y"][:, i], inputs[Structure.R],
+            nonadiabatic_couplings = torch.stack([-grad(result["y"][:, i], inputs[Properties.R],
                                                         grad_outputs=torch.ones_like(result["y"][:, i]),
                                                         create_graph=self.create_graph)[0] for i in
                                                   range(self.n_states)], dim=1)

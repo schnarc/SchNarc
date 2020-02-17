@@ -41,32 +41,13 @@ Install SchNet in a suitable folder:
 Then go to the directory schnetpack  
 ``cd schnetpack``  
 and carry out:  
-``python setup.py --verbose build``  
-Installation can take place in the same directory, e.g., ``<some-path>/schnetpack ``  
-Therefore run  
-``python setup.py --verbose install --prefix <some-path>/schnetpack``  
-If you are told to adjust your PYTHONPATH, then do as you are told e.g. by putting it into your ``.bashrc``: 
-``export PYTHONPATH=$PYTHONPATH:<some-path>/schnetpack/lib/python<version>/site-packages/``  
-Reload the .bashrc with  
-``. ~/.bashrc``  
-Then re-run  
-``python setup.py --verbose install --prefix <some-path>/schnetpack``  
-
+``pip install .`` 
 
 If you haven't done so, get the SchNarc sources:  
 ``git clone https://github.com/schnarc/schnarc.git``  
 Then go to the directory schnarc  
 ``cd schnarc``  
 and carry out:  
-``python setup.py --verbose build``  
-Installation can take place in the same directory, e.g., ``<some-path>/schnarc``   
-Therefore run  
-``python setup.py --verbose install --prefix <some-path>/schnarc``  
-If you are told to adjust your PYTHONPATH, then do as you are told e.g. by putting it into your ``.bashrc``:  
-``export PYTHONPATH=$PYTHONPATH:<some-path>/schnarc/lib/python<version>/site-packages/``  
-Reload the .bashrc with  
-``. ~/.bashrc``  
-Then re-run  
-``python setup.py --verbose install --prefix <some-path>/schnarc``  
+``pip install .``  
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack

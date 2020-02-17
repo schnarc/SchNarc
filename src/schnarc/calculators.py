@@ -6,7 +6,7 @@ from ase import Atoms
 from collections import Iterable
 
 import schnarc
-from schnetpack.data import Structure
+from schnetpack import Properties
 from schnetpack.environment import SimpleEnvironmentProvider, collect_atom_triples
 
 
@@ -85,32 +85,32 @@ class SchNarculator:
         schnet_inputs = dict()
 
         # Elemental composition
-        schnet_inputs[Structure.Z] = torch.LongTensor(self.molecule.numbers.astype(np.int))
-        schnet_inputs[Structure.atom_mask] = torch.ones_like(schnet_inputs[Structure.Z]).float()
+        schnet_inputs[Properties.Z] = torch.LongTensor(self.molecule.numbers.astype(np.int))
+        schnet_inputs[Properties.atom_mask] = torch.ones_like(schnet_inputs[Properties.Z]).float()
 
         # Set positions
         positions = self.molecule.positions.astype(np.float32)
-        schnet_inputs[Structure.R] = torch.FloatTensor(positions)
+        schnet_inputs[Properties.R] = torch.FloatTensor(positions)
 
         # get atom environment
         nbh_idx, offsets = self.environment_provider.get_environment(self.molecule)
 
         # Get neighbors and neighbor mask
         mask = torch.FloatTensor(nbh_idx) >= 0
-        schnet_inputs[Structure.neighbor_mask] = mask.float()
-        schnet_inputs[Structure.neighbors] = torch.LongTensor(nbh_idx.astype(np.int)) * mask.long()
+        schnet_inputs[Properties.neighbor_mask] = mask.float()
+        schnet_inputs[Properties.neighbors] = torch.LongTensor(nbh_idx.astype(np.int)) * mask.long()
 
         # Get cells
-        schnet_inputs[Structure.cell] = torch.FloatTensor(self.molecule.cell.astype(np.float32))
-        schnet_inputs[Structure.cell_offset] = torch.FloatTensor(offsets.astype(np.float32))
+        schnet_inputs[Properties.cell] = torch.FloatTensor(self.molecule.cell.astype(np.float32))
+        schnet_inputs[Properties.cell_offset] = torch.FloatTensor(offsets.astype(np.float32))
 
         # If requested get masks and neighbor lists for neighbor pairs
         if self.collect_triples is not None:
             nbh_idx_j, nbh_idx_k = collect_atom_triples(nbh_idx)
-            schnet_inputs[Structure.neighbor_pairs_j] = torch.LongTensor(nbh_idx_j.astype(np.int))
-            schnet_inputs[Structure.neighbor_pairs_k] = torch.LongTensor(nbh_idx_k.astype(np.int))
-            schnet_inputs[Structure.neighbor_pairs_mask] = torch.ones_like(
-                schnet_inputs[Structure.neighbor_pairs_j]).float()
+            schnet_inputs[Properties.neighbor_pairs_j] = torch.LongTensor(nbh_idx_j.astype(np.int))
+            schnet_inputs[Properties.neighbor_pairs_k] = torch.LongTensor(nbh_idx_k.astype(np.int))
+            schnet_inputs[Properties.neighbor_pairs_mask] = torch.ones_like(
+                schnet_inputs[Properties.neighbor_pairs_j]).float()
 
         # Add batch dimension and move to CPU/GPU
         for key, value in schnet_inputs.items():
