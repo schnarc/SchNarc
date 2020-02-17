@@ -12,7 +12,7 @@ It is recommended to create an environment (in this example the environment is c
 ``conda create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils``  
 Then activate the environment:  
 ``conda activate ml``  
-Then install further packages (pay attention to use a newer gcc version):
+Then install further packages (pay attention to use a newer gcc version):  
 ``conda install -n ml -c msarahan gcc_linux-64``  
 ``conda install -n ml -c conda-forge lapack fftw``  
 
@@ -22,9 +22,9 @@ Install SHARC with pysharc (see https://sharc-md.org/?page_id=50#tth_sEc2.3 or f
 ``git clone https://github.com/sharc-md/sharc.git``  
 ``cd sharc/source``  
 Edit Makefile and make the following changes:  
-``    USE_PYSHARC := true``
-``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``
-Go to the pysharc/netcdf folder:
+``    USE_PYSHARC := true``  
+``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
+Go to the pysharc/netcdf folder:  
 ``cd ../pysharc/netcdf``  
 Edit Makefile  there and make the following changes:  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
