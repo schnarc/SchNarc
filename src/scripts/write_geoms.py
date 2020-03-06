@@ -12,7 +12,7 @@ def extract_geometries(filename):
   for line in initconds: 
     #get number of atoms 
     data = line.split()
-    atom_number=int(line[0])
+    atom_number=int(data[0])
     print(atom_number)
     break
   iline = -1 
