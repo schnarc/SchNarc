@@ -604,7 +604,7 @@ def read_QMout(Properties,nmstates,n_singlets,n_triplets,filename):
       if n_triplets==0:
         pass
       else:
-        for triplet_number in range(3):
+        for triplet_number in range(1):
           triplet_nmstate_0=triplet_nmstate_1
           triplet_nmstate_1=triplet_nmstate_0+1
           #print(triplet_magnetic, "should start with 1")
@@ -615,7 +615,7 @@ def read_QMout(Properties,nmstates,n_singlets,n_triplets,filename):
             overlap_triplets = float(line[2*overlaps_triplets])
             if abs(overlap_triplets) < threshold:
               for overlaps_stateswitch_triplets in range(n_singlets*triplet_nmstate_0,n_singlets+triplet_nmstate_1*n_triplets):
-                oberlap_switched_state_triplet = float(line[2*overlap_stateswitch_triplets])
+                overlap_switched_state_triplet = float(line[2*overlaps_stateswitch_triplets])
                 if abs(overlap_switched_state_triplet) > threshold:
                   overlap_triplets = overlap_switched_state_triplet
                   if overlap_triplets < int(0):
