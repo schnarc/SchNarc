@@ -96,13 +96,13 @@ def qm2outputdat(Properties,outputdatfile):
           xyz=0
           string_gradient+='\n'
 
-  if int(OUTPUT['Property2d'])==1:
+  if int(OUTPUT['n_property2d'])==1:
     n_property2d=int(OUTPUT['n_property2d'])
     for number in range(n_property2d):
       string_property2d+='! 13 Property matrix (MCH)  %i : N/A\n' %(int(number)+1)
       for numberofstates in range(nmstates):
         for real_imag in range(nmstates*2):
-          string_property2d+='0.000000000 '
+          string_property2d+='%20.12f '%Properties['Dyson'][numberofstates][real_imag]
         string_property2d+='\n'
 
   if int(OUTPUT['Property1d'])==1:
@@ -180,11 +180,14 @@ def get_header(outputdatfile):
       line = line.split()
       n_singlets=int(line[1])
       n_triplets=int(line[3])
-      n_dubletts=int(line[2])
-      nmstates=1*int(line[1])+2*int(line[2])+3*int(line[3])
+      n_dublets=int(line[2])
+      n_quartets=int(line[4])
+      nmstates=1*int(line[1])+2*int(line[2])+3*int(line[3])+4*int(line[4])
       OUTPUT['nmstates']=int(nmstates)
       OUTPUT['n_singlets']=int(n_singlets)
+      OUTPUT['n_dublets']=int(n_dublets)
       OUTPUT['n_triplets']=int(n_triplets)
+      OUTPUT['n_quartets']=int(n_quartets)
     elif line.startswith('natom'):
       line = line.split()
       natoms=line[1]
@@ -274,6 +277,8 @@ def phasecorrection(Properties,oldfilename,filename,newfilename,outputdatfile,in
   nmstates=OUTPUT['nmstates']
   natoms = OUTPUT['natoms']
   n_singlets = OUTPUT['n_singlets']
+  n_dublets = OUTPUT['n_dublets']
+  n_quartets = OUTPUT['n_quartets']
   n_triplets = OUTPUT['n_triplets']
   #print(n_singlets,n_triplets)
   #if n_triplets==None:
@@ -493,6 +498,21 @@ def phasecorrection(Properties,oldfilename,filename,newfilename,outputdatfile,in
         string_phase+='%20.12f 0.000000000\n' %phasevector[phases]
       QMout.write(string_phase)
 
+    elif line.startswith('! 11 Property'):
+        #write dyson norms
+        string_property=''
+        line=data[jline]
+        print(line)
+        print("HER")
+        QMout.write(line)
+        jline+=1
+        Property=Properties['Dyson']
+        string_property+='%s' %line
+        for dyson in range(nmstates):
+          for row_elements in range(nmstates*2):
+            string_property+='%20.12f '%Property[dyson][row_elements]
+          string_property+="\n"
+        QMout.write(string_property)
     else:
       pass
 
@@ -711,6 +731,15 @@ def read_QMout(Properties,nmstates,n_singlets,n_triplets,filename):
         for real_imag in range(nmstates*2):
           overlap[numberofstates][real_imag]=line[real_imag]
       Properties['Overlap']=overlap
+
+    elif line.startswith('! 11 Property Matrix'):
+      dyson=np.zeros((nmstates,nmstates*2))
+      for numberofstates in range(nmstates):
+        line=data[iline+2+numberofstates]
+        line=line.split()
+        for real_imag in range(nmstates*2):
+          dyson[numberofstates][real_imag]=line[real_imag]
+      Properties['Dyson']=dyson
 
   return Properties, data
 
