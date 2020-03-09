@@ -95,11 +95,14 @@ class MultiStatePropertyModel(nn.Module):
         # Flag for computation of nacs
         self.inverse_energy = inverse_energy
 
-        self.requires_dr = self.need_forces
+        self.derivative = self.need_forces
         # Construct default mean and stddevs if passed None
         if mean is None or stddev is None:
             mean = {p: None for p in properties}
             stddev = {p: None for p in properties}
+
+        # Disable stress
+        self.stress = False
 
         outputs = {}
         # Energies and forces
@@ -199,15 +202,34 @@ class MultiState(Atomwise):
             curr_mean = mean
             curr_stddev = stddev
 
-        super(MultiState, self).__init__(n_in, n_states, aggregation_mode, n_layers,
-                                         n_neurons, activation,
-                                         return_contributions, return_force,
-                                         create_graph, curr_mean, curr_stddev,
-                                         atomref, max_z, outnet)
+        if return_force:
+            self.derivative = 'dydx'
+            self.negative_dr = True
+        else:
+            self.derivative = None
+            self.negative_dr = False
+
+        super(MultiState, self).__init__(
+            n_in,
+            n_out=n_states,
+            aggregation_mode=aggregation_mode,
+            n_layers=n_layers,
+            n_neurons=n_neurons,
+            activation=activation,
+            contributions=return_contributions,
+            derivative=self.derivative,
+            negative_dr=self.negative_dr,
+            create_graph=create_graph,
+            mean=curr_mean,
+            stddev=curr_stddev,
+            atomref=atomref,
+            outnet=outnet,
+        )
+
 
     def forward(self, inputs):
         result = super(MultiState, self).forward(inputs)
-        if self.requires_dr:
+        if self.derivative:
             if self.n_states==int(1):
                 i=0
                 dydr = torch.stack([grad(result["y"][:, i], inputs[Properties.R],
@@ -287,6 +309,11 @@ class MultiEnergy(MultiState):
                                           atomref, max_z, outnet,
                                           return_hessian=return_hessian)
 
+    #def __init__(self, n_in, n_states, aggregation_mode='sum', n_layers=2, n_neurons=None,
+    #             activation=spk.nn.activations.shifted_softplus, return_contributions=False, create_graph=True,
+    #             return_force=False, mean=None, stddev=None, atomref=None, max_z=100, outnet=None,
+    #             standardize_after=False, return_hessian=[False,1,0.018,1,0.036]):
+
     def forward(self, inputs):
         """
         predicts energy
@@ -295,7 +322,7 @@ class MultiEnergy(MultiState):
           self.return_hessian=[False,1,0,1,0]
         result = super(MultiEnergy, self).forward(inputs)
         # Apply negative gradient for forces
-        if self.requires_dr:
+        if self.derivative:
             result['dydx'] = -result['dydx']
 
         return result

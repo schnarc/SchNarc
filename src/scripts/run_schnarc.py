@@ -154,7 +154,7 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
     to_opt = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = Adam(to_opt, lr=args.lr)
 
-    schedule = spk.train.ReduceLROnPlateauHook(patience=args.lr_patience, factor=args.lr_decay,
+    schedule = spk.train.ReduceLROnPlateauHook(optimizer, patience=args.lr_patience, factor=args.lr_decay,
                                                min_lr=args.lr_min,
                                                window_length=1, stop_after_min=True)
     hooks.append(schedule)
@@ -405,7 +405,7 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
     if parallelize:
         model = nn.DataParallel(model)
 
-    logging.info("The model you built has: %d parameters" % spk.utils.compute_params(model))
+    logging.info("The model you built has: %d parameters" % spk.utils.count_params(model))
 
     return model
 
@@ -520,7 +520,7 @@ if __name__ == '__main__':
 
     # Read and process the data using the properties found in the tradeoffs.
     logging.info('Loading {:s}...'.format(args.datapath))
-    dataset = spk.data.AtomsData(args.datapath, required_properties=properties, collect_triples=args.model == 'wacsf')
+    dataset = spk.data.AtomsData(args.datapath, collect_triples=args.model == 'wacsf')
     # Determine the number of states based on the metadata
     n_states = {}
     n_states['n_singlets'] = dataset.get_metadata("n_singlets")
@@ -584,6 +584,8 @@ if __name__ == '__main__':
         for p in properties:
             if p in schnarc.data.Properties.normalize:
                 mean_p, stddev_p = train_loader.get_statistics(p, True)
+                mean_p = mean_p[p]
+                stddev_p = stddev_p[p]
                 mean[p] = mean_p
                 stddev[p] = stddev_p
                 logging.info('{:s} MEAN: {:20.11f} STDDEV: {:20.11f}'.format(p, mean_p.detach().cpu().numpy()[0],
