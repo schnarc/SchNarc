@@ -182,7 +182,7 @@ def read_dataset(path,numberofgeoms,filename):
     for quartet in range(4*quartets):
       states += 'Q '
     metadata['states'] = states
-    reference = 'MR-CISD(6,4)/aug-cc-pVDZ, program: COLUMBUS'
+    reference = 'QC' # TODO put your method here
     phasecorrected = False
     metadata['phasecorrected'] = phasecorrected
     metadata['ReferenceMethod'] = reference
