@@ -62,7 +62,7 @@ def read_output_dat(args):
     all_nac = []
     all_dyson=[]
     all_step = np.arange(stepsize)
-    dipole_numberofmatrix=(n_singlets+n_dublets+n_triplets+n_quartets)*(n_singlets+n_dublets+n_triplets+n_quartets+1)/2
+    dipole_numberofmatrix=int((n_singlets*(n_singlets+1))/2+(n_dublets*(n_dublets+1))/2+(n_triplets*(n_triplets+1))/2+(n_quartets*(n_quartets+1))/2)
     dipole_numberofmatrix=int(dipole_numberofmatrix)
     all_dipole=np.zeros((stepsize,dipole_numberofmatrix))
     #iterates over steps in output.dat file, every step is a new row in the desired matrices for the quantities: all_quantity
@@ -105,23 +105,24 @@ def read_output_dat(args):
         #get the dipole moments
         #only between s-s, d-d, t-t, and q-q 
         #between all magnetic multiplicity the same values
+        iterator=0
         for isinglet in range(n_singlets):
-            for jsinglet in range(n_singlets):
+            for jsinglet in range(isinglet,n_singlets):
                 dipole_step_x.append(read_dict['Dipole_x'][isinglet][jsinglet])
                 dipole_step_y.append(read_dict['Dipole_y'][isinglet][jsinglet])
                 dipole_step_z.append(read_dict['Dipole_z'][isinglet][jsinglet])
         for idublet in range(n_singlets,n_singlets+n_dublets):
-            for  jdublet in range(n_singlets,n_singlets+n_dublets):
-                dipole_step_x.append(read_dict['Dipole_x'][isinglet][jsinglet])
-                dipole_step_y.append(read_dict['Dipole_y'][isinglet][jsinglet])
-                dipole_step_z.append(read_dict['Dipole_z'][isinglet][jsinglet])
+            for  jdublet in range(idublet,n_singlets+n_dublets):
+                dipole_step_x.append(read_dict['Dipole_x'][idublet][jdublet])
+                dipole_step_y.append(read_dict['Dipole_y'][idublet][jdublet])
+                dipole_step_z.append(read_dict['Dipole_z'][idublet][jdublet])
         for itriplet in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
-            for jtriplet in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
+            for jtriplet in range(itriplet,n_singlets+2*n_dublets+n_triplets):
                 dipole_step_x.append(read_dict['Dipole_x'][itriplet][jtriplet])
                 dipole_step_y.append(read_dict['Dipole_y'][itriplet][jtriplet])
                 dipole_step_z.append(read_dict['Dipole_z'][itriplet][jtriplet])
         for iquartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
-            for jquartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+            for jquartet in range(iquartet,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
                 dipole_step_x.append(read_dict['Dipole_x'][iquartet][jquartet])
                 dipole_step_y.append(read_dict['Dipole_y'][iquartet][jquartet])
                 dipole_step_z.append(read_dict['Dipole_z'][iquartet][jquartet])
@@ -562,7 +563,7 @@ def get_properties(dict_properties,args):
       for nac in range(len(dict_properties['NonAdiabaticCoupling'][i])):
         file.write("%12.9E "%dict_properties['NonAdiabaticCoupling'][i][nac])
     if DYSON==True:
-        file.write("\n! Dynson Norms, property matrix %i\n" %len(dict_properties['Dyson'][i]))
+        file.write("\n! Dyson Norms, property matrix %i\n" %len(dict_properties['Dyson'][i]))
         for dysonvalue in range(len(dict_properties['Dyson'][i])):
             file.write("%12.9E "%dict_properties['Dyson'][i][dysonvalue])
     file.close()

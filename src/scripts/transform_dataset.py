@@ -29,7 +29,9 @@ def read_dataset(path,numberofgeoms,filename):
         #Properties
         prop_file = open(path+"/properties/%07d"%geom,"r").readlines()
         singlets = 0
+        dublets = 0
         triplets = 0
+        quartets = 0
         _energy = False
         energy = np.zeros((1))
         _soc = False
@@ -40,38 +42,65 @@ def read_dataset(path,numberofgeoms,filename):
         dipole = np.zeros((1))
         _nac = False
         nac = np.zeros((1))
+        _dyson = False
+        dyson = np.zeros((1))
+        property_list=[]
         for line in prop_file:
             if line.startswith("Singlets"):
                 singlets = int(line.split()[1])
+            elif line.startswith("Dublets"):
+                dublets = int(line.split()[1])
             elif line.startswith("Triplets"):
                 triplets = int(line.split()[1])
+            elif line.startswith("Quartets"):
+                quartets = int(line.split()[1])
             elif line.startswith("Energy"):
-                _energy = True
+                if int(line.split()[-1])==int(1):
+                    _energy = True
+                    property_list.append('energy')
             elif line.startswith("Dipole"):
-                _dipole = True
+                if int(line.split()[-1])==int(1):
+                    _dipole = True
+                    property_list.append('dipoles')
             elif line.startswith("SOC"):
-                _soc = True
+                if int(line.split()[-1])==int(1):
+                    _soc = True
+                    property_list.append('socs')
             elif line.startswith("Grad"):
-                _force = True
+                if int(line.split()[-1])==int(1):
+                    _force = True
+                    property_list.append('forces')
             elif line.startswith("NAC"):
-                _nac = True
+                if int(line.split()[-1])==int(1):
+                    _nac = True
+                    property_list.append('nacs')
+            elif line.startswith('DYSON'):
+                if int(line.split()[-1])==int(1):
+                    _dyson = True
+                    property_list.append('dyson')
             else:
                 continue
-        nmstates = singlets + 3*triplets
+        nmstates = singlets + 2*dublets + 3*triplets + 4*quartets
         iline = -1
         for line in prop_file:
             iline+=1
             if line.startswith("! Energy"):
-                n_energy = singlets+triplets 
+                n_energy = singlets + dublets + triplets + quartets
                 #int(line.split()[2])
                 energy = [] #np.zeros((n_energy))
                 eline  = prop_file[iline+1].split()
-                for i in range(n_energy):
+                for i in range(singlets):
+                    energy.append(float(eline[i]))
+                for i in range(singlets,singlets+dublets):
+                    energy.append(float(eline[i]))
+                for i in range(singlets+2*dublets,singlets+2*dublets+triplets):
+                    energy.append(float(eline[i]))
+                for i in range(singlets+2*dublets+3*triplets,singlets+2*dublets+3*triplets+quartets):
                     energy.append(float(eline[i]))
                 energy=np.array(energy)
             #dipole is read in as mu(1,1), mu(1,2), mu(1,3),...
             elif line.startswith("! Dipole"):
-                n_dipole = int(nmstates*(nmstates-1)/2+nmstates)
+                n_dipole = int((singlets*(singlets+1))/2+(dublets*(dublets+1))/2+(triplets*(triplets+1))/2+(quartets*(quartets+1))/2)
                 dipole = np.zeros((n_dipole,3))
                 dline = prop_file[iline+1].split()
                 for i in range(n_dipole):
@@ -86,10 +115,22 @@ def read_dataset(path,numberofgeoms,filename):
                 soc=np.array(soc)
             elif line.startswith("! Gradient"):
                 n_grad = int(line.split()[2])
-                force = np.zeros((singlets+triplets,natom,3))
+                force = np.zeros((singlets+triplets+dublets+quartets,natom,3))
                 index = -1
                 gline = prop_file[iline+1].split()
-                for istate in range(singlets+triplets):
+                for istate in range(singlets+dublets):
+                    for iatom in range(natom):
+                        for xyz in range(3):
+                            index+=1
+                            force[istate][iatom][xyz] = -float(gline[index])
+                index+=(natoms*3*dublets)
+                for istate in range(singlets+2*dublets,singlets+2*dublets,triplets):
+                    for iatom in range(natom):
+                        for xyz in range(3):
+                            index+=1
+                            force[istate][iatom][xyz] = -float(gline[index])
+                index+=(2*natoms*3*triplets)
+                for istate in range(singlets+2*dublets+3*triplets,singlets+2*dublets+3*triplets+quartets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
@@ -106,18 +147,26 @@ def read_dataset(path,numberofgeoms,filename):
                         for xyz in range(3):
                             index+=1
                             nac[i][iatom][xyz] = float(nacline[index])
+            elif line.startswith('! Dyson'):
+                n_dyson = int(line.split()[-1])
+                property_matrix = []
+                sline = prop_file[iline+1].split()
+                for i in range(n_dyson):
+                    property_matrix.append(float(sline[i]))
+                property_matrix=np.array(property_matrix)
             else:
                 continue
 
-        properties = { 'energy' : energy,
+        available_properties = { 'energy' : energy,
                         'socs'    : soc,
                         'forces'  : force,
                         'nacs'    : nac,
-                        'dipoles' : dipole }
+                        'dipoles' : dipole,
+                        'dyson'   : dyson }
         #Append list 
         charge_buffer.append(charge)
         atom_buffer.append(atoms)
-        property_buffer.append(properties)
+        property_buffer.append(available_properties)
     #get schnet format
     metadata['n_singlets'] = int(singlets)
     metadata['n_triplets'] = int(triplets)
@@ -131,7 +180,7 @@ def read_dataset(path,numberofgeoms,filename):
     phasecorrected = False
     metadata['phasecorrected'] = phasecorrected
     metadata['ReferenceMethod'] = reference
-    spk_data = AtomsData(filename,)
+    spk_data = AtomsData(filename,available_properties=property_list)
     spk_data.add_systems(atom_buffer,property_buffer)
     #get metadata
     spk_data.set_metadata(metadata)
