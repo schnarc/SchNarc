@@ -169,12 +169,18 @@ def read_dataset(path,numberofgeoms,filename):
         property_buffer.append(available_properties)
     #get schnet format
     metadata['n_singlets'] = int(singlets)
+    metadata['n_dublets'] = int(dublets)
     metadata['n_triplets'] = int(triplets)
+    metadata['n_quartets'] = int(quartets)
     states = ''
     for singlet in range(singlets):
       states += 'S '
+    for dublet in range(2*dublets):
+      states += 'D '
     for triplet in range(3*triplets):
       states += 'T '
+    for quartet in range(4*quartets):
+      states += 'Q '
     metadata['states'] = states
     reference = 'MR-CISD(6,4)/aug-cc-pVDZ, program: COLUMBUS'
     phasecorrected = False

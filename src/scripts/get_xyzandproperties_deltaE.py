@@ -172,17 +172,24 @@ def read_output_dat(args):
           all_nac.append(nac_step)
 
         if DYSON==True:
+            iterator=0
             #only real values
             for singlet_line in range(n_singlets):
                 for singlet_dublet in range(n_singlets,n_singlets+n_dublets):
+                    iterator+=1
                     dyson_step.append(read_dict['Dyson'][singlet_line][singlet_dublet*2])
-                for singlet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets,n_quartets):
+            for singlet_line in range(n_singlets):
+                for singlet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+                    iterator+=1
                     dyson_step.append(read_dict['Dyson'][singlet_line][singlet_quartet*2])
             for triplet_line in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
                 for triplet_dublet in range(n_singlets,n_singlets+n_dublets):
+                    iterator+=1
                     dyson_step.append(read_dict['Dyson'][triplet_line][triplet_dublet*2])
-                for triplet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets,n_quartets):
-                    dyston_step.append(read_dict['Dyson'][triplet_line][triplet_quartet*2])
+            for triplet_ine in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
+                for triplet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+                    iterator+=1
+                    dyson_step.append(read_dict['Dyson'][triplet_line][triplet_quartet*2])
 
             all_dyson.append(dyson_step)
       else:

@@ -517,7 +517,6 @@ if __name__ == '__main__':
 
     # Determine the properties to load based on the tradeoffs
     properties = [p for p in tradeoffs]
-
     # Read and process the data using the properties found in the tradeoffs.
     logging.info('Loading {:s}...'.format(args.datapath))
     dataset = spk.data.AtomsData(args.datapath, collect_triples=args.model == 'wacsf')
@@ -534,14 +533,20 @@ if __name__ == '__main__':
     s=tradeoffs['energy'].split()
     if int(s[1]) > int(0):
         n_singlets = int(s[1])
-        n_triplets = int(s[2])
+        n_dublets  = int(s[2])
+        n_triplets = int(s[3])
+        n_quartets = int(s[4])
         n_states['n_singlets'] = n_singlets
+        n_states['n_dublets'] = n_dublets
         n_states['n_triplets'] = n_triplets
-        n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
+        n_states['n_quartets'] = n_quartets
+        n_states['n_states'] = n_states['n_singlets'] + +n_states['n_dublets']+n_states['n_triplets']+n_states['n_quartets']
     n_states['states'] = dataset.get_metadata("states")
-    logging.info('Found {:d} states... {:d} singlet states and {:d} triplet states'.format(n_states['n_states'],
+    logging.info('Found {:d} states... {:d} singlet states, {:d} dublet states, {:d} triplet states, and {:d} quartet states'.format(n_states['n_states'],
                                                                                            n_states['n_singlets'],
-                                                                                           n_states['n_triplets']))
+                                                                                           n_states['n_dublets'],
+                                                                                           n_states['n_triplets'],
+                                                                                           n_states['n_quartets']))
 
     if args.mode == 'eval':
         split_path = os.path.join(args.modelpath, 'split.npz')
@@ -610,7 +615,7 @@ if __name__ == '__main__':
         #properties for phase vector
         #n_nacs = int(n_states['n_singlets']*(n_states['n_singlets']-1)/2 + n_states['n_triplets']*(n_states['n_triplets']-1)/2 )
         batch_size = args.batch_size
-        all_states = n_states['n_singlets'] + 3 * n_states['n_triplets']
+        all_states = n_states['n_singlets'] + 2 * n_states['n_dublets'] + 3 * n_states['n_triplets'] + 4 * n_states['n_quartets']
         n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
         #min loss for a given batch size
         #vector with correct phases for a mini batch
@@ -619,7 +624,11 @@ if __name__ == '__main__':
         #number of singlet-singlet and triplet-triplet deriative couplings
         #gives the number of phases 
         #generate all possible 2**(nstates-1) vectors that give rise to possible combinations of phases
-
+        """TODO 
+        adapt phase vector generation for dublets and quartets 
+        this should be separated and exactly the same as for singlets and triplets
+        the socs should then be separated in order to get the right phases with respect to the phases of nacs between dublets-dublets and quartets-quartets
+        in case only 1 property, such as only socs, are computed: phaseless_loss_single can be applied and this is not necessary"""
         phasevector = generateAllBinaryStrings(n_states['n_states'],[None]*n_states['n_states'],0,[])
         phase_pytorch = torch.Tensor( n_states['n_states'],n_phases ).to(device)
         iterator = -1
