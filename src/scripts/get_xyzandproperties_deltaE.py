@@ -522,7 +522,7 @@ def get_properties(dict_properties,args):
       DYSON=False
   for i in range(stepsize):
     file = open ("%07d"%(i+1),"w")
-    file.write("Singlets %i\nTriplets %i \nEnergy 1\nDipole 1\nSOC 1\nGrad 1\nNAC 1\n"%(dict_properties['n_Singlets'],dict_properties['n_Triplets']))
+    file.write("Singlets %i\nDublets %i \nTriplets %i\nQuartets %i \nEnergy 1\nDipole 1\nSOC 1\nGrad 1\nNAC 1\nDYSON 1\n"%(dict_properties['n_Singlets'],dict_properties['n_Dublets'],dict_properties['n_Triplets'],dict_properties['n_Quartets']))
     file.write("\n! Energy %i\n"%len(dict_properties['Energy'][i]))
     for ener in range(dict_properties['NumberOfStates']):
       file.write("%12.9E "%dict_properties['Energy'][i][ener] )
