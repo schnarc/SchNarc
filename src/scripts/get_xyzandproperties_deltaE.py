@@ -1,4 +1,5 @@
 #!/usr/remote/bin/python -u
+import argparse
 import numpy as np
 import os
 from sys import argv
@@ -10,7 +11,7 @@ import shutil
 from optparse import OptionParser
 import readline
 
-def read_output_dat(sharc_dat,threshold_S,threshold_T):
+def read_output_dat(args):
     """ used class: output_dat
     """
     dict_properties = { "Step"              : False,
@@ -20,15 +21,29 @@ def read_output_dat(sharc_dat,threshold_S,threshold_T):
                         "NonAdiabaticCoupling"	: False,
 			"Gradient"		: False,
 			"Index"			: False }
-    y=output_dat(sharc_dat)
+    if args.singlets is not None:
+        threshold_S=args.singlets
+    if args.dublets is not None:
+        threshold_D=args.dublets
+        DYSON=True
+    if args.triplets is not None:
+        threshold_T=args.triplets
+    if args.quartets is not None:
+        threshold_Q=args.quartets
+        DYSON=True
+    if args.dublets is None and args.quartets is None:
+        DYSON=False
+    y=output_dat(args.datafile)
     ezero = y.ezero
     all_atype = y.all_atype
     nmstates = y.nmstates
     natoms = y.natoms
-    NAC=True #NAC=False
+    NAC=args.nacs
     n_singlets = y.states[0]
+    n_dublets = y.states[1]
     n_triplets = y.states[2]
-    n_states = n_singlets+3*n_triplets
+    n_quartets = y.states[3]
+    n_states = n_singlets+2*n_dublets+3*n_triplets+4*n_quartets
     stepsize = len(y.startlines)
     all_energy=[]
     #for socs there are n_singlets*n_triplets values for a,b and c and 0.5*(n_triplets*(n_triplets-1)) values for d,e and f
@@ -45,8 +60,9 @@ def read_output_dat(sharc_dat,threshold_S,threshold_T):
     all_grad = []
     all_geom = []
     all_nac = []
-    all_step=np.arange(stepsize)
-    dipole_numberofmatrix=(n_states*(n_states-1))/2+n_states #3*((n_singlets*(n_singlets-1)/2+n_singlets)+(n_triplets*(n_triplets-1)/2+n_triplets))
+    all_dyson=[]
+    all_step = np.arange(stepsize)
+    dipole_numberofmatrix=(n_singlets+n_dublets+n_triplets+n_quartets)*(n_singlets+n_dublets+n_triplets+n_quartets+1)/2
     dipole_numberofmatrix=int(dipole_numberofmatrix)
     all_dipole=np.zeros((stepsize,dipole_numberofmatrix))
     #iterates over steps in output.dat file, every step is a new row in the desired matrices for the quantities: all_quantity
@@ -63,6 +79,7 @@ def read_output_dat(sharc_dat,threshold_S,threshold_T):
       dipole_step_z = []
       grad_step = []
       nac_step = []
+      dyson_step = []
       for singlets in range(n_states):
         energy_step.append(read_dict['Hamiltonian_real'][singlets][singlets])
       SKIP = False
@@ -85,12 +102,29 @@ def read_output_dat(sharc_dat,threshold_S,threshold_T):
         all_geom.append(read_dict["Geometries"])
         all_energy.append(energy_step)
  
-        #get the dipole moments 
-        for istate in range(n_states):
-          for jstate in range(istate,n_states):
-            dipole_step_x.append(read_dict['Dipole_x'][istate][jstate])
-            dipole_step_y.append(read_dict['Dipole_y'][istate][jstate])
-            dipole_step_z.append(read_dict['Dipole_z'][istate][jstate])
+        #get the dipole moments
+        #only between s-s, d-d, t-t, and q-q 
+        #between all magnetic multiplicity the same values
+        for isinglet in range(n_singlets):
+            for jsinglet in range(n_singlets):
+                dipole_step_x.append(read_dict['Dipole_x'][isinglet][jsinglet])
+                dipole_step_y.append(read_dict['Dipole_y'][isinglet][jsinglet])
+                dipole_step_z.append(read_dict['Dipole_z'][isinglet][jsinglet])
+        for idublet in range(n_singlets,n_singlets+n_dublets):
+            for  jdublet in range(n_singlets,n_singlets+n_dublets):
+                dipole_step_x.append(read_dict['Dipole_x'][isinglet][jsinglet])
+                dipole_step_y.append(read_dict['Dipole_y'][isinglet][jsinglet])
+                dipole_step_z.append(read_dict['Dipole_z'][isinglet][jsinglet])
+        for itriplet in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
+            for jtriplet in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
+                dipole_step_x.append(read_dict['Dipole_x'][itriplet][jtriplet])
+                dipole_step_y.append(read_dict['Dipole_y'][itriplet][jtriplet])
+                dipole_step_z.append(read_dict['Dipole_z'][itriplet][jtriplet])
+        for iquartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+            for jquartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+                dipole_step_x.append(read_dict['Dipole_x'][iquartet][jquartet])
+                dipole_step_y.append(read_dict['Dipole_y'][iquartet][jquartet])
+                dipole_step_z.append(read_dict['Dipole_z'][iquartet][jquartet])
         all_dipole_x.append(dipole_step_x)
         all_dipole_y.append(dipole_step_y)
         all_dipole_z.append(dipole_step_z)
@@ -135,6 +169,21 @@ def read_output_dat(sharc_dat,threshold_S,threshold_T):
             else:
               break
           all_nac.append(nac_step)
+
+        if DYSON==True:
+            #only real values
+            for singlet_line in range(n_singlets):
+                for singlet_dublet in range(n_singlets,n_singlets+n_dublets):
+                    dyson_step.append(read_dict['Dyson'][singlet_line][singlet_dublet*2])
+                for singlet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets,n_quartets):
+                    dyson_step.append(read_dict['Dyson'][singlet_line][singlet_quartet*2])
+            for triplet_line in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
+                for triplet_dublet in range(n_singlets,n_singlets+n_dublets):
+                    dyson_step.append(read_dict['Dyson'][triplet_line][triplet_dublet*2])
+                for triplet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets,n_quartets):
+                    dyston_step.append(read_dict['Dyson'][triplet_line][triplet_quartet*2])
+
+            all_dyson.append(dyson_step)
       else:
         pass
     #transform list into matrix, for all_energy: add zero point energy 
@@ -180,6 +229,9 @@ def read_output_dat(sharc_dat,threshold_S,threshold_T):
     dict_properties["Ezero"]=ezero
     dict_properties["n_Singlets"]=n_singlets
     dict_properties['n_Triplets']=n_triplets
+    dict_properties['n_Dublets']=n_dublets
+    dict_properties['n_Quartets']=n_quartets
+    dict_properties['Dyson']=all_dyson
     return dict_properties
 
 
@@ -384,7 +436,16 @@ class output_dat:
             l=self.natoms*iline+a
             Nac[l][j]=float(s[j])
     self.read_dict["NonAdiabaticCoupling"]=Nac
-    
+    Property=np.zeros((self.nmstates,self.nmstates*2))
+    if self.n_2dindex==int(1):
+      for iline in range(self.nmstates):
+        if self.gradientindex==0:
+            index=self.startlines[current]+19+self.n_1dindex+2*self.natoms+(7+self.n_1dindex)*self.nmstates
+            line=(self.data[index+iline+1])
+            s=line.split()
+            for istate in range(self.nmstates*2):
+                Property[iline][istate] = float(s[istate])
+    self.read_dict['Dyson']=Property
     return current, read_dict
 
 #========================================================================================================
@@ -447,11 +508,18 @@ def get_xyz(dict_properties):
       file.write("%s %12.9E %12.9E %12.9E \n"%(atomtype,dict_properties['AllGeometries'][i][j][0],dict_properties['AllGeometries'][i][j][1], dict_properties['AllGeometries'][i][j][2]))
     file.close()
 
-def get_properties(dict_properties):
+def get_properties(dict_properties,args):
   #iterate over number of geometries and write a file containing all the properties
   stepsize = dict_properties['Energy'].shape[0]
-  NAC=True
-  SOC=True
+  NAC=args.nacs
+  if args.triplets is not None:
+      SOC=True
+  else:
+      SOC=False
+  if args.dublets is not None or args.quartets is not None:
+      DYSON=True
+  else:
+      DYSON=False
   for i in range(stepsize):
     file = open ("%07d"%(i+1),"w")
     file.write("Singlets %i\nTriplets %i \nEnergy 1\nDipole 1\nSOC 1\nGrad 1\nNAC 1\n"%(dict_properties['n_Singlets'],dict_properties['n_Triplets']))
@@ -472,19 +540,31 @@ def get_properties(dict_properties):
       file.write("\n! Nonadiabatic coupling %i\n" %(len(dict_properties['NonAdiabaticCoupling'][i])))
       for nac in range(len(dict_properties['NonAdiabaticCoupling'][i])):
         file.write("%12.9E "%dict_properties['NonAdiabaticCoupling'][i][nac])
+    if DYSON==True:
+        file.write("\n! Dynson Norms, property matrix %i\n" %len(dict_properties['Dyson'][i]))
+        for dysonvalue in range(len(dict_properties['Dyson'][i])):
+            file.write("%12.9E "%dict_properties['Dyson'][i][dysonvalue])
     file.close()
 
 if  __name__ == "__main__":
     try:
-        name, datafile,threshold_S,threshold_T = argv
+
+        parser = argparse.ArgumentParser(description='Process some integers.')
+        parser.add_argument('--datafile',help='specify the datafile',type=str)
+        parser.add_argument('--nacs', help='set flag if NACs are available', 
+                            action="store_true")
+        parser.add_argument('--singlets',help='set flag if singlets are available and specify the threshold for the corresponding energy gap',type=float)
+        parser.add_argument('--dublets', help='set flag if dublets are available and specify the threshold for the corresponding energy gap', type=float)
+        parser.add_argument('--triplets', help='set flag if triplets are available and specify the threshold for the corresponding energy gap',type=float)
+        parser.add_argument('--quartets',help='set flag if triplets are available and specify the threshold for the corresponding energy gap',type=float)
     except ValueError:
         print( "Usage: script <filename>")
         exit()
-    threshold_S = float(argv[2])
-    threshold_T = float(argv[3])
-    dict_properties = read_output_dat(datafile,threshold_S,threshold_T)
+
+    args = parser.parse_args()
+    dict_properties = read_output_dat(args)
     get_xyz(dict_properties)
-    get_properties(dict_properties)
+    get_properties(dict_properties,args)
     os.system("mkdir xyz-files properties")
     os.system("mv *.xyz xyz-files")
     os.system("mv 0* properties")
