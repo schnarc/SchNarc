@@ -292,6 +292,15 @@ class GlobalRepresentation(nn.Module):
         return global_representation
 
 
+class DysonTransform(nn.Module):
+
+    def __init__(self, ndyson):
+        super(DysonTransform, self).__init__()
+
+
+    def forward(self, dyson):
+        return abs(dyson)
+
 class SocsTransform(nn.Module):
 
     def __init__(self, nsocs, real=True):

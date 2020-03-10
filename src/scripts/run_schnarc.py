@@ -81,7 +81,7 @@ def get_parser():
     pred_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
     pred_parser.add_argument('modelpath', help='Path of stored model')
     pred_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
-    pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
+    pred_parser.add_argument('--nac_approx',type=float, nargs=5, default=[1,0.018,0.036,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     # model-specific parsers
     model_parser = argparse.ArgumentParser(add_help=False)
 
@@ -246,7 +246,7 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                 else:
                     prop_err = torch.mean(prop_diff.view(-1))
             else:
-                if prop=='energy' and result['forces'].shape[1]==int(1) or prop=='forces' and result['forces'].shape[1]==int(1) or prop=='dipoles' and result['forces'].shape[1]==int(1):
+                if result['energy'].shape[1]==int(1):
                     prop_diff = batch[prop][:,0] - result[prop][:,0]
                 else:
                     prop_diff = batch[prop] - result[prop]
@@ -474,12 +474,12 @@ if __name__ == '__main__':
     if args.mode != 'train':
         model = torch.load(os.path.join(args.modelpath, 'best_model'), map_location='cpu').to(device)
         if args.hessian == True:
-            model.output_modules.output_dict['energy'].return_hessian = [True,1,1,1,1]
+            model.output_modules.output_dict['energy'].return_hessian = [True,1,1,1,1,1,1,1,1]
         else:
-            model.output_modules.output_dict['energy'].return_hessian = [False,1,1]
+            model.output_modules.output_dict['energy'].return_hessian = [False,1,1,1,1]
  
     if args.mode == 'pred':
-        pred_data = spk.data.AtomsData(args.datapath, required_properties=[])
+        pred_data = spk.data.AtomsData(args.datapath)
         pred_loader = spk.data.AtomsLoader(pred_data, batch_size=args.batch_size, num_workers=2, pin_memory=True)
         run_prediction(model, pred_loader, device, args)
         sys.exit(0)
@@ -522,25 +522,17 @@ if __name__ == '__main__':
     dataset = spk.data.AtomsData(args.datapath, collect_triples=args.model == 'wacsf')
     # Determine the number of states based on the metadata
     n_states = {}
-    n_states['n_singlets'] = dataset.get_metadata("n_singlets")
-    if dataset.get_metadata("n_triplets") == None:
-        n_states['n_triplets']=int(0)
-    else:
-        n_states['n_triplets'] = dataset.get_metadata("n_triplets")
-    n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
-
-    ##activate if only one state is learned or not all
+    #activate if only one state is learned or not all
     s=tradeoffs['energy'].split()
-    if int(s[1]) > int(0):
-        n_singlets = int(s[1])
-        n_dublets  = int(s[2])
-        n_triplets = int(s[3])
-        n_quartets = int(s[4])
-        n_states['n_singlets'] = n_singlets
-        n_states['n_dublets'] = n_dublets
-        n_states['n_triplets'] = n_triplets
-        n_states['n_quartets'] = n_quartets
-        n_states['n_states'] = n_states['n_singlets'] + +n_states['n_dublets']+n_states['n_triplets']+n_states['n_quartets']
+    n_singlets = int(s[1])
+    n_dublets  = int(s[2])
+    n_triplets = int(s[3])
+    n_quartets = int(s[4])
+    n_states['n_singlets'] = n_singlets
+    n_states['n_dublets'] = n_dublets
+    n_states['n_triplets'] = n_triplets
+    n_states['n_quartets'] = n_quartets
+    n_states['n_states'] = n_states['n_singlets'] + +n_states['n_dublets']+n_states['n_triplets']+n_states['n_quartets']
     n_states['states'] = dataset.get_metadata("states")
     logging.info('Found {:d} states... {:d} singlet states, {:d} dublet states, {:d} triplet states, and {:d} quartet states'.format(n_states['n_states'],
                                                                                            n_states['n_singlets'],
@@ -616,11 +608,12 @@ if __name__ == '__main__':
         #n_nacs = int(n_states['n_singlets']*(n_states['n_singlets']-1)/2 + n_states['n_triplets']*(n_states['n_triplets']-1)/2 )
         batch_size = args.batch_size
         all_states = n_states['n_singlets'] + 2 * n_states['n_dublets'] + 3 * n_states['n_triplets'] + 4 * n_states['n_quartets']
+        n_states['n_states_st'] = n_states['n_singlets'] + n_states['n_triplets']
         n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
         #min loss for a given batch size
         #vector with correct phases for a mini batch
         #number of possible phase vectors
-        n_phases = int(2**(n_states['n_states']-1))
+        n_phases_st = int(2**(n_states['n_states_st']-1))
         #number of singlet-singlet and triplet-triplet deriative couplings
         #gives the number of phases 
         #generate all possible 2**(nstates-1) vectors that give rise to possible combinations of phases
@@ -629,11 +622,11 @@ if __name__ == '__main__':
         this should be separated and exactly the same as for singlets and triplets
         the socs should then be separated in order to get the right phases with respect to the phases of nacs between dublets-dublets and quartets-quartets
         in case only 1 property, such as only socs, are computed: phaseless_loss_single can be applied and this is not necessary"""
-        phasevector = generateAllBinaryStrings(n_states['n_states'],[None]*n_states['n_states'],0,[])
-        phase_pytorch = torch.Tensor( n_states['n_states'],n_phases ).to(device)
+        phasevector = generateAllBinaryStrings(n_states['n_states_st'],[None]*n_states['n_states_st'],0,[])
+        phase_pytorch = torch.Tensor( n_states['n_states_st'],n_phases_st ).to(device)
         iterator = -1
-        for i in range(n_phases):
-            for j in range(n_states['n_states']):
+        for i in range(n_phases_st):
+            for j in range(n_states['n_states_st']):
                 iterator+=1
                 if phasevector[iterator]==0:
                     phase_pytorch[j,i] = 1
@@ -642,7 +635,7 @@ if __name__ == '__main__':
 
         socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2 = generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device)
 
-        props_phase=[n_phases,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
+        props_phase=[n_phases_st,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
         train(args, model, tradeoffs, train_loader, val_loader, device, n_states,props_phase)
         logging.info("...training done!")
 

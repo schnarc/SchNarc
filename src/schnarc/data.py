@@ -8,6 +8,7 @@ class Properties:
     nacs = 'nacs'
     dipole_moment = 'dipoles'
     charges = 'charges'
+    dyson = 'dyson'
 
     # Only for prediction and calculator
     hessian = 'hessian'
@@ -18,7 +19,8 @@ class Properties:
         forces,
         socs,
         nacs,
-        dipole_moment
+        dipole_moment,
+        dyson
     ]
 
     # Properties for which normalization is meaningful
@@ -46,9 +48,12 @@ class Properties:
         socs: (socs, 'y'),
         dipole_moment: (dipole_moment, 'y'),
         charges: (dipole_moment, 'yi'),
-        nacs: (nacs, 'dydx')
+        nacs: (nacs, 'dydx'),
+        dyson: (dyson, 'y')
     }
 
     n_triplets = 'n_triplets'
     n_singlets = 'n_singlets'
+    n_dublets = 'n_dublets'
+    n_quartets = 'n_quartets'
     n_states = 'n_states'
