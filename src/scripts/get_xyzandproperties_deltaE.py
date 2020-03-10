@@ -534,7 +534,7 @@ def get_properties(dict_properties,args):
       DYSON=False
       _dyson = int(0)
   DIPOLE = args.dipoles
-  if args.dipole == True:
+  if args.dipoles == True:
       _dipole = int(1)
   else:
       _dipole = int(0)
@@ -572,12 +572,11 @@ if  __name__ == "__main__":
 
         parser = argparse.ArgumentParser(description='Process some integers.')
         parser.add_argument('--datafile',help='specify the datafile',type=str)
-        parser.add_argument('--dipoles', help='set flag if (transition) dipole moments are available', 
-        parser.add_argument('--socs', help='set flag if spin-orbit couplings are available', 
-        parser.add_argument('--gradients', help='set flag if gradients are available', 
-        parser.add_argument('--nacs', help='set flag if nonadiabatic couplings are available', 
-        parser.add_argument('--dyson', help='set flag if nonadiabatic couplings are available', 
-                            action="store_true")
+        parser.add_argument('--dipoles', help='set flag if (transition) dipole moments are available', action='store_true')
+        parser.add_argument('--socs', help='set flag if spin-orbit couplings are available', action='store_true')
+        parser.add_argument('--gradients', help='set flag if gradients are available', action='store_true')
+        parser.add_argument('--nacs', help='set flag if nonadiabatic couplings are available', action='store_true')
+        parser.add_argument('--dyson', help='set flag if nonadiabatic couplings are available', action='store_true')
         parser.add_argument('--singlets',help='set flag if singlets are available and specify the threshold for the corresponding energy gap',type=float)
         parser.add_argument('--dublets', help='set flag if dublets are available and specify the threshold for the corresponding energy gap', type=float)
         parser.add_argument('--triplets', help='set flag if triplets are available and specify the threshold for the corresponding energy gap',type=float)
