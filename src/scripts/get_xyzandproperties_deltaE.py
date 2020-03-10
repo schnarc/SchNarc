@@ -25,13 +25,13 @@ def read_output_dat(args):
         threshold_S=args.singlets
     if args.dublets is not None:
         threshold_D=args.dublets
-        DYSON=True
     if args.triplets is not None:
         threshold_T=args.triplets
     if args.quartets is not None:
         threshold_Q=args.quartets
+    if args.dyson == True:
         DYSON=True
-    if args.dublets is None and args.quartets is None:
+    if args.dyson == False:
         DYSON=False
     y=output_dat(args.datafile)
     ezero = y.ezero
@@ -511,18 +511,37 @@ def get_xyz(dict_properties):
 def get_properties(dict_properties,args):
   #iterate over number of geometries and write a file containing all the properties
   stepsize = dict_properties['Energy'].shape[0]
+  GRAD = args.gradients
+  if GRAD == True:
+      _grad = int(1)
+  else:
+      _grad = int(0)
   NAC=args.nacs
-  if args.triplets is not None:
+  if NAC == True:
+      _nac=int(1)
+  else:
+      _nac = int(0)
+  if args.socs==True:
       SOC=True
+      _soc=int(1)
   else:
       SOC=False
+      _soc = int(0)
   if args.dublets is not None or args.quartets is not None:
       DYSON=True
+      _dyson = int(1)
   else:
       DYSON=False
+      _dyson = int(0)
+  DIPOLE = args.dipoles
+  if args.dipole == True:
+      _dipole = int(1)
+  else:
+      _dipole = int(0)
+
   for i in range(stepsize):
     file = open ("%07d"%(i+1),"w")
-    file.write("Singlets %i\nDublets %i \nTriplets %i\nQuartets %i \nEnergy 1\nDipole 1\nSOC 1\nGrad 1\nNAC 1\nDYSON 1\n"%(dict_properties['n_Singlets'],dict_properties['n_Dublets'],dict_properties['n_Triplets'],dict_properties['n_Quartets']))
+    file.write("Singlets %i\nDublets %i \nTriplets %i\nQuartets %i \nEnergy 1\nDipole %i\nSOC %i\nGrad %i\nNAC %i\nDYSON %i\n"%(dict_properties['n_Singlets'],dict_properties['n_Dublets'],dict_properties['n_Triplets'],dict_properties['n_Quartets'],_dipole,_soc,_grad,_nac,_dyson))
     file.write("\n! Energy %i\n"%len(dict_properties['Energy'][i]))
     for ener in range(dict_properties['NumberOfStates']):
       file.write("%12.9E "%dict_properties['Energy'][i][ener] )
@@ -530,12 +549,14 @@ def get_properties(dict_properties,args):
       file.write("\n! SpinOrbitCoupling %i\n" %len(dict_properties['SpinOrbitCoupling'][i]))
       for soc in range(len(dict_properties['SpinOrbitCoupling'][i])):
         file.write("%12.9E "%dict_properties['SpinOrbitCoupling'][i][soc])
-    file.write("\n! Dipole %i\n"%len(dict_properties['Dipole'][i]))
-    for dipole in range(len(dict_properties['Dipole'][i])):
-      file.write("%12.9E "%dict_properties['Dipole'][i][dipole])
-    file.write("\n! Gradient %i\n"%len(dict_properties['Gradient'][i]))
-    for grad in range(len(dict_properties['Gradient'][i])):
-      file.write("%12.9E "%dict_properties['Gradient'][i][grad])
+    if DIPOLE == True:
+        file.write("\n! Dipole %i\n"%len(dict_properties['Dipole'][i]))
+        for dipole in range(len(dict_properties['Dipole'][i])):
+          file.write("%12.9E "%dict_properties['Dipole'][i][dipole])
+    if GRAD == True:
+        file.write("\n! Gradient %i\n"%len(dict_properties['Gradient'][i]))
+        for grad in range(len(dict_properties['Gradient'][i])):
+          file.write("%12.9E "%dict_properties['Gradient'][i][grad])
     if NAC==True:
       file.write("\n! Nonadiabatic coupling %i\n" %(len(dict_properties['NonAdiabaticCoupling'][i])))
       for nac in range(len(dict_properties['NonAdiabaticCoupling'][i])):
@@ -551,7 +572,11 @@ if  __name__ == "__main__":
 
         parser = argparse.ArgumentParser(description='Process some integers.')
         parser.add_argument('--datafile',help='specify the datafile',type=str)
-        parser.add_argument('--nacs', help='set flag if NACs are available', 
+        parser.add_argument('--dipoles', help='set flag if (transition) dipole moments are available', 
+        parser.add_argument('--socs', help='set flag if spin-orbit couplings are available', 
+        parser.add_argument('--gradients', help='set flag if gradients are available', 
+        parser.add_argument('--nacs', help='set flag if nonadiabatic couplings are available', 
+        parser.add_argument('--dyson', help='set flag if nonadiabatic couplings are available', 
                             action="store_true")
         parser.add_argument('--singlets',help='set flag if singlets are available and specify the threshold for the corresponding energy gap',type=float)
         parser.add_argument('--dublets', help='set flag if dublets are available and specify the threshold for the corresponding energy gap', type=float)
