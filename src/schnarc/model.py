@@ -85,7 +85,7 @@ class MultiStatePropertyModel(nn.Module):
         self.n_in = n_in
         self.n_states = n_states
         self.n_singlets = n_states['n_singlets']
-        self.n_dublets  = n_states['n_dublets']
+        self.n_doublets  = n_states['n_doublets']
         self.n_triplets = n_states['n_triplets']
         self.n_quartets = n_states['n_quartets']
         self.nmstates = n_states['n_states']
@@ -118,7 +118,7 @@ class MultiStatePropertyModel(nn.Module):
             except:
                 atomref = None
 
-            energy_module = MultiEnergy(n_in, self.n_singlets + self.n_dublets + self.n_triplets + self.n_quartets, aggregation_mode='sum',
+            energy_module = MultiEnergy(n_in, self.n_singlets + self.n_doublets + self.n_triplets + self.n_quartets, aggregation_mode='sum',
                                         return_force=self.need_forces,
                                         return_contributions=self.need_atomic, mean=mean[Properties.energy],
                                         stddev=stddev[Properties.energy],
@@ -128,7 +128,7 @@ class MultiStatePropertyModel(nn.Module):
 
         # Dipole moments and transition dipole moments
         if self.need_dipole:
-            n_dipoles = int((self.n_singlets*(self.n_singlets+1)/2) + (self.n_dublets*(self.n_dublets+1)/2) +(self.n_triplets*(self.n_triplets+1)/2) + (self.n_quartets*(self.n_quartets + 1) / 2))  # between each states
+            n_dipoles = int((self.n_singlets*(self.n_singlets+1)/2) + (self.n_doublets*(self.n_doublets+1)/2) +(self.n_triplets*(self.n_triplets+1)/2) + (self.n_quartets*(self.n_quartets + 1) / 2))  # between each states
             print(n_dipoles)
             dipole_module = MultiDipole(n_in, n_dipoles, n_layers=n_layers)
             outputs[Properties.dipole_moment] = dipole_module
@@ -142,14 +142,14 @@ class MultiStatePropertyModel(nn.Module):
         # Spinorbit couplings
         if self.need_socs:
             n_socs = int(
-                (self.n_singlets+2*self.n_dublets+3*self.n_triplets+4*self.n_quartets) * (self.n_singlets+2*self.n_dublets+3*self.n_triplets+4*self.n_quartets-1))  # Between all different states - including imaginary numbers
+                (self.n_singlets+2*self.n_doublets+3*self.n_triplets+4*self.n_quartets) * (self.n_singlets+2*self.n_doublets+3*self.n_triplets+4*self.n_quartets-1))  # Between all different states - including imaginary numbers
             socs_module = MultiSoc(n_in, n_socs, n_layers=n_layers, real=real, mean=mean[Properties.socs],
                                    stddev=stddev[Properties.socs])
             outputs[Properties.socs] = socs_module
 
 
         if self.need_dyson:
-            n_dyson = self.n_singlets*(self.n_dublets+self.n_quartets)+self.n_triplets*(self.n_dublets+self.n_quartets)
+            n_dyson = self.n_singlets*(self.n_doublets+self.n_quartets)+self.n_triplets*(self.n_doublets+self.n_quartets)
             dyson_module = MultiDyson(n_in, n_dyson, n_layers=n_layers)
             outputs[Properties.dyson] = dyson_module
 
@@ -266,7 +266,7 @@ class MultiState(Atomwise):
             if self.return_hessian[0]:
                 n_singlets=self.return_hessian[1]
                 n_triplets=self.return_hessian[5]
-                n_dublets = self.return_hessian[3]
+                n_doublets = self.return_hessian[3]
                 n_quartets = self.return_hessian[7]
                 threshold_dE_S=self.return_hessian[2]
                 threshold_dE_D= self.return_hessian[4]
@@ -279,16 +279,16 @@ class MultiState(Atomwise):
                             compute_hessian=True
                         else:
                             pass
-                for istate in range(n_singlets,n_singlets+n_dublets):
-                    for jstate in range(istate+1,n_singlets+n_dublets):
+                for istate in range(n_singlets,n_singlets+n_doublets):
+                    for jstate in range(istate+1,n_singlets+n_doublets):
                         if abs(result['y'][0][istate].item()-result['y'][0][jstate].item()) <= threshold_dE_D:
                             compute_hessian=True
-                for istate in range(n_singlets+n_dublets,n_singlets+n_dublets+n_triplets):
-                    for jstate in range(istate+1,n_singlets+n_dublets+n_triplets):
+                for istate in range(n_singlets+n_doublets,n_singlets+n_doublets+n_triplets):
+                    for jstate in range(istate+1,n_singlets+n_doublets+n_triplets):
                         if abs(result['y'][0][istate].item()-result['y'][0][jstate].item()) <= threshold_dE_T:
                             compute_hessian=True
-                for istate in range(n_singlets+n_dublets+n_triplets,n_singlets+n_dublets+n_triplets+n_quartets):
-                    for jstate in range(istate+1,n_singlets+n_dublets+n_triplets+n_quartets):
+                for istate in range(n_singlets+n_doublets+n_triplets,n_singlets+n_doublets+n_triplets+n_quartets):
+                    for jstate in range(istate+1,n_singlets+n_doublets+n_triplets+n_quartets):
                         if abs(result['y'][0][istate].item()-result['y'][0][jstate].item()) <= threshold_dE_Q:
                             compute_hessian=True
                         else:
