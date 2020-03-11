@@ -129,7 +129,6 @@ class MultiStatePropertyModel(nn.Module):
         # Dipole moments and transition dipole moments
         if self.need_dipole:
             n_dipoles = int((self.n_singlets*(self.n_singlets+1)/2) + (self.n_doublets*(self.n_doublets+1)/2) +(self.n_triplets*(self.n_triplets+1)/2) + (self.n_quartets*(self.n_quartets + 1) / 2))  # between each states
-            print(n_dipoles)
             dipole_module = MultiDipole(n_in, n_dipoles, n_layers=n_layers)
             outputs[Properties.dipole_moment] = dipole_module
 

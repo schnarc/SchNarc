@@ -222,8 +222,8 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
                 elif prop == "dipoles" and combined_phaseless_loss == False:
-                    #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
-                    prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
+                    prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
+                    #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                 elif prop == "nacs" and combined_phaseless_loss == True:
                     #for nacs regardless of any other available phase-property
@@ -461,7 +461,6 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
     diagonal_dipole_s = matrix_dipole_s[:,torch.triu(torch.ones(n_states['n_singlets'],n_states['n_singlets'])) == 1 ]
     diagonal_dipole_t1 = matrix_dipole_t1[:,torch.triu(torch.ones(n_states['n_triplets'],n_states['n_triplets'])) == 1 ]
     diagonal_dipole_t2 = matrix_dipole_t2[:,torch.triu(torch.ones(n_states['n_triplets'],n_states['n_triplets'])) == 1 ]
-    print(matrix_dipole_t2,matrix_dipole_t1)
     #final dipole phasevector
     n_dipoles = n_states['n_singlets']*(n_states['n_singlets']+1)/2 + n_states['n_triplets']*(n_states['n_triplets']+1)/2
     dipole_phasevector_1 = torch.Tensor(phase_pytorch.shape[1],int(n_dipoles))
@@ -471,8 +470,7 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
         dipole_phasevector_2[:,istate] = diagonal_dipole_s[:,istate]
     for istate in range(int(n_states['n_triplets']*(n_states['n_triplets']+1)/2)):
         dipole_phasevector_1[:,int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)+istate] = diagonal_dipole_t1[:,istate]
-        dipole_phasevector_2[:,int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)+istate] = diagonal_dipole_t2[:,istate] 
-    print(dipole_phasevector_1-dipole_phasevector_2)
+        dipole_phasevector_2[:,int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)+istate] = diagonal_dipole_t2[:,istate]
 
     #two possibilities - the min function should be give the correct error
     #therefore, build a matrix that contains all the two possibilities of phases by building the outer product of each phase vector for     a given sample of a mini batch
@@ -486,13 +484,12 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
         phase_matrix_2[possible_permutation,:,:] = torch.ger(phase_vector_nacs_2[:,possible_permutation],phase_vector_nacs_2[:,possible_permutation])
     diagonal_phase_matrix_1=phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 0]
     diagonal_phase_matrix_2=phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 0]
-    print(diagonal_phase_matrix_1.shape)
     for i in range(int(n_socs/2)):
         complex_diagonal_phase_matrix_1[:,2*i] = diagonal_phase_matrix_1[:,i]
         complex_diagonal_phase_matrix_1[:,2*i+1] = diagonal_phase_matrix_1[:,i]
         complex_diagonal_phase_matrix_2[:,2*i] = diagonal_phase_matrix_2[:,i]
         complex_diagonal_phase_matrix_2[:,2*i+1] = diagonal_phase_matrix_2[:,i]
-    return complex_diagonal_phase_matrix_1, complex_diagonal_phase_matrix_2, phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 1], phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 1]
+    return complex_diagonal_phase_matrix_1, complex_diagonal_phase_matrix_2, dipole_phasevector_1, dipole_phasevector_2 #phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 1], phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 1]
 
 
 if __name__ == '__main__':
