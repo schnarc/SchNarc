@@ -114,10 +114,10 @@ if __name__ == '__main__':
     device = torch.device("cuda" if args.cuda else "cpu")
 
     # Load data
-    data = spk.data.AtomsData(args.database, required_properties=['energy',
-                                                                  'forces',
-                                                                  'dipoles',
-                                                                  'nacs'])
+    data = spk.data.AtomsData(args.database) #, required_properties=['energy',
+                                             #                     'forces',
+                                             #                     'dipoles',
+                                             #                     'nacs'])
     n_states={}
     if data.get_metadata('n_triplets') == None:
         n_states['n_triplets']= 0
