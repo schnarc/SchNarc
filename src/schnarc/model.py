@@ -128,7 +128,8 @@ class MultiStatePropertyModel(nn.Module):
 
         # Dipole moments and transition dipole moments
         if self.need_dipole:
-            n_dipoles = int((self.n_singlets*(self.n_singlets+1)/2) + (self.n_dublets*(self.n_dublets+1)/2) +(self.n_triplets*(self.n_triplets+1)/2) * (self.n_quartets*(self.n_quartets + 1) / 2))  # between each states
+            n_dipoles = int((self.n_singlets*(self.n_singlets+1)/2) + (self.n_dublets*(self.n_dublets+1)/2) +(self.n_triplets*(self.n_triplets+1)/2) + (self.n_quartets*(self.n_quartets + 1) / 2))  # between each states
+            print(n_dipoles)
             dipole_module = MultiDipole(n_in, n_dipoles, n_layers=n_layers)
             outputs[Properties.dipole_moment] = dipole_module
 
@@ -222,6 +223,11 @@ class MultiState(Atomwise):
             self.derivative = None
             self.negative_dr = False
 
+        if return_contributions:
+            contributions = 'yi'
+        else:
+            contributions = None
+
         super(MultiState, self).__init__(
             n_in,
             n_out=n_states,
@@ -229,7 +235,7 @@ class MultiState(Atomwise):
             n_layers=n_layers,
             n_neurons=n_neurons,
             activation=activation,
-            contributions=return_contributions,
+            contributions=contributions,
             derivative=self.derivative,
             negative_dr=self.negative_dr,
             create_graph=create_graph,

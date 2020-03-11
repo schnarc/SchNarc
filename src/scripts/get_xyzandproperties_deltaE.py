@@ -23,8 +23,8 @@ def read_output_dat(args):
 			"Index"			: False }
     if args.singlets is not None:
         threshold_S=args.singlets
-    if args.dublets is not None:
-        threshold_D=args.dublets
+    if args.doublets is not None:
+        threshold_D=args.doublets
     if args.triplets is not None:
         threshold_T=args.triplets
     if args.quartets is not None:
@@ -40,10 +40,10 @@ def read_output_dat(args):
     natoms = y.natoms
     NAC=args.nacs
     n_singlets = y.states[0]
-    n_dublets = y.states[1]
+    n_doublets = y.states[1]
     n_triplets = y.states[2]
     n_quartets = y.states[3]
-    n_states = n_singlets+2*n_dublets+3*n_triplets+4*n_quartets
+    n_states = n_singlets+2*n_doublets+3*n_triplets+4*n_quartets
     stepsize = len(y.startlines)
     all_energy=[]
     #for socs there are n_singlets*n_triplets values for a,b and c and 0.5*(n_triplets*(n_triplets-1)) values for d,e and f
@@ -62,7 +62,7 @@ def read_output_dat(args):
     all_nac = []
     all_dyson=[]
     all_step = np.arange(stepsize)
-    dipole_numberofmatrix=int((n_singlets*(n_singlets+1))/2+(n_dublets*(n_dublets+1))/2+(n_triplets*(n_triplets+1))/2+(n_quartets*(n_quartets+1))/2)
+    dipole_numberofmatrix=int((n_singlets*(n_singlets+1))/2+(n_doublets*(n_doublets+1))/2+(n_triplets*(n_triplets+1))/2+(n_quartets*(n_quartets+1))/2)
     dipole_numberofmatrix=int(dipole_numberofmatrix)
     all_dipole=np.zeros((stepsize,dipole_numberofmatrix))
     #iterates over steps in output.dat file, every step is a new row in the desired matrices for the quantities: all_quantity
@@ -111,18 +111,18 @@ def read_output_dat(args):
                 dipole_step_x.append(read_dict['Dipole_x'][isinglet][jsinglet])
                 dipole_step_y.append(read_dict['Dipole_y'][isinglet][jsinglet])
                 dipole_step_z.append(read_dict['Dipole_z'][isinglet][jsinglet])
-        for idublet in range(n_singlets,n_singlets+n_dublets):
-            for  jdublet in range(idublet,n_singlets+n_dublets):
+        for idublet in range(n_singlets,n_singlets+n_doublets):
+            for  jdublet in range(idublet,n_singlets+n_doublets):
                 dipole_step_x.append(read_dict['Dipole_x'][idublet][jdublet])
                 dipole_step_y.append(read_dict['Dipole_y'][idublet][jdublet])
                 dipole_step_z.append(read_dict['Dipole_z'][idublet][jdublet])
-        for itriplet in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
-            for jtriplet in range(itriplet,n_singlets+2*n_dublets+n_triplets):
+        for itriplet in range(n_singlets+2*n_doublets,n_singlets+2*n_doublets+n_triplets):
+            for jtriplet in range(itriplet,n_singlets+2*n_doublets+n_triplets):
                 dipole_step_x.append(read_dict['Dipole_x'][itriplet][jtriplet])
                 dipole_step_y.append(read_dict['Dipole_y'][itriplet][jtriplet])
                 dipole_step_z.append(read_dict['Dipole_z'][itriplet][jtriplet])
-        for iquartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
-            for jquartet in range(iquartet,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+        for iquartet in range(n_singlets+2*n_doublets+3*n_triplets,n_singlets+2*n_doublets+3*n_triplets+n_quartets):
+            for jquartet in range(iquartet,n_singlets+2*n_doublets+3*n_triplets+n_quartets):
                 dipole_step_x.append(read_dict['Dipole_x'][iquartet][jquartet])
                 dipole_step_y.append(read_dict['Dipole_y'][iquartet][jquartet])
                 dipole_step_z.append(read_dict['Dipole_z'][iquartet][jquartet])
@@ -175,19 +175,19 @@ def read_output_dat(args):
             iterator=0
             #only real values
             for singlet_line in range(n_singlets):
-                for singlet_dublet in range(n_singlets,n_singlets+n_dublets):
+                for singlet_dublet in range(n_singlets,n_singlets+n_doublets):
                     iterator+=1
                     dyson_step.append(read_dict['Dyson'][singlet_line][singlet_dublet*2])
             for singlet_line in range(n_singlets):
-                for singlet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+                for singlet_quartet in range(n_singlets+2*n_doublets+3*n_triplets,n_singlets+2*n_doublets+3*n_triplets+n_quartets):
                     iterator+=1
                     dyson_step.append(read_dict['Dyson'][singlet_line][singlet_quartet*2])
-            for triplet_line in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
-                for triplet_dublet in range(n_singlets,n_singlets+n_dublets):
+            for triplet_line in range(n_singlets+2*n_doublets,n_singlets+2*n_doublets+n_triplets):
+                for triplet_dublet in range(n_singlets,n_singlets+n_doublets):
                     iterator+=1
                     dyson_step.append(read_dict['Dyson'][triplet_line][triplet_dublet*2])
-            for triplet_ine in range(n_singlets+2*n_dublets,n_singlets+2*n_dublets+n_triplets):
-                for triplet_quartet in range(n_singlets+2*n_dublets+3*n_triplets,n_singlets+2*n_dublets+3*n_triplets+n_quartets):
+            for triplet_ine in range(n_singlets+2*n_doublets,n_singlets+2*n_doublets+n_triplets):
+                for triplet_quartet in range(n_singlets+2*n_doublets+3*n_triplets,n_singlets+2*n_doublets+3*n_triplets+n_quartets):
                     iterator+=1
                     dyson_step.append(read_dict['Dyson'][triplet_line][triplet_quartet*2])
 
@@ -237,7 +237,7 @@ def read_output_dat(args):
     dict_properties["Ezero"]=ezero
     dict_properties["n_Singlets"]=n_singlets
     dict_properties['n_Triplets']=n_triplets
-    dict_properties['n_Dublets']=n_dublets
+    dict_properties['n_Dublets']=n_doublets
     dict_properties['n_Quartets']=n_quartets
     dict_properties['Dyson']=all_dyson
     return dict_properties
@@ -535,7 +535,7 @@ def get_properties(dict_properties,args):
   else:
       SOC=False
       _soc = int(0)
-  if args.dublets is not None or args.quartets is not None:
+  if args.doublets is not None or args.quartets is not None:
       DYSON=True
       _dyson = int(1)
   else:
@@ -586,7 +586,7 @@ if  __name__ == "__main__":
         parser.add_argument('--nacs', help='set flag if nonadiabatic couplings are available', action='store_true')
         parser.add_argument('--dyson', help='set flag if nonadiabatic couplings are available', action='store_true')
         parser.add_argument('--singlets',help='set flag if singlets are available and specify the threshold for the corresponding energy gap',type=float)
-        parser.add_argument('--dublets', help='set flag if dublets are available and specify the threshold for the corresponding energy gap', type=float)
+        parser.add_argument('--doublets', help='set flag if doublets are available and specify the threshold for the corresponding energy gap', type=float)
         parser.add_argument('--triplets', help='set flag if triplets are available and specify the threshold for the corresponding energy gap',type=float)
         parser.add_argument('--quartets',help='set flag if triplets are available and specify the threshold for the corresponding energy gap',type=float)
     except ValueError:

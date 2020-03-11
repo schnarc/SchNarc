@@ -444,6 +444,36 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
 
     phase_vector_nacs_2[:n_states['n_singlets'],:] = phase_vector_nacs_1[:n_states['n_singlets'],:]
     phase_vector_nacs_2[n_states['n_singlets']:,:] = phase_vector_nacs_1[n_states['n_singlets']:,:] * -1
+
+    # for dipoles only relevant numbers
+    phase_dipole_s = torch.Tensor(phase_pytorch.shape[1],n_states['n_singlets'])
+    phase_dipole_s = phase_vector_nacs_1[:n_states['n_singlets'],:]
+    phase_dipole_t = torch.Tensor(phase_pytorch.shape[1],n_states['n_triplets'])
+    phase_dipole_t1 = phase_vector_nacs_1[n_states['n_singlets']:int(n_states['n_singlets']+n_states['n_triplets']),:]
+    phase_dipole_t2 = phase_vector_nacs_2[n_states['n_singlets']:int(n_states['n_singlets']+n_states['n_triplets']),:]
+    matrix_dipole_s = torch.Tensor(phase_pytorch.shape[1],n_states['n_singlets'],n_states['n_singlets'])
+    matrix_dipole_t1 = torch.Tensor(phase_pytorch.shape[1],n_states['n_triplets'],n_states['n_triplets'])
+    matrix_dipole_t2 = torch.Tensor(phase_pytorch.shape[1],n_states['n_triplets'],n_states['n_triplets'])
+    for possible_permutation in range(0,phase_pytorch.shape[1]):
+        matrix_dipole_s[possible_permutation,:,:]=torch.ger(phase_dipole_s[:,possible_permutation],phase_dipole_s[:,possible_permutation])
+        matrix_dipole_t1[possible_permutation,:,:]=torch.ger(phase_dipole_t1[:,possible_permutation],phase_dipole_t1[:,possible_permutation])
+        matrix_dipole_t2[possible_permutation,:,:]=torch.ger(phase_dipole_t2[:,possible_permutation],phase_dipole_t2[:,possible_permutation])
+    diagonal_dipole_s = matrix_dipole_s[:,torch.triu(torch.ones(n_states['n_singlets'],n_states['n_singlets'])) == 1 ]
+    diagonal_dipole_t1 = matrix_dipole_t1[:,torch.triu(torch.ones(n_states['n_triplets'],n_states['n_triplets'])) == 1 ]
+    diagonal_dipole_t2 = matrix_dipole_t2[:,torch.triu(torch.ones(n_states['n_triplets'],n_states['n_triplets'])) == 1 ]
+    print(matrix_dipole_t2,matrix_dipole_t1)
+    #final dipole phasevector
+    n_dipoles = n_states['n_singlets']*(n_states['n_singlets']+1)/2 + n_states['n_triplets']*(n_states['n_triplets']+1)/2
+    dipole_phasevector_1 = torch.Tensor(phase_pytorch.shape[1],int(n_dipoles))
+    dipole_phasevector_2 = dipole_phasevector_1
+    for istate in range(int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)):
+        dipole_phasevector_1[:,istate] = diagonal_dipole_s[:,istate]
+        dipole_phasevector_2[:,istate] = diagonal_dipole_s[:,istate]
+    for istate in range(int(n_states['n_triplets']*(n_states['n_triplets']+1)/2)):
+        dipole_phasevector_1[:,int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)+istate] = diagonal_dipole_t1[:,istate]
+        dipole_phasevector_2[:,int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)+istate] = diagonal_dipole_t2[:,istate] 
+    print(dipole_phasevector_1-dipole_phasevector_2)
+
     #two possibilities - the min function should be give the correct error
     #therefore, build a matrix that contains all the two possibilities of phases by building the outer product of each phase vector for     a given sample of a mini batch
     complex_diagonal_phase_matrix_1 = torch.Tensor(phase_pytorch.shape[1],n_socs).to(device)
@@ -456,6 +486,7 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
         phase_matrix_2[possible_permutation,:,:] = torch.ger(phase_vector_nacs_2[:,possible_permutation],phase_vector_nacs_2[:,possible_permutation])
     diagonal_phase_matrix_1=phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 0]
     diagonal_phase_matrix_2=phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 0]
+    print(diagonal_phase_matrix_1.shape)
     for i in range(int(n_socs/2)):
         complex_diagonal_phase_matrix_1[:,2*i] = diagonal_phase_matrix_1[:,i]
         complex_diagonal_phase_matrix_1[:,2*i+1] = diagonal_phase_matrix_1[:,i]
@@ -525,18 +556,18 @@ if __name__ == '__main__':
     #activate if only one state is learned or not all
     s=tradeoffs['energy'].split()
     n_singlets = int(s[1])
-    n_dublets  = int(s[2])
+    n_doublets  = int(s[2])
     n_triplets = int(s[3])
     n_quartets = int(s[4])
     n_states['n_singlets'] = n_singlets
-    n_states['n_dublets'] = n_dublets
+    n_states['n_doublets'] = n_doublets
     n_states['n_triplets'] = n_triplets
     n_states['n_quartets'] = n_quartets
-    n_states['n_states'] = n_states['n_singlets'] + +n_states['n_dublets']+n_states['n_triplets']+n_states['n_quartets']
+    n_states['n_states'] = n_states['n_singlets'] + +n_states['n_doublets']+n_states['n_triplets']+n_states['n_quartets']
     n_states['states'] = dataset.get_metadata("states")
     logging.info('Found {:d} states... {:d} singlet states, {:d} dublet states, {:d} triplet states, and {:d} quartet states'.format(n_states['n_states'],
                                                                                            n_states['n_singlets'],
-                                                                                           n_states['n_dublets'],
+                                                                                           n_states['n_doublets'],
                                                                                            n_states['n_triplets'],
                                                                                            n_states['n_quartets']))
 
@@ -607,7 +638,7 @@ if __name__ == '__main__':
         #properties for phase vector
         #n_nacs = int(n_states['n_singlets']*(n_states['n_singlets']-1)/2 + n_states['n_triplets']*(n_states['n_triplets']-1)/2 )
         batch_size = args.batch_size
-        all_states = n_states['n_singlets'] + 2 * n_states['n_dublets'] + 3 * n_states['n_triplets'] + 4 * n_states['n_quartets']
+        all_states = n_states['n_singlets'] + 2 * n_states['n_doublets'] + 3 * n_states['n_triplets'] + 4 * n_states['n_quartets']
         n_states['n_states_st'] = n_states['n_singlets'] + n_states['n_triplets']
         n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
         #min loss for a given batch size
@@ -618,9 +649,9 @@ if __name__ == '__main__':
         #gives the number of phases 
         #generate all possible 2**(nstates-1) vectors that give rise to possible combinations of phases
         """TODO 
-        adapt phase vector generation for dublets and quartets 
+        adapt phase vector generation for doublets and quartets 
         this should be separated and exactly the same as for singlets and triplets
-        the socs should then be separated in order to get the right phases with respect to the phases of nacs between dublets-dublets and quartets-quartets
+        the socs should then be separated in order to get the right phases with respect to the phases of nacs between doublets-doublets and quartets-quartets
         in case only 1 property, such as only socs, are computed: phaseless_loss_single can be applied and this is not necessary"""
         phasevector = generateAllBinaryStrings(n_states['n_states_st'],[None]*n_states['n_states_st'],0,[])
         phase_pytorch = torch.Tensor( n_states['n_states_st'],n_phases_st ).to(device)

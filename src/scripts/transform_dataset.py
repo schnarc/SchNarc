@@ -29,7 +29,7 @@ def read_dataset(path,numberofgeoms,filename):
         #Properties
         prop_file = open(path+"/properties/%07d"%geom,"r").readlines()
         singlets = 0
-        dublets = 0
+        doublets = 0
         triplets = 0
         quartets = 0
         _energy = False
@@ -49,7 +49,7 @@ def read_dataset(path,numberofgeoms,filename):
             if line.startswith("Singlets"):
                 singlets = int(line.split()[1])
             elif line.startswith("Dublets"):
-                dublets = int(line.split()[1])
+                doublets = int(line.split()[1])
             elif line.startswith("Triplets"):
                 triplets = int(line.split()[1])
             elif line.startswith("Quartets"):
@@ -80,27 +80,27 @@ def read_dataset(path,numberofgeoms,filename):
                     property_list.append('dyson')
             else:
                 continue
-        nmstates = singlets + 2*dublets + 3*triplets + 4*quartets
+        nmstates = singlets + 2*doublets + 3*triplets + 4*quartets
         iline = -1
         for line in prop_file:
             iline+=1
             if line.startswith("! Energy"):
-                n_energy = singlets + dublets + triplets + quartets
+                n_energy = singlets + doublets + triplets + quartets
                 #int(line.split()[2])
                 energy = [] #np.zeros((n_energy))
                 eline  = prop_file[iline+1].split()
                 for i in range(singlets):
                     energy.append(float(eline[i]))
-                for i in range(singlets,singlets+dublets):
+                for i in range(singlets,singlets+doublets):
                     energy.append(float(eline[i]))
-                for i in range(singlets+2*dublets,singlets+2*dublets+triplets):
+                for i in range(singlets+2*doublets,singlets+2*doublets+triplets):
                     energy.append(float(eline[i]))
-                for i in range(singlets+2*dublets+3*triplets,singlets+2*dublets+3*triplets+quartets):
+                for i in range(singlets+2*doublets+3*triplets,singlets+2*doublets+3*triplets+quartets):
                     energy.append(float(eline[i]))
                 energy=np.array(energy)
             #dipole is read in as mu(1,1), mu(1,2), mu(1,3),...
             elif line.startswith("! Dipole"):
-                n_dipole = int((singlets*(singlets+1))/2+(dublets*(dublets+1))/2+(triplets*(triplets+1))/2+(quartets*(quartets+1))/2)
+                n_dipole = int((singlets*(singlets+1))/2+(doublets*(doublets+1))/2+(triplets*(triplets+1))/2+(quartets*(quartets+1))/2)
                 dipole = np.zeros((n_dipole,3))
                 dline = prop_file[iline+1].split()
                 for i in range(n_dipole):
@@ -115,22 +115,22 @@ def read_dataset(path,numberofgeoms,filename):
                 soc=np.array(soc)
             elif line.startswith("! Gradient"):
                 n_grad = int(line.split()[2])
-                force = np.zeros((singlets+triplets+dublets+quartets,natom,3))
+                force = np.zeros((singlets+triplets+doublets+quartets,natom,3))
                 index = -1
                 gline = prop_file[iline+1].split()
-                for istate in range(singlets+dublets):
+                for istate in range(singlets+doublets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
                             force[istate][iatom][xyz] = -float(gline[index])
-                index+=(natom*3*dublets)
-                for istate in range(singlets+2*dublets,singlets+2*dublets,triplets):
+                index+=(natom*3*doublets)
+                for istate in range(singlets+2*doublets,singlets+2*doublets,triplets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
                             force[istate][iatom][xyz] = -float(gline[index])
                 index+=(2*natom*3*triplets)
-                for istate in range(singlets+2*dublets+3*triplets,singlets+2*dublets+3*triplets+quartets):
+                for istate in range(singlets+2*doublets+3*triplets,singlets+2*doublets+3*triplets+quartets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
@@ -169,13 +169,13 @@ def read_dataset(path,numberofgeoms,filename):
         property_buffer.append(available_properties)
     #get schnet format
     metadata['n_singlets'] = int(singlets)
-    metadata['n_dublets'] = int(dublets)
+    metadata['n_doublets'] = int(doublets)
     metadata['n_triplets'] = int(triplets)
     metadata['n_quartets'] = int(quartets)
     states = ''
     for singlet in range(singlets):
       states += 'S '
-    for dublet in range(2*dublets):
+    for dublet in range(2*doublets):
       states += 'D '
     for triplet in range(3*triplets):
       states += 'T '
