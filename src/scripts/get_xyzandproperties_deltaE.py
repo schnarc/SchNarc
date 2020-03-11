@@ -237,7 +237,7 @@ def read_output_dat(args):
     dict_properties["Ezero"]=ezero
     dict_properties["n_Singlets"]=n_singlets
     dict_properties['n_Triplets']=n_triplets
-    dict_properties['n_Dublets']=n_doublets
+    dict_properties['n_Doublets']=n_doublets
     dict_properties['n_Quartets']=n_quartets
     dict_properties['Dyson']=all_dyson
     return dict_properties
@@ -549,7 +549,7 @@ def get_properties(dict_properties,args):
 
   for i in range(stepsize):
     file = open ("%07d"%(i+1),"w")
-    file.write("Singlets %i\nDublets %i \nTriplets %i\nQuartets %i \nEnergy 1\nDipole %i\nSOC %i\nGrad %i\nNAC %i\nDYSON %i\n"%(dict_properties['n_Singlets'],dict_properties['n_Dublets'],dict_properties['n_Triplets'],dict_properties['n_Quartets'],_dipole,_soc,_grad,_nac,_dyson))
+    file.write("Singlets %i\nDoublets %i \nTriplets %i\nQuartets %i \nEnergy 1\nDipole %i\nSOC %i\nGrad %i\nNAC %i\nDYSON %i\n"%(dict_properties['n_Singlets'],dict_properties['n_Doublets'],dict_properties['n_Triplets'],dict_properties['n_Quartets'],_dipole,_soc,_grad,_nac,_dyson))
     file.write("\n! Energy %i\n"%len(dict_properties['Energy'][i]))
     for ener in range(dict_properties['NumberOfStates']):
       file.write("%12.9E "%dict_properties['Energy'][i][ener] )

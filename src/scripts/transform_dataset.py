@@ -48,7 +48,7 @@ def read_dataset(path,numberofgeoms,filename):
         for line in prop_file:
             if line.startswith("Singlets"):
                 singlets = int(line.split()[1])
-            elif line.startswith("Dublets"):
+            elif line.startswith("Doublets"):
                 doublets = int(line.split()[1])
             elif line.startswith("Triplets"):
                 triplets = int(line.split()[1])
