@@ -117,7 +117,6 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
         n_dipoles=3*int(predicted.size()[1])
         pred_phase_vec = torch.Tensor(batch_size,n_dipoles).to(device)
         #dipole has 3 components (x,y, and z)
-        print(props_phase[8].shape)
         dipole_phase_matrix = torch.cat((props_phase[8],props_phase[8],props_phase[8]),0).view(n_phases,n_dipoles)
         phaseless_loss_all = torch.abs(target[0]-pred_phase_vec[0].view(target[0].shape[0],target[0].shape[1]))
         # do this for each value of the mini batch separately
@@ -172,7 +171,6 @@ def min_loss(target, predicted, combined_phaseless_loss, n_states, props_phase, 
           #take the phase matrix that was best for nacs
           #iterate over all samples in the mini batch
 
-          print(predicted.size())
           n_dipoles = predicted.size()[1]
           diff_1 = torch.Tensor(batch_size,int(3*n_dipoles)).to(device)
           diff_2 = torch.Tensor(batch_size,int(3*n_dipoles)).to(device)
