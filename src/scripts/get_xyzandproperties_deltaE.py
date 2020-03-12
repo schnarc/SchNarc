@@ -14,6 +14,10 @@ import readline
 def read_output_dat(args):
     """ used class: output_dat
     """
+    y=output_dat(args.datafile)
+    n_doublets = int(0)
+    n_triplets = int(0)
+    n_quartets = int(0)
     dict_properties = { "Step"              : False,
                         "Energy"            : False,
                         "SpinOrbitCoupling"	: False,
@@ -25,24 +29,23 @@ def read_output_dat(args):
         threshold_S=args.singlets
     if args.doublets is not None:
         threshold_D=args.doublets
+        n_doublets = y.states[1]
     if args.triplets is not None:
         threshold_T=args.triplets
+        n_triplets = y.states[2]
     if args.quartets is not None:
         threshold_Q=args.quartets
+        n_quartets = y.states[3]
     if args.dyson == True:
         DYSON=True
     if args.dyson == False:
         DYSON=False
-    y=output_dat(args.datafile)
     ezero = y.ezero
     all_atype = y.all_atype
     nmstates = y.nmstates
     natoms = y.natoms
     NAC=args.nacs
     n_singlets = y.states[0]
-    n_doublets = y.states[1]
-    n_triplets = y.states[2]
-    n_quartets = y.states[3]
     n_states = n_singlets+2*n_doublets+3*n_triplets+4*n_quartets
     stepsize = len(y.startlines)
     all_energy=[]
