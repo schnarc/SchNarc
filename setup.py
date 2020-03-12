@@ -14,7 +14,7 @@ setup(
     author='Michael Gastegger, Julia Westermayr, Philipp Marquetand',
     email='michael.gastegger@tu-berlin.de',
     packages=find_packages('src'),
-    scripts=['src/scripts/schnarc_md.py', 'src/scripts/run_schnarc.py', 'src/scripts/setup_schnarc.py', 'src/scripts/transform_prediction_QMout.py', 'src/scripts/countstep.py', 'src/scripts/get_xyzandproperties_deltaE.py', 'src/scripts/QM2output.py', 'src/scripts/write_geoms.py'],
+    scripts=['src/scripts/schnarc_md.py', 'src/scripts/run_schnarc.py', 'src/scripts/setup_schnarc.py', 'src/scripts/transform_prediction_QMout.py', 'src/scripts/countstep.py', 'src/scripts/get_xyzandproperties_deltaE.py', 'src/scripts/QM2output.py', 'src/scripts/write_geoms.py','src/scripts/transform_dataset.py'],
     package_dir={'': 'src'},
     python_requires='>=3.6',
     install_requires=[
