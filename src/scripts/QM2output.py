@@ -34,13 +34,9 @@ def qm2outputdat(Properties,outputdatfile):
   string_output+='! 0 Step\n 0\n'
   string_hamilton='! 1 Hamiltonian (MCH) in a.u.\n'
   string_umatrix='! 2 U matrix\n'
-  string_dipole_x = ""
-  string_dipole_y = ""
-  string_dipole_z = ""
-  if OUTPUT['Dipole']==True:
-    string_dipole_x='! 3 Dipole moments X (MCH) in a.u.\n'
-    string_dipole_y='! 3 Dipole moments Y (MCH) in a.u.\n'
-    string_dipole_z='! 3 Dipole moments Z (MCH) in a.u.\n'
+  string_dipole_x='! 3 Dipole moments X (MCH) in a.u.\n'
+  string_dipole_y='! 3 Dipole moments Y (MCH) in a.u.\n'
+  string_dipole_z='! 3 Dipole moments Z (MCH) in a.u.\n'
   string_overlap=''
   string_coefficient='! 5 Coefficients (diag)\n'
   string_hopping='! 6 Hopping Probabilities\n'
@@ -82,12 +78,15 @@ def qm2outputdat(Properties,outputdatfile):
           string_dipole_x+='%20.12f ' %Properties['Dipole_x'][numberofstates][real_imag]
           string_dipole_y+='%20.12f ' %Properties['Dipole_y'][numberofstates][real_imag]
           string_dipole_z+='%20.12f ' %Properties['Dipole_z'][numberofstates][real_imag]
+      if OUTPUT['Dipole'] == False:
+          string_dipole_x+='0.00000 ' #%Properties['Dipole_x'][numberofstates][real_imag]
+          string_dipole_y+='0.00000 ' #%Properties['Dipole_y'][numberofstates][real_imag]
+          string_dipole_z+='0.00000 ' #%Properties['Dipole_z'][numberofstates][real_imag]
     string_umatrix+='\n'
     string_hamilton+='\n'
-    if OUTPUT['Dipole'] == True:
-      string_dipole_x+='\n'
-      string_dipole_y+='\n'
-      string_dipole_z+='\n'
+    string_dipole_x+='\n'
+    string_dipole_y+='\n'
+    string_dipole_z+='\n'
   for numberofatoms in range(natoms):
     string_velocities+='0.000000000 0.000000000 0.000000000\n'
 
