@@ -34,9 +34,13 @@ def qm2outputdat(Properties,outputdatfile):
   string_output+='! 0 Step\n 0\n'
   string_hamilton='! 1 Hamiltonian (MCH) in a.u.\n'
   string_umatrix='! 2 U matrix\n'
-  string_dipole_x='! 3 Dipole moments X (MCH) in a.u.\n'
-  string_dipole_y='! 3 Dipole moments Y (MCH) in a.u.\n'
-  string_dipole_z='! 3 Dipole moments Z (MCH) in a.u.\n'
+  string_dipole_x = ""
+  string_dipole_y = ""
+  string_dipole_z = ""
+  if OUTPUT['Dipole']==True:
+    string_dipole_x='! 3 Dipole moments X (MCH) in a.u.\n'
+    string_dipole_y='! 3 Dipole moments Y (MCH) in a.u.\n'
+    string_dipole_z='! 3 Dipole moments Z (MCH) in a.u.\n'
   string_overlap=''
   string_coefficient='! 5 Coefficients (diag)\n'
   string_hopping='! 6 Hopping Probabilities\n'
@@ -74,14 +78,16 @@ def qm2outputdat(Properties,outputdatfile):
       else:
         string_hamilton+='%20.12f ' %(Properties['Hamiltonian'][numberofstates][real_imag])
       string_umatrix+='0.000000000 '
-      string_dipole_x+='%20.12f ' %Properties['Dipole_x'][numberofstates][real_imag]
-      string_dipole_y+='%20.12f ' %Properties['Dipole_y'][numberofstates][real_imag]
-      string_dipole_z+='%20.12f ' %Properties['Dipole_z'][numberofstates][real_imag]
+      if OUTPUT['Dipole'] == True:
+          string_dipole_x+='%20.12f ' %Properties['Dipole_x'][numberofstates][real_imag]
+          string_dipole_y+='%20.12f ' %Properties['Dipole_y'][numberofstates][real_imag]
+          string_dipole_z+='%20.12f ' %Properties['Dipole_z'][numberofstates][real_imag]
     string_umatrix+='\n'
     string_hamilton+='\n'
-    string_dipole_x+='\n'
-    string_dipole_y+='\n'
-    string_dipole_z+='\n'
+    if OUTPUT['Dipole'] == True:
+      string_dipole_x+='\n'
+      string_dipole_y+='\n'
+      string_dipole_z+='\n'
   for numberofatoms in range(natoms):
     string_velocities+='0.000000000 0.000000000 0.000000000\n'
 
@@ -163,6 +169,7 @@ def get_header(outputdatfile):
   OUTPUT={ 'Overlap':      False,
            'Gradient':     False,
            'NACdr':        False,
+           'Dipole':       False,
            'Property1d':   0,
            'Property2d':   0,
            'n_property1d': 1,
@@ -222,6 +229,10 @@ def get_header(outputdatfile):
       line = line.split()
       ezero = float(line[1])
       OUTPUT['ezero']= ezero
+    elif line.startswith('Dipoles'):
+        line = line.split()
+        if int(line[1]) == 1:
+            OUTPUT['Dipole'] = True
     else:
       if 'End of header' in line:
         break
@@ -375,30 +386,31 @@ def phasecorrection(Properties,oldfilename,filename,newfilename,outputdatfile,in
       string_dipole=''
       jline+=1
       line=data[jline]
-      string_dipole+='%s' %line
-      for dipole in range(nmstates):
-        for row_elements in range(nmstates*2):
-          string_dipole+='%20.12f '%Dipole_x_phasecorrected[dipole][row_elements]
-        string_dipole+='\n'
-        jline+=1
-      jline+=1
-      line = data[jline]
-      string_dipole+='%s' %line
-      for dipole in range(nmstates):
-        for row_elements in range(nmstates*2):
-          string_dipole+='%20.12f '%Dipole_y_phasecorrected[dipole][row_elements]
-        string_dipole+='\n'
-        jline+=1
-      jline+=1
-      line = data[jline]
-      string_dipole+='%s'%line
-      for dipole in range(nmstates):
-        for row_elements in range(nmstates*2):
-          string_dipole+='%20.12f '%Dipole_z_phasecorrected[dipole][row_elements]
-        string_dipole+='\n'
-        jline+=1
-      #print string_dipole
-      QMout.write(string_dipole)
+      if OUTPUT['Dipole'] == True:
+          string_dipole+='%s' %line
+          for dipole in range(nmstates):
+            for row_elements in range(nmstates*2):
+              string_dipole+='%20.12f '%Dipole_x_phasecorrected[dipole][row_elements]
+            string_dipole+='\n'
+            jline+=1
+          jline+=1
+          line = data[jline]
+          string_dipole+='%s' %line
+          for dipole in range(nmstates):
+            for row_elements in range(nmstates*2):
+              string_dipole+='%20.12f '%Dipole_y_phasecorrected[dipole][row_elements]
+            string_dipole+='\n'
+            jline+=1
+          jline+=1
+          line = data[jline]
+          string_dipole+='%s'%line
+          for dipole in range(nmstates):
+            for row_elements in range(nmstates*2):
+              string_dipole+='%20.12f '%Dipole_z_phasecorrected[dipole][row_elements]
+            string_dipole+='\n'
+            jline+=1
+          #print string_dipole
+          QMout.write(string_dipole)
 
     elif line.startswith('! 3 Gradient Vectors'):
       #only write lines - no phasecorrection for gradients
