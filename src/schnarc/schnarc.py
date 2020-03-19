@@ -61,16 +61,17 @@ def get_socs(socs,n_states,energy):
     h_string = "! 1 Hamiltonian Matrix (%dx%d), complex \n %d %d \n"      % ( n_states,n_states,n_states,n_states)
     hamiltonian = np.zeros((n_states,n_states),dtype=complex)
     for i in range(n_singlets):
-        hamiltonian[i][i] = (energy[i])
+        hamiltonian[i][i] = (energy[i])/2
     iterator=0
     for i in range(n_states):
       for j in range(i+1,n_states):
-        hamiltonian[i][j] = (socs[iterator])
+        hamiltonian[i][j] = np.complex(socs[iterator],socs[iterator+1])
         iterator+=2
     for i in range(n_singlets,n_singlets+n_triplets):
-        hamiltonian[i][i] = energy[i]
-        hamiltonian[i+n_triplets][i+n_triplets]=energy[i]
-        hamiltonian[i+2*n_triplets][i+2*n_triplets]=energy[i]
+        hamiltonian[i][i] = energy[i]/2
+        hamiltonian[i+n_triplets][i+n_triplets]=energy[i]/2
+        hamiltonian[i+2*n_triplets][i+2*n_triplets]=energy[i]/2
+    hamiltonian=hamiltonian+np.conjugate(hamiltonian.T)
     for istate in hamiltonian:
         for jstate in istate:
             h_string += "%20.12E %20.12E "%(np.real(jstate), np.imag(jstate))
