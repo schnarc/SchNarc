@@ -70,6 +70,14 @@ def read_dataset(path,numberofgeoms,filename):
                 if int(line.split()[-1])==int(1):
                     _force = True
                     property_list.append('forces')
+                    property_list.append('has_forces')
+            elif line.startswith("Given_grad"):
+                if int(line.split()[-1])==int(1):
+                    _has_forces = True
+                    has_force = int(1)
+                    property_list.append('has_forces')
+                else:
+                    has_force = int(0)
             elif line.startswith("NAC"):
                 if int(line.split()[-1])==int(1):
                     _nac = True
@@ -124,7 +132,7 @@ def read_dataset(path,numberofgeoms,filename):
                             index+=1
                             force[istate][iatom][xyz] = -float(gline[index])
                 index+=(natom*3*doublets)
-                for istate in range(singlets+2*doublets,singlets+2*doublets,triplets):
+                for istate in range(singlets+2*doublets,singlets+2*doublets+triplets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
@@ -160,6 +168,7 @@ def read_dataset(path,numberofgeoms,filename):
         available_properties = { 'energy' : energy,
                         'socs'    : soc,
                         'forces'  : force,
+                        'has_forces': has_force,
                         'nacs'    : nac,
                         'dipoles' : dipole,
                         'dyson'   : dyson }

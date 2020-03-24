@@ -523,10 +523,15 @@ def get_properties(dict_properties,args):
   #iterate over number of geometries and write a file containing all the properties
   stepsize = dict_properties['Energy'].shape[0]
   GRAD = args.gradients
+  GRAD_given = args.gradients_given
   if GRAD == True:
       _grad = int(1)
   else:
       _grad = int(0)
+  if GRAD_given == True:
+      _grad_given = int(1)
+  else:
+      _grad_given = int(0)
   NAC=args.nacs
   if NAC == True:
       _nac=int(1)
@@ -552,7 +557,7 @@ def get_properties(dict_properties,args):
 
   for i in range(stepsize):
     file = open ("%07d"%(i+1),"w")
-    file.write("Singlets %i\nDoublets %i \nTriplets %i\nQuartets %i \nEnergy 1\nDipole %i\nSOC %i\nGrad %i\nNAC %i\nDYSON %i\n"%(dict_properties['n_Singlets'],dict_properties['n_Doublets'],dict_properties['n_Triplets'],dict_properties['n_Quartets'],_dipole,_soc,_grad,_nac,_dyson))
+    file.write("Singlets %i\nDoublets %i \nTriplets %i\nQuartets %i \nEnergy 1\nDipole %i\nSOC %i\nGrad %i\nGiven_gradients %i\nNAC %i\nDYSON %i\n"%(dict_properties['n_Singlets'],dict_properties['n_Doublets'],dict_properties['n_Triplets'],dict_properties['n_Quartets'],_dipole,_soc,_grad,_grad_given,_nac,_dyson))
     file.write("\n! Energy %i\n"%len(dict_properties['Energy'][i]))
     for ener in range(dict_properties['NumberOfStates']):
       file.write("%12.9E "%dict_properties['Energy'][i][ener] )
@@ -585,6 +590,7 @@ if  __name__ == "__main__":
         parser.add_argument('--datafile',help='specify the datafile',type=str)
         parser.add_argument('--dipoles', help='set flag if (transition) dipole moments are available', action='store_true')
         parser.add_argument('--socs', help='set flag if spin-orbit couplings are available', action='store_true')
+        parser.add_argument('--gradients_given', help='set flag if gradients are available', action='store_true')
         parser.add_argument('--gradients', help='set flag if gradients are available', action='store_true')
         parser.add_argument('--nacs', help='set flag if nonadiabatic couplings are available', action='store_true')
         parser.add_argument('--dyson', help='set flag if nonadiabatic couplings are available', action='store_true')

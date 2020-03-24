@@ -228,7 +228,7 @@ def get_header(outputdatfile):
       line = line.split()
       ezero = float(line[1])
       OUTPUT['ezero']= ezero
-    elif line.startswith('Dipoles'):
+    elif line.startswith('write_dipoles'):
         line = line.split()
         if int(line[1]) == 1:
             OUTPUT['Dipole'] = True
