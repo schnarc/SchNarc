@@ -171,7 +171,7 @@ def read_dataset(path,numberofgeoms,filename):
                         'has_forces': has_force,
                         'nacs'    : nac,
                         'dipoles' : dipole,
-                        'dyson'   : dyson }
+                        'dyson'   : property_matrix }
         #Append list 
         charge_buffer.append(charge)
         atom_buffer.append(atoms)

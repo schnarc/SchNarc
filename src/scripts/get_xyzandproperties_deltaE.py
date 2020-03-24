@@ -450,7 +450,6 @@ class output_dat:
     Property=np.zeros((self.nmstates,self.nmstates*2))
     if self.n_2dindex==int(1):
       for iline in range(self.nmstates):
-        if self.gradientindex==0:
             index=self.startlines[current]+19+self.n_1dindex+2*self.natoms+(7+self.n_1dindex)*self.nmstates
             line=(self.data[index+iline+1])
             s=line.split()
