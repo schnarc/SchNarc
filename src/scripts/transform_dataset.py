@@ -132,13 +132,13 @@ def read_dataset(path,numberofgeoms,filename):
                             index+=1
                             force[istate][iatom][xyz] = -float(gline[index])
                 index+=(natom*3*doublets)
-                for istate in range(singlets+2*doublets,singlets+2*doublets+triplets):
+                for istate in range(singlets+doublets,singlets+doublets+triplets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
                             force[istate][iatom][xyz] = -float(gline[index])
                 index+=(2*natom*3*triplets)
-                for istate in range(singlets+2*doublets+3*triplets,singlets+2*doublets+3*triplets+quartets):
+                for istate in range(singlets+doublets+triplets,singlets+doublets+triplets+quartets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
