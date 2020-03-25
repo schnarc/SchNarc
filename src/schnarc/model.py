@@ -96,7 +96,7 @@ class MultiStatePropertyModel(nn.Module):
 
         # Flag for computation of nacs
         self.inverse_energy = inverse_energy
-
+        
         self.derivative = self.need_forces
         if self.derivative:
             create_graph=True

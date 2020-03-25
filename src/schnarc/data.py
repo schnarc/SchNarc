@@ -9,7 +9,8 @@ class Properties:
     dipole_moment = 'dipoles'
     charges = 'charges'
     dyson = 'dyson'
-
+    #only for data bases with inconsistent data for forces
+    has_forces = 'has_forces'
     # Only for prediction and calculator
     hessian = 'hessian'
 
@@ -20,7 +21,8 @@ class Properties:
         socs,
         nacs,
         dipole_moment,
-        dyson
+        dyson,
+        has_forces
     ]
 
     # Properties for which normalization is meaningful

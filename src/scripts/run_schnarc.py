@@ -144,7 +144,7 @@ def get_parser():
     return main_parser
 
 
-def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase):
+def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase, has_forces):
     # setup hook and logging
     hooks = [
         spk.train.MaxEpochHook(args.max_epochs)
@@ -167,28 +167,41 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
        else:
            socs_given=False
     for prop in tradeoffs:
-       if args.phase_loss or args.min_loss:
-            if prop in schnarc.data.Properties.phase_properties:
-                if prop == 'nacs' and socs_given == True:
-                    metrics += [
-                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-                    ]
+        if prop!="has_forces":
+            if args.phase_loss or args.min_loss:
+                if prop in schnarc.data.Properties.phase_properties:
+                    if prop == 'nacs' and socs_given == True:
+                        metrics += [
+                            schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
+                            schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
+                        ]
+                    else:
+                        metrics += [
+                            schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
+                            schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
+                        ]
+                #TODO adapt if necessary
+                #elif prop == "forces" and has_forces == False:
+                #    metrics += [
+                #        spk.metrics.MeanAbsoluteError_forces(prop,prop,has_forces),
+                #        spk.metrics.RottMeanSquaredError_forces(prop,prop,has_forces)
+                #    ]
                 else:
                     metrics += [
-                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
+                        spk.metrics.MeanAbsoluteError(prop, prop),
+                        spk.metrics.RootMeanSquaredError(prop, prop)
                     ]
+            #TODO adapt if necessary
+            #if prop == "forces" and has_forces == False:
+            #    metrics += [
+            #        spk.metrics.MeanAbsoluteError_forces(prop,prop),
+            #        spk.metrics.RottMeanSquaredError_forces(prop,prop)
+            #    ]
             else:
-                metrics += [
-                    spk.metrics.MeanAbsoluteError(prop, prop),
-                    spk.metrics.RootMeanSquaredError(prop, prop)
-                ]
-       else:
-          metrics += [
-              spk.metrics.MeanAbsoluteError(prop, prop),
-              spk.metrics.RootMeanSquaredError(prop, prop)
-          ]
+              metrics += [
+                  spk.metrics.MeanAbsoluteError(prop, prop),
+                  spk.metrics.RootMeanSquaredError(prop, prop)
+             ]
     if args.logger == 'csv':
         logger = spk.train.CSVHook(os.path.join(args.modelpath, 'log'),
                                    metrics, every_n_epochs=args.log_every_n_epochs)
@@ -208,52 +221,58 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
         else:
             combined_phaseless_loss = False
         for prop in tradeoffs:
-            if args.min_loss and prop in schnarc.data.Properties.phase_properties:
-                if prop == "socs" and combined_phaseless_loss == True:
-                    prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs )
-                    #already spared and mean of all values
-                    prop_err = torch.mean(prop_diff.view(-1))
-                elif prop == "socs" and combined_phaseless_loss == False:
-                    #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
-                    prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                elif prop == "dipoles" and combined_phaseless_loss == True:
-                    prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
-                    #already spared and mean of all values
-                    prop_err = torch.mean(prop_diff.view(-1))
-                elif prop == "dipoles" and combined_phaseless_loss == False:
-                    prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
-                    #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                elif prop == "nacs" and combined_phaseless_loss == True:
-                    #for nacs regardless of any other available phase-property
-                    prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
-                    prop_err = torch.mean(prop_diff.view(-1)) / (2*n_states['n_states']**2)
-                else:
-                    prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                    #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
+            if prop!="has_forces":
+                if args.min_loss and prop in schnarc.data.Properties.phase_properties:
+                    if prop == "socs" and combined_phaseless_loss == True:
+                        prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs )
+                        #already spared and mean of all values
+                        prop_err = torch.mean(prop_diff.view(-1))
+                    elif prop == "socs" and combined_phaseless_loss == False:
+                        #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
+                        prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
+                        prop_err = torch.mean(prop_diff.view(-1) **2 )
+                    elif prop == "dipoles" and combined_phaseless_loss == True:
+                        prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
+                        #already spared and mean of all values
+                        prop_err = torch.mean(prop_diff.view(-1))
+                    elif prop == "dipoles" and combined_phaseless_loss == False:
+                        prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
+                        #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
+                        prop_err = torch.mean(prop_diff.view(-1) **2 )
+                    elif prop == "nacs" and combined_phaseless_loss == True:
+                        #for nacs regardless of any other available phase-property
+                        prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                        prop_err = torch.mean(prop_diff.view(-1)) / (2*n_states['n_states']**2)
+                    else:
+                        prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                        prop_err = torch.mean(prop_diff.view(-1) **2 )
+                        #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
 
-            elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
-                prop_diff = torch.abs(batch[prop] - result[prop])
-                prop_err = torch.mean(prop_diff.view(-1) )
-            elif args.Huber and prop == schnarc.data.Properties.energy or args.Huber and prop == schnarc.data.Properties.forces:
-                prop_diff = torch.abs(batch[prop]-result[prop])
-                if torch.mean(prop_diff.view(-1)) <= 0.005 and prop == schnarc.data.Properties.forces:
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                elif torch.mean(prop_diff.view(-1)) <= 0.05 and prop == schnarc.data.Properties.energy:
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
+                elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
+                    prop_diff = torch.abs(batch[prop] - result[prop])
+                    prop_err = torch.mean(prop_diff.view(-1) )
+                elif args.Huber and prop == schnarc.data.Properties.energy or args.Huber and prop == schnarc.data.Properties.forces:
+                    prop_diff = torch.abs(batch[prop]-result[prop])
+                    if torch.mean(prop_diff.view(-1)) <= 0.005 and prop == schnarc.data.Properties.forces:
+                        prop_err = torch.mean(prop_diff.view(-1) **2 )
+                    elif torch.mean(prop_diff.view(-1)) <= 0.05 and prop == schnarc.data.Properties.energy:
+                        prop_err = torch.mean(prop_diff.view(-1) **2 )
+                    else:
+                        prop_err = torch.mean(prop_diff.view(-1))
                 else:
-                    prop_err = torch.mean(prop_diff.view(-1))
-            else:
-                if result['energy'].shape[1]==int(1):
-                    prop_diff = batch[prop][:,0] - result[prop][:,0]
-                else:
-                    prop_diff = batch[prop] - result[prop]
-                prop_err = torch.mean(prop_diff.view(-1) ** 2)
-            err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
-            if args.verbose:
-                print(prop, prop_err)
+                    if result['energy'].shape[1]==int(1):
+                        prop_diff = batch[prop][:,0] - result[prop][:,0]
+                    else:
+                        if prop == "forces" and has_forces == False:
+                            #multiply by 1 if forces given, otherwise multiply by 0
+                            prop_diff = ( batch[prop] - result[prop] )
+                            prop_diff = prop_diff[:,:,:,:] * batch['has_forces'][:,None,None,None]
+                        else:
+                            prop_diff = batch[prop] - result[prop]
+                    prop_err = torch.mean(prop_diff.view(-1) ** 2)
+                err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
+                if args.verbose:
+                    print(prop, prop_err)
 
         return err_sq
 
@@ -354,8 +373,7 @@ def run_prediction(model, loader, device, args):
     logging.info('Stored model predictions in {:s}...'.format(prediction_path))
 
 
-def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, train_loader=None, parallelize=False,
-              mode='train'):
+def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, train_loader=None, parallelize=False, has_forces=True, mode='train'):
     if args.model == 'schnet':
         representation = spk.representation.SchNet(args.features, args.features, args.interactions,
                                                    args.cutoff / units.Bohr, args.num_gaussians)
@@ -363,7 +381,8 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
         property_output = schnarc.model.MultiStatePropertyModel(args.features, n_states, properties=properties,
                                                                 mean=mean, stddev=stddev, atomref=atomref,
                                                                 n_layers=args.n_layers, real=args.real_socs,
-                                                                inverse_energy=args.inverse_nacs)
+                                                                inverse_energy=args.inverse_nacs
+                                                                )
 
         model = spk.atomistic.AtomisticModel(representation, property_output)
 
@@ -544,7 +563,14 @@ if __name__ == '__main__':
         tradeoffs = schnarc.utils.read_tradeoffs(tradeoff_file)
 
     # Determine the properties to load based on the tradeoffs
-    properties = [p for p in tradeoffs]
+    if "has_forces" in tradeoffs.keys():
+        if tradeoffs['has_forces'] == int(1):
+            has_forces = True
+        else:
+            has_forces = False
+    else:
+        has_forces = True
+    properties = [p for p in tradeoffs if p!="has_forces"]
     # Read and process the data using the properties found in the tradeoffs.
     logging.info('Loading {:s}...'.format(args.datapath))
     dataset = spk.data.AtomsData(args.datapath, collect_triples=args.model == 'wacsf')
@@ -626,6 +652,7 @@ if __name__ == '__main__':
                       stddev=stddev,
                       train_loader=train_loader,
                       parallelize=args.parallel,
+                      has_forces=has_forces,
                       mode=args.mode
                       ).to(device)
 
@@ -664,6 +691,6 @@ if __name__ == '__main__':
         socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2 = generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device)
 
         props_phase=[n_phases_st,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
-        train(args, model, tradeoffs, train_loader, val_loader, device, n_states,props_phase)
+        train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase, has_forces)
         logging.info("...training done!")
 
