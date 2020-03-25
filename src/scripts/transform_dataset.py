@@ -72,12 +72,14 @@ def read_dataset(path,numberofgeoms,filename):
                     property_list.append('forces')
                     property_list.append('has_forces')
             elif line.startswith("Given_grad"):
+                has_force=[]
                 if int(line.split()[-1])==int(1):
                     _has_forces = True
-                    has_force = int(1)
+                    has_force.append(1)
                     property_list.append('has_forces')
                 else:
-                    has_force = int(0)
+                    has_force.append(0)
+                has_force=np.array(has_force)
             elif line.startswith("NAC"):
                 if int(line.split()[-1])==int(1):
                     _nac = True
