@@ -588,7 +588,7 @@ if __name__ == '__main__':
     n_states['n_quartets'] = n_quartets
     n_states['n_states'] = n_states['n_singlets'] + +n_states['n_doublets']+n_states['n_triplets']+n_states['n_quartets']
     n_states['states'] = dataset.get_metadata("states")
-    logging.info('Found {:d} states... {:d} singlet states, {:d} dublet states, {:d} triplet states, and {:d} quartet states'.format(n_states['n_states'],
+    logging.info('Found {:d} states... {:d} singlet states, {:d} doublet states, {:d} triplet states, and {:d} quartet states'.format(n_states['n_states'],
                                                                                            n_states['n_singlets'],
                                                                                            n_states['n_doublets'],
                                                                                            n_states['n_triplets'],
