@@ -337,12 +337,31 @@ def evaluate_dataset(metrics, model, loader, device,properties):
             for k, v in batch.items()
         }
         result = model(batch)
+        qm_values={}
+        for prop in result:
+            if prop in predicted:
+                predicted[prop] += [result[prop].cpu().detach().numpy()]
+            else:
+                predicted[prop] = [result[prop].cpu().detach().numpy()]
+            if prop in qm_values:
+                qm_values[prop] += [batch[prop].cpu().detach().numpy()]
+            else:
+                qm_values[prop] = [result[prop].cpu().detach().numpy()]
+            qm_values[prop] = batch[prop]
         for metric in metrics:
             metric.add_batch(batch, result)
     results = [
     metric.aggregate() for metric in metrics
     ]
 
+    for p in predicted.keys():
+        predicted[p]=np.vstack(predicted[p])
+        qm_values[p]=np.vstach(qm_values[p])
+    prediction_path = os.path.join(args.modelpath,"evaluation_values.npz")
+    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
+    np.savez(prediction_path,**predicted)
+    np.savez(prediction_path_qm,**qm_values)
+    logging.info('Stored model predictions in {:s} ...'.format(prediction_path))
 
     return results
 
