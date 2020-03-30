@@ -232,11 +232,11 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                         prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
                         prop_err = torch.mean(prop_diff.view(-1) **2 )
                     elif prop == "dipoles" and combined_phaseless_loss == True:
-                        prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
+                        prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
                         #already spared and mean of all values
                         prop_err = torch.mean(prop_diff.view(-1))
                     elif prop == "dipoles" and combined_phaseless_loss == False:
-                        prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
+                        prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
                         #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
                         prop_err = torch.mean(prop_diff.view(-1) **2 )
                     elif prop == "nacs" and combined_phaseless_loss == True:
