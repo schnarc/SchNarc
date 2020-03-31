@@ -218,7 +218,7 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                 elif prop == "dipoles" and combined_phaseless_loss == True:
-                    prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
+                    prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
                 elif prop == "dipoles" and combined_phaseless_loss == False:
@@ -474,9 +474,9 @@ if __name__ == '__main__':
     if args.mode != 'train':
         model = torch.load(os.path.join(args.modelpath, 'best_model'), map_location='cpu').to(device)
         if args.hessian == True:
-            model.output_modules.output_dict['energy'].return_hessian = [True,1,1,1,1]
+            model.output_modules[0].output_dict['energy'].return_hessian = [True,1,1,1,1]
         else:
-            model.output_modules.output_dict['energy'].return_hessian = [False,1,1]
+            model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
  
     if args.mode == 'pred':
         pred_data = spk.data.AtomsData(args.datapath, required_properties=[])
