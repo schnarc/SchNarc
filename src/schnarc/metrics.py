@@ -49,6 +49,35 @@ class MeanAbsoluteError(spk.metrics.MeanAbsoluteError):
             diff += self.bias_correction
         return diff
 
+#class MeanAbsoluteError_forces(spk.metrics.MeanAbsoluteError):
+#
+#    def __init__(self, target, model_output=None, bias_correction=None,
+#                 name=None, element_wise=False):
+#        name = 'MAE_' + target if name is None else name
+#        super(MeanAbsoluteError_forces, self).__init__(target, model_output=model_output, has_forces=True, bias_correction=bias_correction,
+#                                                     name=name, element_wise=element_wise)
+#        print(has_forces)
+#    def _get_diff(self, y, yp,has_forces):
+#        diff = y - yp
+#        diff = (torch.abs(diff))
+#
+#        if self.bias_correction is not None:
+#            diff += self.bias_correction
+#        return diff
+
+#class RootMeanSquaredError_forces(MeanSquaredError):
+#
+#    def __init__(self, target, model_output=None, bias_correction=None,
+#                 name=None, element_wise=False):
+#        name = 'PhRMSE_' + target if name is None else name
+#        super(RootMeanSquaredError_forces, self).__init__(target, model_output,
+#                                                        bias_correction, name,
+#                                                        element_wise=element_wise)
+#
+#    def aggregate(self):
+#        return np.sqrt(self.l2loss / self.n_entries)
+
+
 class PhaseMeanSquaredError(spk.metrics.MeanSquaredError):
 
     def __init__(self, target, model_output=None, bias_correction=None,

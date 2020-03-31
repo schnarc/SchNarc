@@ -114,11 +114,11 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
             batch_loss[index_batch_sample] = phaseless_loss_all
 
     else:
-        n_dipoles = 3*int(predicted.size()[1])
+        n_dipoles=3*int(predicted.size()[1])
         pred_phase_vec = torch.Tensor(batch_size,n_dipoles).to(device)
         #dipole has 3 components (x,y, and z)
         dipole_phase_matrix = torch.cat((props_phase[8],props_phase[8],props_phase[8]),0).view(n_phases,n_dipoles)
-        phaseless_loss_all = torch.abs(target[0]-pred_phase_vec[0])
+        phaseless_loss_all = torch.abs(target[0]-pred_phase_vec[0].view(target[0].shape[0],target[0].shape[1]))
         # do this for each value of the mini batch separately
         for index_batch_sample in range(batch_size):
             phaseless_loss = float('inf')
@@ -130,7 +130,7 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
                 diff_mean = torch.mean(diff.view(-1))
                 if diff_mean < phaseless_loss:
                     phaseless_loss = diff_mean
-                    phaseless_loss_all = diff
+                    phaseless_loss_all = diff.reshape((target[0].shape[0],target[0].shape[1]))
             batch_loss[index_batch_sample] = phaseless_loss_all
 
 
@@ -291,6 +291,15 @@ class GlobalRepresentation(nn.Module):
         global_representation = self.transform_aggregate(global_representation)
         return global_representation
 
+
+class DysonTransform(nn.Module):
+
+    def __init__(self, ndyson):
+        super(DysonTransform, self).__init__()
+
+
+    def forward(self, dyson):
+        return abs(dyson)
 
 class SocsTransform(nn.Module):
 
