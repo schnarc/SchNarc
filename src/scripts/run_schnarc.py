@@ -228,8 +228,8 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                         #already spared and mean of all values
                         prop_err = torch.mean(prop_diff.view(-1))
                     elif prop == "socs" and combined_phaseless_loss == False:
-                        #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
-                        prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
+                        prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
+                        #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
                         prop_err = torch.mean(prop_diff.view(-1) **2 )
                     elif prop == "dipoles" and combined_phaseless_loss == True:
                         prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
@@ -330,6 +330,7 @@ def evaluate_dataset(metrics, model, loader, device,properties):
         metric.reset()
 
     predicted={}
+    qm_values={}
     header=[]
     for batch in loader:
         batch = {
@@ -337,20 +338,17 @@ def evaluate_dataset(metrics, model, loader, device,properties):
             for k, v in batch.items()
         }
         result = model(batch)
-        qm_values={}
         for prop in result:
             if prop in predicted:
                 predicted[prop] += [result[prop].cpu().detach().numpy()]
             else:
                 predicted[prop] = [result[prop].cpu().detach().numpy()]
-            if prop == "diab" or prop == "diab2" or prop == "hessian":
-                pass
+        for prop in batch:
+            if prop in qm_values:
+                qm_values[prop] += [batch[prop].cpu().detach().numpy()]
             else:
-                if prop in qm_values:
-                    qm_values[prop] += [batch[prop].cpu().detach().numpy()]
-                else:
-                    qm_values[prop] = [result[prop].cpu().detach().numpy()]
-                qm_values[prop] = batch[prop]
+                qm_values[prop] = [batch[prop].cpu().detach().numpy()]
+            #qm_values[prop] = batch[prop]
         for metric in metrics:
             metric.add_batch(batch, result)
     results = [
@@ -359,10 +357,8 @@ def evaluate_dataset(metrics, model, loader, device,properties):
 
     for p in predicted.keys():
         predicted[p]=np.vstack(predicted[p])
-        if p == "diab" or p == "diab2" or p == "hessian":
-          pass
-        else:
-           qm_values[p]=np.vstack(qm_values[p])
+    for p in qm_values.keys():
+        qm_values[p]=np.vstack(qm_values[p])
     prediction_path = os.path.join(args.modelpath,"evaluation_values.npz")
     prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
     np.savez(prediction_path,**predicted)
