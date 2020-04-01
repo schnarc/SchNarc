@@ -373,6 +373,7 @@ def run_prediction(model, loader, device, args):
     import numpy as np
 
     predicted = {}
+    qm_values={}
 
     for batch in tqdm(loader, ncols=120):
         batch = {
