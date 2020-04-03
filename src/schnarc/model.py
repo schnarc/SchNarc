@@ -310,7 +310,7 @@ class MultiState(Atomwise):
                     result['d2ydx2'] = d2ydr2
                 else:
                     #for scan enable those lines
-                    #d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[Properties.R],
+                    #d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[spk.Properties.R],
                     #                      grad_outputs=torch.ones_like(dydr.view(batch, -1)[:, i]),
                     #                      create_graph=self.create_graph)[0].detach() for i in
                     #                 range(self.n_states * natoms * 3)], dim=1)
