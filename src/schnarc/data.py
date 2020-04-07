@@ -51,6 +51,7 @@ class Properties:
         dipole_moment: (dipole_moment, 'y'),
         charges: (dipole_moment, 'yi'),
         nacs: (nacs, 'dydx'),
+        hessian: (energy, 'd2ydx2'),
         dyson: (dyson, 'y')
     }
 
