@@ -244,9 +244,10 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                         prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
                         prop_err = torch.mean(prop_diff.view(-1)) / (2*n_states['n_states']**2)
                     else:
-                        prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                        #prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                        #prop_err = torch.mean(prop_diff.view(-1) **2 )
+                        prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
                         prop_err = torch.mean(prop_diff.view(-1) **2 )
-                        #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
 
                 elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
                     prop_diff = torch.abs(batch[prop] - result[prop])
