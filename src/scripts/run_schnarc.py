@@ -81,7 +81,7 @@ def get_parser():
     pred_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
     pred_parser.add_argument('modelpath', help='Path of stored model')
     pred_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
-    pred_parser.add_argument('--nac_approx',type=float, nargs=5, default=[1,0.018,0.036,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
+    pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     # model-specific parsers
     model_parser = argparse.ArgumentParser(add_help=False)
 
@@ -144,7 +144,7 @@ def get_parser():
     return main_parser
 
 
-def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase, has_forces):
+def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase):
     # setup hook and logging
     hooks = [
         spk.train.MaxEpochHook(args.max_epochs)
@@ -167,41 +167,28 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
        else:
            socs_given=False
     for prop in tradeoffs:
-        if prop!="has_forces":
-            if args.phase_loss or args.min_loss:
-                if prop in schnarc.data.Properties.phase_properties:
-                    if prop == 'nacs' and socs_given == True:
-                        metrics += [
-                            schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                            schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-                        ]
-                    else:
-                        metrics += [
-                            schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                            schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-                        ]
-                #TODO adapt if necessary
-                #elif prop == "forces" and has_forces == False:
-                #    metrics += [
-                #        spk.metrics.MeanAbsoluteError_forces(prop,prop,has_forces),
-                #        spk.metrics.RottMeanSquaredError_forces(prop,prop,has_forces)
-                #    ]
+       if args.phase_loss or args.min_loss:
+            if prop in schnarc.data.Properties.phase_properties:
+                if prop == 'nacs' and socs_given == True:
+                    metrics += [
+                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
+                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
+                    ]
                 else:
                     metrics += [
-                        spk.metrics.MeanAbsoluteError(prop, prop),
-                        spk.metrics.RootMeanSquaredError(prop, prop)
+                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
+                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
                     ]
-            #TODO adapt if necessary
-            #if prop == "forces" and has_forces == False:
-            #    metrics += [
-            #        spk.metrics.MeanAbsoluteError_forces(prop,prop),
-            #        spk.metrics.RottMeanSquaredError_forces(prop,prop)
-            #    ]
             else:
-              metrics += [
-                  spk.metrics.MeanAbsoluteError(prop, prop),
-                  spk.metrics.RootMeanSquaredError(prop, prop)
-             ]
+                metrics += [
+                    spk.metrics.MeanAbsoluteError(prop, prop),
+                    spk.metrics.RootMeanSquaredError(prop, prop)
+                ]
+       else:
+          metrics += [
+              spk.metrics.MeanAbsoluteError(prop, prop),
+              spk.metrics.RootMeanSquaredError(prop, prop)
+          ]
     if args.logger == 'csv':
         logger = spk.train.CSVHook(os.path.join(args.modelpath, 'log'),
                                    metrics, every_n_epochs=args.log_every_n_epochs)
@@ -221,59 +208,52 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
         else:
             combined_phaseless_loss = False
         for prop in tradeoffs:
-            if prop!="has_forces":
-                if args.min_loss and prop in schnarc.data.Properties.phase_properties:
-                    if prop == "socs" and combined_phaseless_loss == True:
-                        prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs )
-                        #already spared and mean of all values
-                        prop_err = torch.mean(prop_diff.view(-1))
-                    elif prop == "socs" and combined_phaseless_loss == False:
-                        prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
-                        #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
-                        prop_err = torch.mean(prop_diff.view(-1) **2 )
-                    elif prop == "dipoles" and combined_phaseless_loss == True:
-                        prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
-                        #already spared and mean of all values
-                        prop_err = torch.mean(prop_diff.view(-1))
-                    elif prop == "dipoles" and combined_phaseless_loss == False:
-                        prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
-                        #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
-                        prop_err = torch.mean(prop_diff.view(-1) **2 )
-                    elif prop == "nacs" and combined_phaseless_loss == True:
-                        #for nacs regardless of any other available phase-property
-                        prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
-                        prop_err = torch.mean(prop_diff.view(-1)) / (2*n_states['n_states']**2)
-                    else:
-                        #prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
-                        #prop_err = torch.mean(prop_diff.view(-1) **2 )
-                        prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
-                        prop_err = torch.mean(prop_diff.view(-1) **2 )
-
-                elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
-                    prop_diff = torch.abs(batch[prop] - result[prop])
-                    prop_err = torch.mean(prop_diff.view(-1) )
-                elif args.Huber and prop == schnarc.data.Properties.energy or args.Huber and prop == schnarc.data.Properties.forces:
-                    prop_diff = torch.abs(batch[prop]-result[prop])
-                    if torch.mean(prop_diff.view(-1)) <= 0.005 and prop == schnarc.data.Properties.forces:
-                        prop_err = torch.mean(prop_diff.view(-1) **2 )
-                    elif torch.mean(prop_diff.view(-1)) <= 0.05 and prop == schnarc.data.Properties.energy:
-                        prop_err = torch.mean(prop_diff.view(-1) **2 )
-                    else:
-                        prop_err = torch.mean(prop_diff.view(-1))
+            if args.min_loss and prop in schnarc.data.Properties.phase_properties:
+                if prop == "socs" and combined_phaseless_loss == True:
+                    prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs )
+                    #already spared and mean of all values
+                    prop_err = torch.mean(prop_diff.view(-1))
+                elif prop == "socs" and combined_phaseless_loss == False:
+                    #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
+                    prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
+                    prop_err = torch.mean(prop_diff.view(-1) **2 )
+                elif prop == "dipoles" and combined_phaseless_loss == True:
+                    prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
+                    #already spared and mean of all values
+                    prop_err = torch.mean(prop_diff.view(-1))
+                elif prop == "dipoles" and combined_phaseless_loss == False:
+                    #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
+                    prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
+                    prop_err = torch.mean(prop_diff.view(-1) **2 )
+                elif prop == "nacs" and combined_phaseless_loss == True:
+                    #for nacs regardless of any other available phase-property
+                    prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                    prop_err = torch.mean(prop_diff.view(-1)) / (2*n_states['n_states']**2)
                 else:
-                    if result['energy'].shape[1]==int(1):
-                        prop_diff = batch[prop][:,0] - result[prop][:,0]
-                    else:
-                        if prop == "forces" and has_forces == False:
-                            #multiply by 1 if forces given, otherwise multiply by 0
-                            prop_diff = ( batch[prop] - result[prop] )
-                            prop_diff = prop_diff[:,:,:,:] * batch['has_forces'][:,None,None,None]
-                        else:
-                            prop_diff = batch[prop] - result[prop]
-                    prop_err = torch.mean(prop_diff.view(-1) ** 2)
-                err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
-                if args.verbose:
-                    print(prop, prop_err)
+                    prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                    prop_err = torch.mean(prop_diff.view(-1) **2 )
+                    #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
+
+            elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
+                prop_diff = torch.abs(batch[prop] - result[prop])
+                prop_err = torch.mean(prop_diff.view(-1) )
+            elif args.Huber and prop == schnarc.data.Properties.energy or args.Huber and prop == schnarc.data.Properties.forces:
+                prop_diff = torch.abs(batch[prop]-result[prop])
+                if torch.mean(prop_diff.view(-1)) <= 0.005 and prop == schnarc.data.Properties.forces:
+                    prop_err = torch.mean(prop_diff.view(-1) **2 )
+                elif torch.mean(prop_diff.view(-1)) <= 0.05 and prop == schnarc.data.Properties.energy:
+                    prop_err = torch.mean(prop_diff.view(-1) **2 )
+                else:
+                    prop_err = torch.mean(prop_diff.view(-1))
+            else:
+                if prop=='energy' and result['forces'].shape[1]==int(1) or prop=='forces' and result['forces'].shape[1]==int(1) or prop=='dipoles' and result['forces'].shape[1]==int(1):
+                    prop_diff = batch[prop][:,0] - result[prop][:,0]
+                else:
+                    prop_diff = batch[prop] - result[prop]
+                prop_err = torch.mean(prop_diff.view(-1) ** 2)
+            err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
+            if args.verbose:
+                print(prop, prop_err)
 
         return err_sq
 
@@ -285,9 +265,9 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
 def evaluate(args, model, train_loader, val_loader, test_loader, device):
     # Get property names from model
     if args.parallel:
-        properties=model.module.output_modules[0].properties
+        properties=model.module.output_modules.properties
     else:
-        properties = model.output_modules[0].properties
+        properties = model.output_modules.properties
     header = ['Subset']
     metrics = []
     for prop in properties:
@@ -331,7 +311,6 @@ def evaluate_dataset(metrics, model, loader, device,properties):
         metric.reset()
 
     predicted={}
-    qm_values={}
     header=[]
     for batch in loader:
         batch = {
@@ -339,32 +318,12 @@ def evaluate_dataset(metrics, model, loader, device,properties):
             for k, v in batch.items()
         }
         result = model(batch)
-        for prop in result:
-            if prop in predicted:
-                predicted[prop] += [result[prop].cpu().detach().numpy()]
-            else:
-                predicted[prop] = [result[prop].cpu().detach().numpy()]
-        for prop in batch:
-            if prop in qm_values:
-                qm_values[prop] += [batch[prop].cpu().detach().numpy()]
-            else:
-                qm_values[prop] = [batch[prop].cpu().detach().numpy()]
-
         for metric in metrics:
             metric.add_batch(batch, result)
     results = [
     metric.aggregate() for metric in metrics
     ]
 
-    for p in predicted.keys():
-        predicted[p]=np.vstack(predicted[p])
-    for p in qm_values.keys():
-        qm_values[p]=np.vstack(qm_values[p])
-    prediction_path = os.path.join(args.modelpath,"evaluation_values.npz")
-    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
-    np.savez(prediction_path,**predicted)
-    np.savez(prediction_path_qm,**qm_values)
-    logging.info('Stored model predictions in {:s} ...'.format(prediction_path))
 
     return results
 
@@ -374,7 +333,6 @@ def run_prediction(model, loader, device, args):
     import numpy as np
 
     predicted = {}
-    qm_values={}
 
     for batch in tqdm(loader, ncols=120):
         batch = {
@@ -387,27 +345,17 @@ def run_prediction(model, loader, device, args):
                 predicted[prop] += [result[prop].cpu().detach().numpy()]
             else:
                 predicted[prop] = [result[prop].cpu().detach().numpy()]
-        for prop in batch:
-            if prop in qm_values:
-                qm_values[prop] += [batch[prop].cpu().detach().numpy()]
-            else:
-                qm_values[prop] = [batch[prop].cpu().detach().numpy()]
 
     for p in predicted.keys():
         predicted[p] = np.vstack(predicted[p])
-    for p in qm_values.keys():
-        qm_values[p]=np.vstack(qm_values[p])
-    prediction_path = os.path.join(args.modelpath,"evaluation_values.npz")
-    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
-    np.savez(prediction_path,**predicted)
-    np.savez(prediction_path_qm,**qm_values)
 
     prediction_path = os.path.join(args.modelpath, 'predictions.npz')
     np.savez(prediction_path, **predicted)
     logging.info('Stored model predictions in {:s}...'.format(prediction_path))
 
 
-def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, train_loader=None, parallelize=False, has_forces=True, mode='train'):
+def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, train_loader=None, parallelize=False,
+              mode='train'):
     if args.model == 'schnet':
         representation = spk.representation.SchNet(args.features, args.features, args.interactions,
                                                    args.cutoff / units.Bohr, args.num_gaussians)
@@ -415,8 +363,7 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
         property_output = schnarc.model.MultiStatePropertyModel(args.features, n_states, properties=properties,
                                                                 mean=mean, stddev=stddev, atomref=atomref,
                                                                 n_layers=args.n_layers, real=args.real_socs,
-                                                                inverse_energy=args.inverse_nacs
-                                                                )
+                                                                inverse_energy=args.inverse_nacs)
 
         model = spk.atomistic.AtomisticModel(representation, property_output)
 
@@ -497,34 +444,6 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
 
     phase_vector_nacs_2[:n_states['n_singlets'],:] = phase_vector_nacs_1[:n_states['n_singlets'],:]
     phase_vector_nacs_2[n_states['n_singlets']:,:] = phase_vector_nacs_1[n_states['n_singlets']:,:] * -1
-
-    # for dipoles only relevant numbers
-    phase_dipole_s = torch.Tensor(phase_pytorch.shape[1],n_states['n_singlets'])
-    phase_dipole_s = phase_vector_nacs_1[:n_states['n_singlets'],:]
-    phase_dipole_t = torch.Tensor(phase_pytorch.shape[1],n_states['n_triplets'])
-    phase_dipole_t1 = phase_vector_nacs_1[n_states['n_singlets']:int(n_states['n_singlets']+n_states['n_triplets']),:]
-    phase_dipole_t2 = phase_vector_nacs_2[n_states['n_singlets']:int(n_states['n_singlets']+n_states['n_triplets']),:]
-    matrix_dipole_s = torch.Tensor(phase_pytorch.shape[1],n_states['n_singlets'],n_states['n_singlets'])
-    matrix_dipole_t1 = torch.Tensor(phase_pytorch.shape[1],n_states['n_triplets'],n_states['n_triplets'])
-    matrix_dipole_t2 = torch.Tensor(phase_pytorch.shape[1],n_states['n_triplets'],n_states['n_triplets'])
-    for possible_permutation in range(0,phase_pytorch.shape[1]):
-        matrix_dipole_s[possible_permutation,:,:]=torch.ger(phase_dipole_s[:,possible_permutation],phase_dipole_s[:,possible_permutation])
-        matrix_dipole_t1[possible_permutation,:,:]=torch.ger(phase_dipole_t1[:,possible_permutation],phase_dipole_t1[:,possible_permutation])
-        matrix_dipole_t2[possible_permutation,:,:]=torch.ger(phase_dipole_t2[:,possible_permutation],phase_dipole_t2[:,possible_permutation])
-    diagonal_dipole_s = matrix_dipole_s[:,torch.triu(torch.ones(n_states['n_singlets'],n_states['n_singlets'])) == 1 ]
-    diagonal_dipole_t1 = matrix_dipole_t1[:,torch.triu(torch.ones(n_states['n_triplets'],n_states['n_triplets'])) == 1 ]
-    diagonal_dipole_t2 = matrix_dipole_t2[:,torch.triu(torch.ones(n_states['n_triplets'],n_states['n_triplets'])) == 1 ]
-    #final dipole phasevector
-    n_dipoles = n_states['n_singlets']*(n_states['n_singlets']+1)/2 + n_states['n_triplets']*(n_states['n_triplets']+1)/2
-    dipole_phasevector_1 = torch.Tensor(phase_pytorch.shape[1],int(n_dipoles))
-    dipole_phasevector_2 = dipole_phasevector_1
-    for istate in range(int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)):
-        dipole_phasevector_1[:,istate] = diagonal_dipole_s[:,istate]
-        dipole_phasevector_2[:,istate] = diagonal_dipole_s[:,istate]
-    for istate in range(int(n_states['n_triplets']*(n_states['n_triplets']+1)/2)):
-        dipole_phasevector_1[:,int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)+istate] = diagonal_dipole_t1[:,istate]
-        dipole_phasevector_2[:,int(n_states['n_singlets']*(n_states['n_singlets']+1)/2)+istate] = diagonal_dipole_t2[:,istate]
-
     #two possibilities - the min function should be give the correct error
     #therefore, build a matrix that contains all the two possibilities of phases by building the outer product of each phase vector for     a given sample of a mini batch
     complex_diagonal_phase_matrix_1 = torch.Tensor(phase_pytorch.shape[1],n_socs).to(device)
@@ -542,7 +461,7 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
         complex_diagonal_phase_matrix_1[:,2*i+1] = diagonal_phase_matrix_1[:,i]
         complex_diagonal_phase_matrix_2[:,2*i] = diagonal_phase_matrix_2[:,i]
         complex_diagonal_phase_matrix_2[:,2*i+1] = diagonal_phase_matrix_2[:,i]
-    return complex_diagonal_phase_matrix_1, complex_diagonal_phase_matrix_2, dipole_phasevector_1, dipole_phasevector_2 #phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 1], phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 1]
+    return complex_diagonal_phase_matrix_1, complex_diagonal_phase_matrix_2, phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 1], phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 1]
 
 
 if __name__ == '__main__':
@@ -555,12 +474,12 @@ if __name__ == '__main__':
     if args.mode != 'train':
         model = torch.load(os.path.join(args.modelpath, 'best_model'), map_location='cpu').to(device)
         if args.hessian == True:
-            model.output_modules[0].output_dict['energy'].return_hessian = [True,1,1,1,1,1,1,1,1]
+            model.output_modules.output_dict['energy'].return_hessian = [True,1,1,1,1]
         else:
-            model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1,1,1]
+            model.output_modules.output_dict['energy'].return_hessian = [False,1,1]
  
     if args.mode == 'pred':
-        pred_data = spk.data.AtomsData(args.datapath)
+        pred_data = spk.data.AtomsData(args.datapath, required_properties=[])
         pred_loader = spk.data.AtomsLoader(pred_data, batch_size=args.batch_size, num_workers=2, pin_memory=True)
         run_prediction(model, pred_loader, device, args)
         sys.exit(0)
@@ -597,36 +516,32 @@ if __name__ == '__main__':
         tradeoffs = schnarc.utils.read_tradeoffs(tradeoff_file)
 
     # Determine the properties to load based on the tradeoffs
-    if "has_forces" in tradeoffs.keys():
-        if tradeoffs['has_forces'] == int(1):
-            has_forces = True
-        else:
-            has_forces = False
-    else:
-        has_forces = True
-    properties = [p for p in tradeoffs if p!="has_forces"]
+    properties = [p for p in tradeoffs]
+
     # Read and process the data using the properties found in the tradeoffs.
     logging.info('Loading {:s}...'.format(args.datapath))
     dataset = spk.data.AtomsData(args.datapath, collect_triples=args.model == 'wacsf')
     # Determine the number of states based on the metadata
     n_states = {}
-    #activate if only one state is learned or not all
+    n_states['n_singlets'] = dataset.get_metadata("n_singlets")
+    if dataset.get_metadata("n_triplets") == None:
+        n_states['n_triplets']=int(0)
+    else:
+        n_states['n_triplets'] = dataset.get_metadata("n_triplets")
+    n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
+
+    ##activate if only one state is learned or not all
     s=tradeoffs['energy'].split()
-    n_singlets = int(s[1])
-    n_doublets  = int(s[2])
-    n_triplets = int(s[3])
-    n_quartets = int(s[4])
-    n_states['n_singlets'] = n_singlets
-    n_states['n_doublets'] = n_doublets
-    n_states['n_triplets'] = n_triplets
-    n_states['n_quartets'] = n_quartets
-    n_states['n_states'] = n_states['n_singlets'] + +n_states['n_doublets']+n_states['n_triplets']+n_states['n_quartets']
+    if int(s[1]) > int(0):
+        n_singlets = int(s[1])
+        n_triplets = int(s[2])
+        n_states['n_singlets'] = n_singlets
+        n_states['n_triplets'] = n_triplets
+        n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
     n_states['states'] = dataset.get_metadata("states")
-    logging.info('Found {:d} states... {:d} singlet states, {:d} doublet states, {:d} triplet states, and {:d} quartet states. Warning: can not go higher than quartets.'.format(n_states['n_states'],
+    logging.info('Found {:d} states... {:d} singlet states and {:d} triplet states'.format(n_states['n_states'],
                                                                                            n_states['n_singlets'],
-                                                                                           n_states['n_doublets'],
-                                                                                           n_states['n_triplets'],
-                                                                                           n_states['n_quartets']))
+                                                                                           n_states['n_triplets']))
 
     if args.mode == 'eval':
         split_path = os.path.join(args.modelpath, 'split.npz')
@@ -686,7 +601,6 @@ if __name__ == '__main__':
                       stddev=stddev,
                       train_loader=train_loader,
                       parallelize=args.parallel,
-                      has_forces=has_forces,
                       mode=args.mode
                       ).to(device)
 
@@ -696,26 +610,21 @@ if __name__ == '__main__':
         #properties for phase vector
         #n_nacs = int(n_states['n_singlets']*(n_states['n_singlets']-1)/2 + n_states['n_triplets']*(n_states['n_triplets']-1)/2 )
         batch_size = args.batch_size
-        all_states = n_states['n_singlets'] + 2 * n_states['n_doublets'] + 3 * n_states['n_triplets'] + 4 * n_states['n_quartets']
-        n_states['n_states_st'] = n_states['n_singlets'] + n_states['n_triplets']
+        all_states = n_states['n_singlets'] + 3 * n_states['n_triplets']
         n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
         #min loss for a given batch size
         #vector with correct phases for a mini batch
         #number of possible phase vectors
-        n_phases_st = int(2**(n_states['n_states_st']-1))
+        n_phases = int(2**(n_states['n_states']-1))
         #number of singlet-singlet and triplet-triplet deriative couplings
         #gives the number of phases 
         #generate all possible 2**(nstates-1) vectors that give rise to possible combinations of phases
-        """TODO 
-        adapt phase vector generation for doublets and quartets 
-        this should be separated and exactly the same as for singlets and triplets
-        the socs should then be separated in order to get the right phases with respect to the phases of nacs between doublets-doublets and quartets-quartets
-        in case only 1 property, such as only socs, are computed: phaseless_loss_single can be applied and this is not necessary"""
-        phasevector = generateAllBinaryStrings(n_states['n_states_st'],[None]*n_states['n_states_st'],0,[])
-        phase_pytorch = torch.Tensor( n_states['n_states_st'],n_phases_st ).to(device)
+
+        phasevector = generateAllBinaryStrings(n_states['n_states'],[None]*n_states['n_states'],0,[])
+        phase_pytorch = torch.Tensor( n_states['n_states'],n_phases ).to(device)
         iterator = -1
-        for i in range(n_phases_st):
-            for j in range(n_states['n_states_st']):
+        for i in range(n_phases):
+            for j in range(n_states['n_states']):
                 iterator+=1
                 if phasevector[iterator]==0:
                     phase_pytorch[j,i] = 1
@@ -724,7 +633,7 @@ if __name__ == '__main__':
 
         socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2 = generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device)
 
-        props_phase=[n_phases_st,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
-        train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase, has_forces)
+        props_phase=[n_phases,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
+        train(args, model, tradeoffs, train_loader, val_loader, device, n_states,props_phase)
         logging.info("...training done!")
 
