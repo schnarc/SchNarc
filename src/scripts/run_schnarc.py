@@ -265,9 +265,9 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
 def evaluate(args, model, train_loader, val_loader, test_loader, device):
     # Get property names from model
     if args.parallel:
-        properties=model.module.output_modules.properties
+        properties=model.module.output_modules[0].properties
     else:
-        properties = model.output_modules.properties
+        properties = model.output_modules[0].properties
     header = ['Subset']
     metrics = []
     for prop in properties:
@@ -474,12 +474,12 @@ if __name__ == '__main__':
     if args.mode != 'train':
         model = torch.load(os.path.join(args.modelpath, 'best_model'), map_location='cpu').to(device)
         if args.hessian == True:
-            model.output_modules.output_dict['energy'].return_hessian = [True,1,1,1,1]
+            model.output_modules[0].output_dict['energy'].return_hessian = [True,1,1,1,1]
         else:
-            model.output_modules.output_dict['energy'].return_hessian = [False,1,1]
+            model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
  
     if args.mode == 'pred':
-        pred_data = spk.data.AtomsData(args.datapath, required_properties=[])
+        pred_data = spk.data.AtomsData(args.datapath)
         pred_loader = spk.data.AtomsLoader(pred_data, batch_size=args.batch_size, num_workers=2, pin_memory=True)
         run_prediction(model, pred_loader, device, args)
         sys.exit(0)
