@@ -60,17 +60,22 @@ def get_socs(socs,n_states,energy):
     n_states = n_states['n_states']
     h_string = "! 1 Hamiltonian Matrix (%dx%d), complex \n %d %d \n"      % ( n_states,n_states,n_states,n_states)
     hamiltonian = np.zeros((n_states,n_states),dtype=complex)
+    if n_triplets==int(0):
+        index=np.argsort(energy)
+    else:
+        index=np.argsort(energy[0:n_singlets])
+        indext=np.argsort(energy[n_singlets:int(n_singlets+n_triplets)])
     for i in range(n_singlets):
-        hamiltonian[i][i] = (energy[i])
+        hamiltonian[i][i] = (energy[index[i]])
     iterator=0
     for i in range(n_states):
       for j in range(i+1,n_states):
         hamiltonian[i][j] = (socs[iterator])
         iterator+=2
     for i in range(n_singlets,n_singlets+n_triplets):
-        hamiltonian[i][i] = energy[i]
-        hamiltonian[i+n_triplets][i+n_triplets]=energy[i]
-        hamiltonian[i+2*n_triplets][i+2*n_triplets]=energy[i]
+        hamiltonian[i][i] = energy[indext[i-n_singlets]+n_singlets]
+        hamiltonian[i+n_triplets][i+n_triplets]=energy[indext[i-n_singlets]+n_singlets]
+        hamiltonian[i+2*n_triplets][i+2*n_triplets]=energy[indext[i-n_singlets]+n_singlets]
     for istate in hamiltonian:
         for jstate in istate:
             h_string += "%20.12E %20.12E "%(np.real(jstate), np.imag(jstate))
@@ -99,17 +104,22 @@ def get_diab(coupling,energy,n_states):
     return h_string
 
 def get_energy(energy,n_states):
-    n_singlets=n_states['n_singlets']
-    n_triplets=n_states['n_triplets']
-    n_states = n_states['n_states']
+    n_singlets= n_states['n_singlets']
+    n_triplets= n_states['n_triplets']
+    n_states =  n_states['n_states']
     h_string = "! 1 Hamiltonian Matrix (%dx%d), complex \n %d %d \n"      % ( n_states,n_states,n_states,n_states)
     hamiltonian = np.zeros((n_states,n_states),dtype=complex)
+    if n_triplets==int(0):
+        index=np.argsort(energy)
+    else:
+        index=np.argsort(energy[0:n_singlets])
+        indext=np.argsort(energy[n_singlets:int(n_singlets+n_triplets)])
     for i in range(n_singlets):
-        hamiltonian[i][i] = (energy[i])
-    for i in range(n_singlets,n_singlets+n_triplets):
-        hamiltonian[i][i] = energy[i]
-        hamiltonian[i+n_triplets][i+n_triplets]=energy[i]
-        hamiltonian[i+2*n_triplets][i+2*n_triplets]=energy[i]
+        hamiltonian[i][i] = (energy[index[i]])
+    for i in range(n_triplets):
+        hamiltonian[i+n_singlets][n_singlets+i] = energy[indext[i]+n_singlets]
+        hamiltonian[i+n_singlets+n_triplets][i+n_singlets+n_triplets]=energy[indext[i]+n_singlets]
+        hamiltonian[i+n_singlets+2*n_triplets][i+n_singlets+2*n_triplets]=energy[indext[i]+n_singlets]
     for istate in hamiltonian:
         for jstate in istate:
             h_string += "%20.12E %20.12E "%(np.real(jstate), np.imag(jstate))
@@ -117,46 +127,56 @@ def get_energy(energy,n_states):
     h_string += "\n"
     return h_string
 
-def get_force(force,n_states):
-    n_singlets=n_states['n_singlets']
+def get_force(force,n_states,energy):
+    n_singlets= n_states['n_singlets']
     n_triplets=n_states['n_triplets']
     n_states = n_states['n_states']
     n_atoms = force.shape[1]
+    if n_triplets==int(0):
+        index=np.argsort(energy)
+    else:
+        index=np.argsort(energy[0:n_singlets])
+        indext=np.argsort(energy[n_singlets:(n_singlets+n_triplets)])
     g_string= "! 3 Gradient Vectors (%dx%dx3, real) \n" % (n_states, n_atoms)
     for istate in range(n_singlets):
         g_string += "%d %d ! state %d \n" %(n_atoms, 3, istate+1)
         for iatom in range(n_atoms):
             for xyz in range(3):
-                g_string += "%20.12E " %-force[istate][iatom][xyz]
+                g_string += "%20.12E " %-force[index[istate]][iatom][xyz]
             g_string += "\n"
     for itriplet in range(3):
-        for istate in range(n_singlets,n_singlets+n_triplets):
+        for istate in range(n_triplets):
             g_string += "%d %d ! state %d \n" %(n_atoms, 3, (istate+n_triplets*itriplet)+1)
             for iatom in range(n_atoms):
                 for xyz in range(3):
-                    g_string += "%20.12E " %-force[istate][iatom][xyz]
+                    g_string += "%20.12E " %-force[indext[istate]+n_singlets][iatom][xyz]
                 g_string += "\n"
     return g_string
 
-def get_dipoles(dipoles,n_states):
+def get_dipoles(dipoles,n_states,energy):
     n_singlets=n_states['n_singlets']
     n_triplets=n_states['n_triplets']
     n_states = n_states['n_states']
     dipole_matrix = np.zeros((3, n_states, n_states), dtype=complex)
     d_string="! 2 Dipole Moment Matrices (3x%sx%s, complex)\n" %(n_states,n_states)
+    if n_triplets==int(0):
+        index=np.argsort(energy)
+    else:
+        index= np.argsort(energy[0:n_singlets])
+        indext=np.argsort(energy[n_singlets:(n_singlets+n_triplets)])
     for xyz in range(3):
         iterator=-1
         for istate in range(n_singlets):
             for jstate in range(istate,n_singlets):
                 iterator+=1
-                dipole_matrix[xyz][istate][jstate] = dipoles[iterator][xyz]
-                dipole_matrix[xyz][jstate][istate] = dipoles[iterator][xyz]
-        for istate in range(n_singlets,n_singlets+n_triplets):
-            for jstate in range(istate,n_singlets+n_triplets):
+                dipole_matrix[xyz][index[istate]][index[jstate]] = dipoles[iterator][xyz]
+                dipole_matrix[xyz][index[jstate]][index[istate]] = dipoles[iterator][xyz]
+        for istate in range(n_triplets):
+            for jstate in range(istate,n_triplets):
                 iterator+=1
                 for itriplet in range(3):
-                   dipole_matrix[xyz][istate+n_triplets*itriplet][jstate+n_triplets*itriplet] = dipoles[iterator][xyz]
-                   dipole_matrix[xyz][jstate+n_triplets*itriplet][istate+n_triplets*itriplet] = dipoles[iterator][xyz]
+                   dipole_matrix[xyz][indext[istate]+n_singlets+n_triplets*itriplet][indext[jstate]+n_singlets+n_triplets*itriplet] = dipoles[iterator][xyz]
+                   dipole_matrix[xyz][indext[jstate]+n_singlets+n_triplets*itriplet][indext[istate]+n_singlets+n_triplets*itriplet] = dipoles[iterator][xyz]
         d_string+="%d %d \n" %(n_states,n_states)
         for istate in range(n_states):
             for jstate in range(n_states):

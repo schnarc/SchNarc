@@ -209,6 +209,12 @@ class MultiState(Atomwise):
             self.derivative = None
             self.negative_dr = False
 
+        if return_contributions:
+            contributions = 'yi'
+        else:
+            contributions = None
+
+
         super(MultiState, self).__init__(
             n_in,
             n_out=n_states,
@@ -216,7 +222,7 @@ class MultiState(Atomwise):
             n_layers=n_layers,
             n_neurons=n_neurons,
             activation=activation,
-            contributions=return_contributions,
+            contributions=contributions,
             derivative=self.derivative,
             negative_dr=self.negative_dr,
             create_graph=create_graph,
@@ -264,7 +270,8 @@ class MultiState(Atomwise):
                             pass
                 #only for SO2
                 #compute_hessian=False
-                #if abs(result['y'][0][1].item()-result['y'][0][2].item()) <= threshold_dE_S:
+
+                #if abs(result['y'][0][0].item()-result['y'][0][1].item()) <= threshold_dE_S or  abs(result['y'][0][0].item()-result['y'][0][2].item()) <= threshold_dE_S:
                 #  compute_hessian=True
                 #if abs(result['y'][0][3].item()-result['y'][0][5].item()) <= threshold_dE_T:
                 #  compute_hessian=True
@@ -360,7 +367,8 @@ class MultiDipole(MultiState):
         n_singlets = n_states[Properties.n_singlets]
         n_triplets = n_states[Properties.n_triplets]
         nmstates   = n_singlets + 3 * n_triplets
-        n_couplings = int(nmstates * (nmstates - 1) / 2 + nmstates)
+        n_couplings = int(n_singlets*(n_singlets-1)/2 + n_singlets) + int(n_triplets*(n_triplets-1)/2 + n_triplets)
+        #n_couplings = int(nmstates * (nmstates - 1) / 2 + nmstates)
 
         super(MultiDipole, self).__init__(n_in, n_couplings,
                                           aggregation_mode=aggregation_mode,

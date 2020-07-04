@@ -19,11 +19,11 @@ def QMout(prediction,modelpath,nac_approx,n_states):
         for property in prediction.keys():
             if property == "energy":
                 QMout_energy=get_energy(prediction['energy'][0],n_states)
-                QMout_force=get_force(prediction['forces'][0],n_states)
+                QMout_force=get_force(prediction['forces'][0],n_states,prediction['energy'][0])
             elif property == "diab":
                 QMout_energy=get_diab(prediction['diab2'][0],n_states)
             elif property == "dipoles":
-                QMout_dipoles=get_dipoles(prediction['dipoles'][0],n_states)
+                QMout_dipoles=get_dipoles(prediction['dipoles'][0],n_states,prediction['energy'][0])
             elif property == "nacs":
                 QMout_nacs=get_nacs(prediction['nacs'][0],n_states)
             elif property == "socs":
@@ -45,9 +45,9 @@ def QMout(prediction,modelpath,nac_approx,n_states):
                 elif property == "socs":
                     QMout_energy=get_socs(prediction['socs'][index],n_states,prediction['energy'][index])
                 elif property == "forces":
-                    QMout_force=get_force(prediction['forces'][index],n_states)
+                    QMout_force=get_force(prediction['forces'][index],n_states,prediction['energy'][index])
                 elif property == "dipoles":
-                    QMout_dipoles=get_dipoles(prediction['dipoles'][index],n_states)
+                    QMout_dipoles=get_dipoles(prediction['dipoles'][index],n_states,prediction['energy'][index])
                 elif property == "nacs":
                         QMout_nacs=get_nacs(prediction['nacs'][index],n_states)
             if nac_approx==int(1):
@@ -114,10 +114,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if args.cuda else "cpu")
 
     # Load data
-    data = spk.data.AtomsData(args.database, required_properties=['energy',
-                                                                  'forces',
-                                                                  'dipoles',
-                                                                  'nacs'])
+    data = spk.data.AtomsData(args.database)
     n_states={}
     if data.get_metadata('n_triplets') == None:
         n_states['n_triplets']= 0

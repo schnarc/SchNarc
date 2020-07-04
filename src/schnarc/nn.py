@@ -41,7 +41,7 @@ def min_loss_single_old(target, predicted, smooth=True, smooth_nonvec=False, los
 
     # Correct phase loss
     if smooth:
-        reduce_dims = target.shape[:2] + (-1,)
+        reduce_dims = predicted.shape[:2] + (-1,)
         diff_a = diff_a.view(reduce_dims)
         diff_b = diff_b.view(reduce_dims)
         a = torch.mean(diff_a, 2, keepdim=True)
@@ -88,7 +88,7 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
     # valid if either nacs or socs are treated
     #one degree of freedom: set sign of first state to +1
     phase_pytorch = props_phase[3]
-    batch_loss = torch.Tensor(target.size()).to(device)
+    batch_loss = torch.Tensor(predicted.size()).to(device)
 
     if dipole == False:
         pred_phase_vec = torch.Tensor(predicted.size()).to(device)

@@ -214,16 +214,16 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
                 elif prop == "socs" and combined_phaseless_loss == False:
-                    #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
-                    prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
+                    prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
+                    #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                 elif prop == "dipoles" and combined_phaseless_loss == True:
                     prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
                 elif prop == "dipoles" and combined_phaseless_loss == False:
-                    #prop_err = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
-                    prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
+                    prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
+                    #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                 elif prop == "nacs" and combined_phaseless_loss == True:
                     #for nacs regardless of any other available phase-property
@@ -265,15 +265,12 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
 def evaluate(args, model, train_loader, val_loader, test_loader, device):
     # Get property names from model
     if args.parallel:
-        properties=model.module.output_modules.properties
+        properties=model.module.output_modules[0].properties
     else:
-        properties = model.output_modules.properties
+        properties = model.output_modules[0].properties
     header = ['Subset']
     metrics = []
     for prop in properties:
-      if prop=="dipoles":
-        pass
-      else:
         header += [f'{prop}_MAE', f'{prop}_RMSE']
         if prop in schnarc.data.Properties.phase_properties:
             header += [f'{prop}_pMAE', f'{prop}_pRMSE']
@@ -295,11 +292,9 @@ def evaluate(args, model, train_loader, val_loader, test_loader, device):
     if ('validation' in args.split) or ('all' in args.split):
         logging.info('Validation split...')
         results.append(['validation'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, val_loader, device,properties)])
-
     if ('test' in args.split) or ('all' in args.split):
         logging.info('Testing split...')
         results.append(['test'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, test_loader, device,properties)])
-
     header = ','.join(header)
     results = np.array(results)
 
@@ -310,6 +305,7 @@ def evaluate_dataset(metrics, model, loader, device,properties):
     for metric in metrics:
         metric.reset()
 
+    qm_values={}
     predicted={}
     header=[]
     for batch in loader:
@@ -318,12 +314,33 @@ def evaluate_dataset(metrics, model, loader, device,properties):
             for k, v in batch.items()
         }
         result = model(batch)
+        
+        for prop in result:
+            if prop in predicted:
+                predicted[prop] += [result[prop].cpu().detach().numpy()]
+            else:
+                predicted[prop] = [result[prop].cpu().detach().numpy()]
+        for prop in batch:
+            if prop in qm_values:
+                qm_values[prop] += [batch[prop].cpu().detach().numpy()]
+            else:
+                qm_values[prop] = [batch[prop].cpu().detach().numpy()]
+
         for metric in metrics:
             metric.add_batch(batch, result)
     results = [
     metric.aggregate() for metric in metrics
     ]
 
+    for p in predicted.keys():
+        predicted[p]=np.vstack(predicted[p])
+    for p in qm_values.keys():
+        qm_values[p]=np.vstack(qm_values[p])
+    prediction_path = os.path.join(args.modelpath,"evaluation_values.npz")
+    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
+    np.savez(prediction_path,**predicted)
+    np.savez(prediction_path_qm,**qm_values)
+    logging.info('Stored model predictions in {:s} ...'.format(prediction_path))
 
     return results
 
@@ -333,7 +350,7 @@ def run_prediction(model, loader, device, args):
     import numpy as np
 
     predicted = {}
-
+    qm_values = {}
     for batch in tqdm(loader, ncols=120):
         batch = {
             k: v.to(device)
@@ -345,10 +362,19 @@ def run_prediction(model, loader, device, args):
                 predicted[prop] += [result[prop].cpu().detach().numpy()]
             else:
                 predicted[prop] = [result[prop].cpu().detach().numpy()]
+        for prop in batch:
+            if prop in qm_values:
+                qm_values[prop] += [batch[prop].cpu().detach().numpy()]
+            else:
+                qm_values[prop] = [batch[prop].cpu().detach().numpy()]
+
 
     for p in predicted.keys():
         predicted[p] = np.vstack(predicted[p])
-
+    for p in qm_values.keys():
+        qm_values[p]=np.vstack(qm_values[p])
+    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
+    np.savez(prediction_path_qm,**qm_values)
     prediction_path = os.path.join(args.modelpath, 'predictions.npz')
     np.savez(prediction_path, **predicted)
     logging.info('Stored model predictions in {:s}...'.format(prediction_path))
@@ -474,12 +500,12 @@ if __name__ == '__main__':
     if args.mode != 'train':
         model = torch.load(os.path.join(args.modelpath, 'best_model'), map_location='cpu').to(device)
         if args.hessian == True:
-            model.output_modules.output_dict['energy'].return_hessian = [True,1,1,1,1]
+            model.output_modules[0].output_dict['energy'].return_hessian = [True,1,1,1,1]
         else:
-            model.output_modules.output_dict['energy'].return_hessian = [False,1,1]
+            model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
  
     if args.mode == 'pred':
-        pred_data = spk.data.AtomsData(args.datapath, required_properties=[])
+        pred_data = spk.data.AtomsData(args.datapath)
         pred_loader = spk.data.AtomsLoader(pred_data, batch_size=args.batch_size, num_workers=2, pin_memory=True)
         run_prediction(model, pred_loader, device, args)
         sys.exit(0)
