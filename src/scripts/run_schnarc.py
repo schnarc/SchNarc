@@ -316,6 +316,7 @@ def evaluate_dataset(metrics, model, loader, device,properties):
             for k, v in batch.items()
         }
         result = model(batch)
+        
         for prop in result:
             if prop in predicted:
                 predicted[prop] += [result[prop].cpu().detach().numpy()]
@@ -508,7 +509,7 @@ if __name__ == '__main__':
             else:
                 model.module.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
 
-
+ 
     if args.mode == 'pred':
         pred_data = spk.data.AtomsData(args.datapath)
         pred_loader = spk.data.AtomsLoader(pred_data, batch_size=args.batch_size, num_workers=2, pin_memory=True)
@@ -590,7 +591,7 @@ if __name__ == '__main__':
         exit()
      # Splits the dataset in test, val, train sets
     split_path = os.path.join(args.modelpath, 'split.npz')
-
+ 
     if args.mode == 'train':
         if args.split_path is not None:
             copyfile(args.split_path, split_path)

@@ -391,10 +391,6 @@ class MultiDipole(MultiState):
         """
         result = super(MultiDipole, self).forward(inputs)
         dipole_moments = torch.sum(result["yi"][:, :, :, None] * inputs[spk.Properties.R][:, :, None, :], 1)
-        """can be used to print out the latent partial charges and the "transition charges" (without any physical meaning)
-        in an atom wise fashion
-        the elements are ordered according to the input vector (rows)
-        the elements are ordered according to the upper triangular of the dipole moment matrix (columns)"""
         #print(result['yi'][0])
         #print(inputs)
         result['y'] = dipole_moments #self.output_mask(dipole_moments)
