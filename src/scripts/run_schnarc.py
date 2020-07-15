@@ -222,7 +222,9 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
                 elif prop == "dipoles" and combined_phaseless_loss == False:
+                    #ATTENTION: The permanent dipole moments contain an arbitrary sign when training with the following function
                     prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
+                    #use the following if the signs of the permanent dipole moments should be assigned:
                     #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                 elif prop == "nacs" and combined_phaseless_loss == True:
@@ -502,7 +504,11 @@ if __name__ == '__main__':
         if args.hessian == True:
             model.output_modules[0].output_dict['energy'].return_hessian = [True,1,1,1,1]
         else:
-            model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
+            if args.parallel==False:
+                model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
+            else:
+                model.module.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
+
  
     if args.mode == 'pred':
         pred_data = spk.data.AtomsData(args.datapath)

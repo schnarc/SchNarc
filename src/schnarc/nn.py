@@ -84,7 +84,6 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
     n_phases = props_phase[0]
     batch_size = props_phase[1]
     device = props_phase[2]
-
     # valid if either nacs or socs are treated
     #one degree of freedom: set sign of first state to +1
     phase_pytorch = props_phase[3]
@@ -118,7 +117,7 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
         pred_phase_vec = torch.Tensor(batch_size,n_dipoles).to(device)
         #dipole has 3 components (x,y, and z)
         dipole_phase_matrix = torch.cat((props_phase[8],props_phase[8],props_phase[8]),0).view(n_phases,n_dipoles)
-        phaseless_loss_all = torch.abs(target[0]-pred_phase_vec[0])
+        phaseless_loss_all = torch.abs(target[0]-pred_phase_vec[0].view(predicted.size()[1],3))
         # do this for each value of the mini batch separately
         for index_batch_sample in range(batch_size):
             phaseless_loss = float('inf')
@@ -131,7 +130,7 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
                 if diff_mean < phaseless_loss:
                     phaseless_loss = diff_mean
                     phaseless_loss_all = diff
-            batch_loss[index_batch_sample] = phaseless_loss_all
+            batch_loss[index_batch_sample] = phaseless_loss_all.view(predicted.size()[1],3)
 
 
     return batch_loss

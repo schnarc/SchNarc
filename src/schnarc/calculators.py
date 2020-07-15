@@ -27,9 +27,9 @@ class SchNarculator:
         self.parallel = False
         self.model = self._load_model(modelpath)
         if not self.parallel:
-            self.n_states_dict = self.model.output_modules.n_states
+            self.n_states_dict = self.model.output_modules[0].n_states
         else:
-            self.n_states_dict = self.model.module.output_modules.n_states
+            self.n_states_dict = self.model.module.output_modules[0].n_states
         self.n_states = self.n_states_dict['n_states']
         self.n_singlets = self.n_states_dict['n_singlets']
         self.n_triplets = self.n_states_dict['n_triplets']
@@ -45,14 +45,14 @@ class SchNarculator:
             if not hasattr(self.model.module.output_modules, 'need_hessian'):
                 self.model.module.output_modules.need_hessian = self.hessian
             if hessian:
-                if schnarc.data.Properties.energy in self.model.module.output_modules.output_dict:
-                    self.model.module.output_modules.output_dict[schnarc.data.Properties.energy].return_hessian = self.hessian
+                if schnarc.data.Properties.energy in self.model.module.output_modules[0].output_dict:
+                    self.model.module.output_modules[0].output_dict[schnarc.data.Properties.energy].return_hessian = self.hessian
         else:
             if not hasattr(self.model.output_modules, 'need_hessian'):
                 self.model.output_modules.need_hessian = self.hessian
             if hessian:
-                if schnarc.data.Properties.energy in self.model.output_modules.output_dict:
-                    self.model.output_modules.output_dict[schnarc.data.Properties.energy].return_hessian = self.hessian
+                if schnarc.data.Properties.energy in self.model.output_modules[0].output_dict:
+                    self.model.output_modules[0].output_dict[schnarc.data.Properties.energy].return_hessian = self.hessian
 
         self.molecule = Atoms(atom_types, positions)
 
@@ -83,35 +83,29 @@ class SchNarculator:
         self.molecule.positions = np.array(sharc_output)
 
         schnet_inputs = dict()
-
         # Elemental composition
         schnet_inputs[Properties.Z] = torch.LongTensor(self.molecule.numbers.astype(np.int))
         schnet_inputs[Properties.atom_mask] = torch.ones_like(schnet_inputs[Properties.Z]).float()
-
         # Set positions
         positions = self.molecule.positions.astype(np.float32)
         schnet_inputs[Properties.R] = torch.FloatTensor(positions)
 
         # get atom environment
         nbh_idx, offsets = self.environment_provider.get_environment(self.molecule)
-
         # Get neighbors and neighbor mask
         mask = torch.FloatTensor(nbh_idx) >= 0
         schnet_inputs[Properties.neighbor_mask] = mask.float()
         schnet_inputs[Properties.neighbors] = torch.LongTensor(nbh_idx.astype(np.int)) * mask.long()
-
         # Get cells
         schnet_inputs[Properties.cell] = torch.FloatTensor(self.molecule.cell.astype(np.float32))
         schnet_inputs[Properties.cell_offset] = torch.FloatTensor(offsets.astype(np.float32))
-
         # If requested get masks and neighbor lists for neighbor pairs
         if self.collect_triples is not None:
-            nbh_idx_j, nbh_idx_k = collect_atom_triples(nbh_idx)
+            nbh_idx_j, nbh_idx_k, offset_idx_j, offset_idx_k = collect_atom_triples(nbh_idx)
             schnet_inputs[Properties.neighbor_pairs_j] = torch.LongTensor(nbh_idx_j.astype(np.int))
             schnet_inputs[Properties.neighbor_pairs_k] = torch.LongTensor(nbh_idx_k.astype(np.int))
             schnet_inputs[Properties.neighbor_pairs_mask] = torch.ones_like(
                 schnet_inputs[Properties.neighbor_pairs_j]).float()
-
         # Add batch dimension and move to CPU/GPU
         for key, value in schnet_inputs.items():
             schnet_inputs[key] = value.unsqueeze(0).to(self.device)
@@ -136,26 +130,32 @@ class SchNarculator:
         hamiltonian_update = False
         QMout['dm'] = [[[0.0 for k in range(int(self.n_singlets+3*self.n_triplets))] for j in range(int(self.n_singlets+3*self.n_triplets))] for i in range(3)]
         QMout['nacdr']= [[[[0.0 for xyz in range(3)] for iatom in range(self.n_atoms)] for istate in range(int(self.n_singlets+3*self.n_triplets))] for jstate in range(int(self.n_singlets+3*self.n_triplets))]
+        #sort
+        if self.n_triplets==int(0):
+            index=np.argsort(schnet_outputs['energy'][0])
+        else:
+            index=np.argsort(schnet_outputs['energy'][0][0:n_singlets])
+            indext=np.argsort(schnet_outputs['energy'][0][n_singlets:int(n_singlets+n_triplets)])
         for i,prop in enumerate(schnet_outputs):
             if prop == "energy":
                 hamiltonian = np.zeros((self.n_singlets+self.n_triplets*3,self.n_singlets+self.n_triplets*3),dtype=complex)
                 for istate in range(self.n_singlets):
-                    hamiltonian[istate][istate] = complex(schnet_outputs['energy'][0][istate], 0.000)
+                    hamiltonian[istate][istate] = complex(schnet_outputs['energy'][0][index[istate]], 0.000)
                 for istate in range(self.n_singlets,self.n_singlets+self.n_triplets):
-                    hamiltonian[istate][istate] = complex(schnet_outputs['energy'][0][istate], 0.000)
-                    hamiltonian[istate+self.n_triplets][istate+self.n_triplets] = complex(schnet_outputs['energy'][0][istate], 0.000)
-                    hamiltonian[istate+self.n_triplets*2][istate+self.n_triplets*2] = complex(schnet_outputs['energy'][0][istate], 0.000)
+                    hamiltonian[istate][istate] = complex(schnet_outputs['energy'][0][indext[istate-self.n_singlets]], 0.000)
+                    hamiltonian[istate+self.n_triplets][istate+self.n_triplets] = complex(schnet_outputs['energy'][0][index[istate-self.n_singlets]], 0.000)
+                    hamiltonian[istate+self.n_triplets*2][istate+self.n_triplets*2] = complex(schnet_outputs['energy'][0][index[istate-self.n_singlets]], 0.000)
                 hamiltonian_list = np.array(hamiltonian).tolist()
                 QMout['h'] = hamiltonian_list
             elif prop == "forces":
                 n_atoms = self.n_atoms
                 gradients = np.zeros( (self.n_singlets+self.n_triplets*3, n_atoms, 3) )
                 for istate in range(self.n_singlets):
-                    gradients[istate] = -schnet_outputs['forces'][0][istate]
+                    gradients[istate] = -schnet_outputs['forces'][0][index[istate]]
                 for istate in range(self.n_singlets,self.n_singlets+self.n_triplets):
-                    gradients[istate] = -schnet_outputs['forces'][0][istate]
-                    gradients[istate+self.n_triplets] = -schnet_outputs['forces'][0][istate]
-                    gradients[istate+self.n_triplets*2] = -schnet_outputs['forces'][0][istate]
+                    gradients[istate] = -schnet_outputs['forces'][0][indext[istate-self.n_singlets]]
+                    gradients[istate+self.n_triplets] = -schnet_outputs['forces'][0][indext[istate-self.n_singlets]]
+                    gradients[istate+self.n_triplets*2] = -schnet_outputs['forces'][0][indext[istate-self.n_singlets]]
                 QMout['grad'] = np.array(gradients).tolist()
             elif prop == "dipoles":
                 dipole_matrix = [[[0.0 for k in range(self.n_singlets+3*self.n_triplets)] for j in range(self.n_singlets+3*self.n_triplets)] for i in range(3)]
@@ -164,17 +164,17 @@ class SchNarculator:
                     for istate in range(self.n_singlets):
                         for jstate in range(istate,self.n_singlets):
                             iterator+=1
-                            dipole_matrix[xyz][istate][jstate] = schnet_outputs['dipoles'][0][iterator][xyz]
-                            dipole_matrix[xyz][jstate][istate] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[istate]][index[jstate]] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[jstate]][index[istate]] = schnet_outputs['dipoles'][0][iterator][xyz]
                     for istate in range(self.n_singlets,self.n_triplets):
                         for jstate in range(istate,self.n_singlets+self.n_triplets):
                             iterator+=1
-                            dipole_matrix[xyz][istate][jstate] = schnet_outputs['dipoles'][0][iterator][xyz]
-                            dipole_matrix[xyz][jstate][istate] = schnet_outputs['dipoles'][0][iterator][xyz]
-                            dipole_matrix[xyz][istate+self.n_triplets][jstate+self.n_triplets] = schnet_outputs['dipoles'][0][iterator][xyz]
-                            dipole_matrix[xyz][jstate+self.n_triplets][istate+self.n_triplets] = schnet_outputs['dipoles'][0][iterator][xyz]
-                            dipole_matrix[xyz][istate+2*self.n_triplets][jstate+2*self.n_triplets] = schnet_outputs['dipoles'][0][iterator][xyz]
-                            dipole_matrix[xyz][jstate+2*self.n_triplets][istate+2*self.n_triplets] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[istate]][index[jstate]] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[jstate]][index[istate]] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[istate+self.n_triplets]][index[jstate+self.n_triplets]] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[jstate+self.n_triplets]][index[istate+self.n_triplets]] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[istate+2*self.n_triplets]][index[jstate+2*self.n_triplets]] = schnet_outputs['dipoles'][0][iterator][xyz]
+                            dipole_matrix[xyz][index[jstate+2*self.n_triplets]][index[istate+2*self.n_triplets]] = schnet_outputs['dipoles'][0][iterator][xyz]
                 dipole_list = np.array(dipole_matrix).tolist()
                 QMout.update( { 'dm' : dipole_list } )
             elif prop == "nacs":
@@ -184,11 +184,11 @@ class SchNarculator:
                     for jstate in range(istate+1,self.n_singlets):
                         iterator += 1
                         if istate==int(1) and jstate==int(2):
-                            nonadiabatic_couplings[istate][jstate] = schnet_outputs['nacs'][0][iterator]
-                            nonadiabatic_couplings[jstate][istate] = -schnet_outputs['nacs'][0][iterator]
+                            nonadiabatic_couplings[index[istate]][index[jstate]] = schnet_outputs['nacs'][0][iterator]
+                            nonadiabatic_couplings[index[jstate]][index[istate]] = -schnet_outputs['nacs'][0][iterator]
                         else: 
-                            nonadiabatic_couplings[istate][jstate] = schnet_outputs['nacs'][0][iterator]
-                            nonadiabatic_couplings[jstate][istate] = -schnet_outputs['nacs'][0][iterator]
+                            nonadiabatic_couplings[index[istate]][index[jstate]] = schnet_outputs['nacs'][0][iterator]
+                            nonadiabatic_couplings[index[jstate]][index[istate]] = -schnet_outputs['nacs'][0][iterator]
                             #nonadiabatic_couplings[istate][jstate][:][:] = 0
                             #nonadiabatic_couplings[jstate][istate][:][:] = 0
 
@@ -229,25 +229,25 @@ class SchNarculator:
             #get magnitude by scaling of hopping direction with energy gap
             dH_2=[]
             all_magnitude=[]
-            index = -1
+            indexh = -1
             eigenvalue_hopping_direction = np.zeros( (self.n_singlets + self.n_triplets, self.n_singlets + self.n_triplets,1) )
             nacs_approx = np.zeros( (self.n_singlets+3*self.n_triplets, self.n_singlets+3*self.n_triplets, self.n_atoms, 3) )
             hopping_direction = np.zeros( (self.n_singlets + self.n_triplets, self.n_singlets + self.n_triplets, self.n_atoms, 3) )
             for istate in range(self.n_singlets):
                 for jstate in range(istate+1,self.n_singlets):
-                  if np.abs(np.real(hamiltonian[istate][istate])-np.real(hamiltonian[jstate][jstate])) <= self.threshold_dE_S:
-                    index+=1
-                    Hi=schnet_outputs['hessian'][0][istate]
-                    dE=(schnet_outputs['energy'][0][istate]-schnet_outputs['energy'][0][jstate])
+                  if np.abs(np.real(hamiltonian[index[istate]][index[istate]])-np.real(hamiltonian[index[jstate]][index[jstate]])) <= self.threshold_dE_S:
+                    indexh+=1
+                    Hi=schnet_outputs['hessian'][0][index[istate]]
+                    dE=(schnet_outputs['energy'][0][index[istate]]-schnet_outputs['energy'][0][index[jstate]])
                     if dE == 0:
                       dE=0.0000000001
-                    Hj=schnet_outputs['hessian'][0][jstate]
-                    GiGi=np.dot(-schnet_outputs['forces'][0][istate].reshape(-1,1),-schnet_outputs['forces'][0][istate].reshape(-1,1).T)
-                    GjGj=np.dot(-schnet_outputs['forces'][0][jstate].reshape(-1,1),-schnet_outputs['forces'][0][jstate].reshape(-1,1).T)
-                    GiGj=np.dot(-schnet_outputs['forces'][0][istate].reshape(-1,1),-schnet_outputs['forces'][0][jstate].reshape(-1,1).T)
-                    GjGi=np.dot(-schnet_outputs['forces'][0][jstate].reshape(-1,1),-schnet_outputs['forces'][0][istate].reshape(-1,1).T)
+                    Hj=schnet_outputs['hessian'][0][index[jstate]]
+                    GiGi=np.dot(-schnet_outputs['forces'][0][index[istate]].reshape(-1,1),-schnet_outputs['forces'][0][index[istate]].reshape(-1,1).T)
+                    GjGj=np.dot(-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1),-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1).T)
+                    GiGj=np.dot(-schnet_outputs['forces'][0][index[istate]].reshape(-1,1),-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1).T)
+                    GjGi=np.dot(-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1),-schnet_outputs['forces'][0][index[istate]].reshape(-1,1).T)
 
-                    G_diff = 0.5*(-schnet_outputs['forces'][0][istate]+schnet_outputs['forces'][0][jstate])
+                    G_diff = 0.5*(-schnet_outputs['forces'][0][index[istate]]+schnet_outputs['forces'][0][index[jstate]])
                     G_diff2= np.dot(G_diff.reshape(-1,1),G_diff.reshape(-1,1).T)
 
                     dH_2_ij = 0.5*(dE*(Hi-Hj) + GiGi + GjGj - 2*GiGj)
@@ -258,7 +258,7 @@ class SchNarculator:
 
                     #SVD
                     #u,s,vh = np.linalg.svd(deltaHessian_2[index])
-                    u,s,vh=np.linalg.svd(all_magnitude[index])
+                    u,s,vh=np.linalg.svd(all_magnitude[indexh])
                     ev=vh[0]
                     #get one phase
                     e=max(ev[0:2].min(),ev[0:2].max(),key=abs)
@@ -275,7 +275,7 @@ class SchNarculator:
                             hopping_direction[jstate][istate][iatom][xyz] = -ev[iterator]
                     #for SO2
                     if self.nacs_approx_method == int(2):
-                        if istate==int(1) and jstate==int(2):
+                        if istate==int(0) and jstate==int(1):
                           hopping_magnitude =np.sqrt(ew)/dE
                         else:
                           hopping_magnitude=0.0
@@ -286,18 +286,18 @@ class SchNarculator:
                     nacs_approx[jstate][istate] = - nacs_approx[istate][jstate]
             for istate in range(self.n_singlets,self.n_singlets+self.n_triplets):
                 for jstate in range(istate+1, self.n_singlets+self.n_triplets):
-                  if np.abs(np.real(hamiltonian[istate][istate])-np.real(hamiltonian[jstate][jstate])) <= self.threshold_dE_T:
-                    Hi=schnet_outputs['hessian'][0][istate]
-                    dE=np.abs(schnet_outputs['energy'][0][istate]-schnet_outputs['energy'][0][jstate])
-                    Hj=schnet_outputs['hessian'][0][jstate]
+                  if np.abs(np.real(hamiltonian[indext[istate-self.n_singlets]][indext[istate-self.n_singlets]])-np.real(hamiltonian[indext[jstate-self.n_singlets]][indext[jstate-self.n_singlets]])) <= self.threshold_dE_T:
+                    Hi=schnet_outputs['hessian'][0][indext[istate-self.n_singlets]]
+                    dE=np.abs(schnet_outputs['energy'][0][indext[istate-self.n_singlets]]-schnet_outputs['energy'][0][indext[jstate-self.n_singlets]])
+                    Hj=schnet_outputs['hessian'][0][indext[jstate-self.n_singlets]]
                     if dE == 0:
                       dE=0.0000000001
-                    GiGi=np.dot(-schnet_outputs['forces'][0][istate].reshape(-1,1),-schnet_outputs['forces'][0][istate].reshape(-1,1).T)
-                    GjGj=np.dot(-schnet_outputs['forces'][0][jstate].reshape(-1,1),-schnet_outputs['forces'][0][jstate].reshape(-1,1).T)
-                    GiGj=np.dot(-schnet_outputs['forces'][0][istate].reshape(-1,1),-schnet_outputs['forces'][0][jstate].reshape(-1,1).T)
-                    GjGi=np.dot(-schnet_outputs['forces'][0][jstate].reshape(-1,1),-schnet_outputs['forces'][0][istate].reshape(-1,1).T)
+                    GiGi=np.dot(-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1).T)
+                    GjGj=np.dot(-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1).T)
+                    GiGj=np.dot(-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1).T)
+                    GjGi=np.dot(-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1).T)
 
-                    G_diff = 0.5*(-schnet_outputs['forces'][0][istate]+schnet_outputs['forces'][0][jstate])
+                    G_diff = 0.5*(-schnet_outputs['forces'][0][indext[istate-self.n_singlets]]+schnet_outputs['forces'][0][indext[jstate-self.n_singlets]])
                     G_diff2= np.dot(G_diff.reshape(-1,1),G_diff.reshape(-1,1).T)
 
                     dH_2_ij = 0.5*(dE*(Hi-Hj) + GiGi + GjGj - 2*GiGj)
@@ -305,8 +305,8 @@ class SchNarculator:
                     magnitude = dH_2_ij/2-G_diff2
                     all_magnitude.append(magnitude)
                     #SVD
-                    index+=1
-                    u,s,vh = np.linalg.svd(all_magnitude[index])
+                    indexh+=1
+                    u,s,vh = np.linalg.svd(all_magnitude[indexh])
                     ev=vh[0]
                     #get one phase
                     e=max(ev[0:2].min(),ev[0:2].max(),key=abs)
