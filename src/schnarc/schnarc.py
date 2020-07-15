@@ -63,8 +63,8 @@ def get_socs(socs,n_states,energy):
     if n_triplets==int(0):
         index=np.argsort(energy)
     else:
-        index=np.argsort(energy[0:n_singlets]) #ange(n_singlets+3*n_triplets)
-        indext=np.argsort(energy[n_singlets:int(n_singlets+n_triplets)]) #ange(n_singlets+3*n_triplets)
+        index=np.argsort(energy[0:n_singlets])
+        indext=np.argsort(energy[n_singlets:int(n_singlets+n_triplets)])
     for i in range(n_singlets):
         hamiltonian[i][i] = (energy[index[i]])
     iterator=0
