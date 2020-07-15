@@ -16,11 +16,10 @@ def read_dataset(path,numberofgeoms,filename):
 
         #Geometry and Atomtypes
         xyz_file = open(path+"/xyz-files/%07d.xyz"%geom,"r").readlines()
-        charge = int(2)
+        charge = int(xyz_file[1].split()[2])
         natom = int(xyz_file[0].split()[0])
         E=[]
         R=np.zeros((natom,3))
-        print(geom)
         for iatom in range(natom):
             E.append(xyz_file[iatom+2].split()[0])
             for xyz in range(3):

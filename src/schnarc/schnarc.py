@@ -20,7 +20,7 @@ def get_schnarc(prediction,properties):
                       nonadiabatic_couplings[istate][jstate] = prediction['nacs'][0][iterator]
                       nonadiabatic_couplings[jstate][istate] = -prediction['nacs'][0][iterator]
               QMout['nacdr'] = nonadiabatic_couplings
- 
+
         elif prop == "force":
             QMout['grad'] = prediction['force'][0]
 
@@ -243,7 +243,6 @@ def get_nacs_deltaH2(hessian,energy,forces,n_states):
             if np.abs(energy[istate]-energy[jstate]) <= threshold_dE:
                 #magnitude =np.sqrt(hopping_magnitude[istate][jstate])/np.sqrt(np.abs(energy[istate]-energy[jstate]))/2
                 magnitude =(hopping_magnitude[istate][jstate])/(np.abs(energy[istate]-energy[jstate]))**2/2
-                
                 nonadiabatic_couplings[istate][jstate][:][:] = hopping_direction[istate][jstate] * magnitude
                 nonadiabatic_couplings[jstate][istate][:][:] = -nonadiabatic_couplings[istate][jstate]
     for istate in range(n_singlets,n_singlets+n_triplets):
@@ -262,7 +261,7 @@ def get_nacs_deltaH2(hessian,energy,forces,n_states):
                     g_string += "%20.12E " %(nonadiabatic_couplings[istate][jstate][iatom][xyz])
                 g_string += "\n"
     return g_string
-    
+
 def get_nacs_deltaH3(hessian,energy,forces,n_states):
     n_singlets=n_states['n_singlets']
     n_triplets=n_states['n_triplets']
@@ -551,7 +550,7 @@ def get_nacs_deltaH(hessian,energy,forces,n_states):
                     g_string += "%20.12E " %(nonadiabatic_couplings[istate][jstate][iatom][xyz])
                 g_string += "\n"
     return g_string
-    
+
 def get_nacs(nacs,n_states):
     n_singlets=n_states['n_singlets']
     n_triplets=n_states['n_triplets']
