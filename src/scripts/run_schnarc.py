@@ -267,7 +267,8 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
 def evaluate(args, model, train_loader, val_loader, test_loader, device):
     # Get property names from model
     if args.parallel:
-        properties=model.module.output_modules[0].properties
+        model=model.module.to(device)
+        properties=model.output_modules[0].properties
     else:
         properties = model.output_modules[0].properties
     header = ['Subset']
@@ -316,7 +317,7 @@ def evaluate_dataset(metrics, model, loader, device,properties):
             for k, v in batch.items()
         }
         result = model(batch)
-        
+
         for prop in result:
             if prop in predicted:
                 predicted[prop] += [result[prop].cpu().detach().numpy()]
