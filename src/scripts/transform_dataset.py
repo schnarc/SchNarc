@@ -43,6 +43,7 @@ def read_dataset(path,numberofgeoms,filename):
         _nac = False
         nac = np.zeros((1))
         _dyson = False
+        property_matrix=False
         dyson = np.zeros((1))
         property_list=[]
         for line in prop_file:
@@ -92,6 +93,80 @@ def read_dataset(path,numberofgeoms,filename):
                 continue
         nmstates = singlets + 2*doublets + 3*triplets + 4*quartets
         iline = -1
+        for line in prop_file:
+            iline+=1
+            if line.startswith("! Energy"):
+                n_energy = singlets + doublets + triplets + quartets
+                #int(line.split()[2])
+                energy = [] #np.zeros((n_energy))
+                eline  = prop_file[iline+1].split()
+                for i in range(singlets):
+                    energy.append(float(eline[i]))
+                for i in range(singlets,singlets+doublets):
+                    energy.append(float(eline[i]))
+                for i in range(singlets+2*doublets,singlets+2*doublets+triplets):
+                    energy.append(float(eline[i]))
+                for i in range(singlets+2*doublets+3*triplets,singlets+2*doublets+3*triplets+quartets):
+                    energy.append(float(eline[i]))
+                energy=np.array(energy)
+            #dipole is read in as mu(1,1), mu(1,2), mu(1,3),...
+            elif line.startswith("! Dipole"):
+                n_dipole = int((singlets*(singlets+1))/2+(doublets*(doublets+1))/2+(triplets*(triplets+1))/2+(quartets*(quartets+1))/2)
+                dipole = np.zeros((n_dipole,3))
+                dline = prop_file[iline+1].split()
+                for i in range(n_dipole):
+                    for xyz in range(3):
+                        dipole[i][xyz] = float(dline[i+n_dipole*xyz])
+            elif line.startswith("! SpinOrbitCoupling"):
+                n_soc = int(line.split()[2])
+                soc = [] #np.zeros((n_soc))
+                sline = prop_file[iline+1].split()
+                for i in range(n_soc):
+                     soc.append(float(sline[i]))
+                soc=np.array(soc)
+            elif line.startswith("! Gradient"):
+                n_grad = int(line.split()[2])
+                force = np.zeros((singlets+triplets+doublets+quartets,natom,3))
+                index = -1
+                gline = prop_file[iline+1].split()
+                for istate in range(singlets+doublets):
+                    for iatom in range(natom):
+                        for xyz in range(3):
+                            index+=1
+                            force[istate][iatom][xyz] = -float(gline[index])
+                index+=(natom*3*doublets)
+                for istate in range(singlets+doublets,singlets+doublets+triplets):
+                    for iatom in range(natom):
+                        for xyz in range(3):
+                            index+=1
+                            force[istate][iatom][xyz] = -float(gline[index])
+                index+=(2*natom*3*triplets)
+                for istate in range(singlets+doublets+triplets,singlets+doublets+triplets+quartets):
+                    for iatom in range(natom):
+                        for xyz in range(3):
+                            index+=1
+                            force[istate][iatom][xyz] = -float(gline[index])
+            #nonadiabatic couplings are also defined as vectors
+            elif line.startswith("! Nonadiabatic coupling"):
+                n_nac = int(int(line.split()[3])/3/natom)
+                #dimension: nstates(coupled), natoms,xyz(3)
+                nac = np.zeros((n_nac,natom,3))
+                nacline = prop_file[iline+1].split()
+                index=-1
+                for i in range(n_nac):
+                    for iatom in range(natom):
+                        for xyz in range(3):
+                            index+=1
+                            nac[i][iatom][xyz] = float(nacline[index])
+            elif line.startswith('! Dyson'):
+                n_dyson = int(line.split()[-1])
+                property_matrix = []
+                sline = prop_file[iline+1].split()
+                for i in range(n_dyson):
+                    property_matrix.append(float(sline[i]))
+                property_matrix=np.array(property_matrix)
+            else:
+                continue
 
         available_properties = { 'energy' : energy,
                         'socs'    : soc,
@@ -99,7 +174,7 @@ def read_dataset(path,numberofgeoms,filename):
                         'has_forces': has_force,
                         'nacs'    : nac,
                         'dipoles' : dipole,
-                        'dyson'   : False }
+                        'dyson'   : property_matrix }
         #Append list 
         charge_buffer.append(charge)
         atom_buffer.append(atoms)
