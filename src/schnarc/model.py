@@ -156,13 +156,13 @@ class MultiStatePropertyModel(nn.Module):
             result = model(inputs)
             outputs[prop] = result['y']
             if prop == 'energy' and self.inverse_energy:
-                # inputs['nac_energy'] = result['y'].detach()
+                inputs['nac_energy'] = result['y'].detach()
                 # Use reference energy during training
-                if 'energy' in inputs:
-                   inputs['nac_energy'] = inputs['energy']
+                #if 'energy' in inputs:
+                #   inputs['nac_energy'] = inputs['energy']
                 # And predicted during production
-                else:
-                    inputs['nac_energy'] = result['y'].detach()
+                #else:
+                #    inputs['nac_energy'] = result['y'].detach()
 
             if prop == Properties.energy and self.need_forces:
                 outputs[Properties.forces] = result['dydx']
