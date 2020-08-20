@@ -1172,7 +1172,7 @@ def get_SchNet(INFOS):
       INFOS['adaptive'] = ""
       INFOS['modelpath2'] = ""
       INFOS['adaptive_model'] = ""
-      INFOS['adaptive_tresholds'] = ""
+      INFOS['adaptive_thresholds'] = ""
       INFOS['print_uncertainty'] = ""
     #get options for the second interface used to generate trainingsdata
     #NAC approximation 
