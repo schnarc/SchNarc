@@ -1149,6 +1149,13 @@ def get_SchNet(INFOS):
     print centerstring('Path to trained SchNet model',60,'-')+'\n'
     modelpath=question('Please specify the path to the SchNet model',str)[0:]
     INFOS['modelpath']=modelpath
+    #Running on GPU 
+    print centerstring('GPU',60,'-')+'\n'
+    cuda=question('Do you want to calculate on a GPU?',bool,False)
+    if cuda == True:
+        INFOS['cuda']="--cuda"
+    else:
+        INFOS['cuda']=""
     #adaptive sampling 
     print centerstring('Adaptive Sampling',60,'-')+'\n'
     Adaptive=question('Do you want to carry out adaptive sampling',bool,False)
@@ -1435,11 +1442,11 @@ SHARC=%s
 cd $PRIMARY_DIR/
 printf '' > 'RUN'
 rm -f STOP
-python -O  $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
+python -O  $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
 grep -q -F "restart" input || echo "restart" >> input
 rm -f STOP
 
-''' % (projname,INFOS['cwdNN'],iconddir,INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'])
+''' % (projname,INFOS['cwdNN'],iconddir,INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'],INFOS['cuda'])
   if INFOS['qsub']:
     string='#$ -v USER_EPILOG=%s/epilog.sh' % (iconddir)
     if INFOS['interface']==8:
@@ -1461,13 +1468,13 @@ cd $COPY_DIR/
 l=1
 j=0
 
-python  $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
+python  $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
 
 mv -r $COPY_DIR/* $PRIMARY_DIR/
 mv $COPY_DIR/* $PRIMARY_DIR/
 exit
 
-''' % (projname,INFOS['cwdNN'],iconddir,INFOS['copydir'],INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'])
+''' % (projname,INFOS['cwdNN'],iconddir,INFOS['copydir'],INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'],INFOS['cuda'])
         else:
           INFOS['script']='/schnarc_md.py'
           string='''#$-N %s
@@ -1484,13 +1491,13 @@ cp -r $PRIMARY_DIR/* $COPY_DIR/
 cd $COPY_DIR/
 printf '' > 'RUN'
 
-python $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
+python $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
 mv -r $COPY_DIR/* $PRIMARY_DIR/
 mv $COPY_DIR/* $PRIMARY_DIR/
 exit
 
 
-''' % (projname,INFOS['cwdNN'],iconddir,INFOS['copydir'],INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'])
+''' % (projname,INFOS['cwdNN'],iconddir,INFOS['copydir'],INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'],INFOS['cuda'])
 
   runscript.write(string)
   runscript.close()
