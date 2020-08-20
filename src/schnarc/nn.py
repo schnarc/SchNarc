@@ -1,6 +1,7 @@
 import schnetpack as spk
 import torch.nn as nn
 import torch
+import numpy as np
 
 
 def force_weigth(target_energies, energy_cutoff=0.02):
@@ -33,6 +34,59 @@ def phaseless_loss(target, predicted, dim=-1, eps=1e-6):
     #print(loss_length, loss_overlap, 'length/overlap')
 
     loss = loss_length + loss_overlap
+    return loss
+
+
+def diagonal_phaseloss(target, predicted, n_states,device,single):
+    socs_target = target['socs']
+    dtype = torch.FloatTensor
+    socs_predicted = predicted['socs'].to('cpu').detach().numpy()
+    #this is a torch tensor:
+    #socs_predicted = predicted['socs']
+    diagonal_target = target['diagonal_energies']
+    energy_predicted = predicted['energy'].to('cpu').detach().numpy()
+    #this would be a torch tensor
+    #energy_predicted = predicted['energy']
+    nmstates=n_states['n_singlets']+3*n_states['n_triplets']
+    #torch tensor
+    #hamiltonian_full = torch.zeros(energy_predicted.shape[0],nmstates,nmstates).type(dtype).to(device)
+    hamiltonian_full = np.zeros((energy_predicted.shape[0],nmstates,nmstates),dtype=complex)
+
+    #energies
+    all_energies = np.zeros((energy_predicted.shape[0],nmstates))
+    #torch tensor
+    #all_energies = torch.zeros(energy_predicted.shape[0],nmstates).type(dtype).to(device)
+    all_energies[:,:n_states['n_singlets']+n_states['n_triplets']] = energy_predicted[:,:]
+    all_energies[:,n_states['n_singlets']+n_states['n_triplets']:n_states['n_singlets']+n_states['n_triplets']*2] = energy_predicted[:,n_states['n_singlets']:]
+    all_energies[:,n_states['n_singlets']+n_states['n_triplets']*2:n_states['n_singlets']+n_states['n_triplets']*3] = energy_predicted[:,n_states['n_singlets']:]
+
+    #socs
+    socs_complex = np.zeros((energy_predicted.shape[0], socs_predicted.shape[1]),dtype = complex)
+    #socs_complex = np.zeros((energy_predicted.shape[0], socs_predicted.shape[1]),dtype = complex)
+    for isoc in range(int(socs_predicted.shape[1]/2)):
+        #torch does not support complex numbers 
+        socs_complex[:,isoc]=np.real(socs_predicted[:,2*isoc])+(socs_predicted[:,2*isoc+1]*1j)
+    iterator=-1
+    for istate in range(nmstates):
+        for jstate in range(istate+1,nmstates):
+            iterator+=1
+            hamiltonian_full[:,istate,jstate] = socs_complex[:,iterator]
+    for i in range(hamiltonian_full.shape[0]):
+        hamiltonian_full[i] = hamiltonian_full[i]+hamiltonian_full[i].conj().T
+        np.fill_diagonal(hamiltonian_full[i],all_energies[i])
+
+    #get diagonal
+    eigenvalues,vec = np.linalg.eigh(hamiltonian_full)
+    eigenvalues = torch.from_numpy(eigenvalues).to(device)
+    diff_diag = (diagonal_target - eigenvalues ) ** 2
+    if single==True:
+        loss = torch.mean(diff_diag.view(-1)).to(device)
+    else:
+        diff_a = ( socs_target - predicted['socs'] ) ** 2
+        diff_b = ( socs_target + predicted['socs'] ) ** 2
+        diff_soc = torch.min(diff_a,diff_b)
+        loss = 0.5 * torch.mean(diff_soc.view(-1)) + 0.5 * torch.mean(diff_diag.view(-1)).to(device)
+
     return loss
 
 def min_loss_single_old(target, predicted, smooth=True, smooth_nonvec=False, loss_length=True):

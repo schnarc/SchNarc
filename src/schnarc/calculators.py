@@ -20,16 +20,27 @@ class SchNarculator:
                  device=torch.device('cpu'),
                  environment_provider=SimpleEnvironmentProvider(),
                  collect_triples=False,
-                 hessian=False,nac_approx=[1,None,None]):
+                 hessian=False,nac_approx=[1,None,None],adaptive=None,thresholds=None, print_uncertainty=None):
 
         self.device = device
         # Load model
         self.parallel = False
         self.model = self._load_model(modelpath)
-        if not self.parallel:
-            self.n_states_dict = self.model.output_modules[0].n_states
+        self.adaptive = adaptive
+        self.thresholds = thresholds
+        self.print_uncertainty = print_uncertainty
+        if self.adaptive is not None:
+            if not self.parallel:
+                self.n_states_dict = self.model[0].output_modules[0].n_states
+                self.model_all = self.model
+                self.model = self.model[0]
+            else:
+                print("Parallel mode not implemented for adaptive sampling.")
         else:
-            self.n_states_dict = self.model.module.output_modules[0].n_states
+            if not self.parallel:
+                self.n_states_dict = self.model.output_modules[0].n_states
+            else:
+                self.n_states_dict = self.model.module.output_modules[0].n_states
         self.n_states = self.n_states_dict['n_states']
         self.n_singlets = self.n_states_dict['n_singlets']
         self.n_triplets = self.n_states_dict['n_triplets']
@@ -348,17 +359,18 @@ class EnsembleSchNarculator(SchNarculator):
     def __init__(self, positions, atom_types, modelpaths,
                  device=torch.device('cpu'),
                  environment_provider=SimpleEnvironmentProvider(),
-                 collect_triples=False):
+                 collect_triples=False,
+                 hessian=False,nac_approx=[1,None,None],adaptive=None,thresholds=None,print_uncertainty=None):
         # Check whether a list of modelpaths has been passed
         if not isinstance(modelpaths, Iterable):
             raise SchNarculatorError('List of modelpaths required for ensemble calculator.')
 
-        super(EnsembleSchNarculator, self).__init__(self, positions, atom_types, modelpaths,
-                                                    device=device,
-                                                    environment_provider=environment_provider,
-                                                    collect_triples=collect_triples)
+        super(EnsembleSchNarculator, self).__init__(positions, atom_types, modelpath=modelpaths,adaptive=adaptive,thresholds=thresholds,print_uncertainty=print_uncertainty)
+                                                    #device=device,
+                                                    #environment_provider=environment_provider,
+                                                    #collect_triples=collect_triples, hessian=hessian, nac_approx=nac_approx)
 
-        self.n_models = len(self.model)
+        self.n_models = len(self.model_all)
         self.uncertainty = {}
 
     def _load_model(self, modelpath):
@@ -366,27 +378,33 @@ class EnsembleSchNarculator(SchNarculator):
         for path in modelpath:
             if os.path.isdir(path):
                 path = os.path.join(path, 'best_model')
-            model = torch.load(path).to(self.device)
+            if not torch.cuda.is_available():
+                model = torch.load(path, map_location='cpu')
+            else:
+                model = torch.load(path)
             models.append(model)
         return models
 
     def _calculate(self, schnet_inputs):
         ensemble_results = {}
-        for model in self.model:
+        for model in self.model_all:
             results = model(schnet_inputs)
-
             for prop in results:
                 if prop in ensemble_results:
-                    ensemble_results[prop] += results[prop].cpu().numpy().detach()
+                    ensemble_results[prop].append(results[prop].cpu().detach().numpy())
                 else:
-                    ensemble_results[prop] = results[prop].cpu().numpy().detach()
+                    ensemble_results[prop] = []
+                    ensemble_results[prop].append(results[prop].cpu().detach().numpy())
 
         results = {}
         for prop in ensemble_results:
             ensemble_results[prop] = np.array(ensemble_results[prop])
-            results[prop] = np.mean(ensemble_results, axis=0)
-            self.uncertainty[prop] = np.std(ensemble_results, axis=0)
-
+            results[prop] =np.mean(ensemble_results[prop],axis=0)
+            self.uncertainty[prop] = np.std(ensemble_results[prop])
+            if self.print_uncertainty==True:
+                print(self.uncertainty[prop], "property:", prop)
+            if self.uncertainty[prop] >= np.multiply(self.thresholds[prop],self.adaptive):
+                exit()
         return results
 
 

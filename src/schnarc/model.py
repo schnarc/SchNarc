@@ -77,7 +77,7 @@ class MultiStatePropertyModel(nn.Module):
 
     mean, stddev and atomrefs only for energies
     """
-    def __init__(self, n_in, n_states, properties, mean=None, stddev=None, atomref=None, need_atomic=False, n_layers=2,
+    def __init__(self, n_in, n_states, properties,n_neurons=None, mean=None, stddev=None, atomref=None, need_atomic=False, n_layers=2,
                  inverse_energy=False, real=False ):
 
         super(MultiStatePropertyModel, self).__init__()
@@ -114,6 +114,7 @@ class MultiStatePropertyModel(nn.Module):
 
             energy_module = MultiEnergy(n_in, self.n_singlets + self.n_triplets, aggregation_mode='sum',
                                         return_force=self.need_forces,
+                                        n_neurons=n_neurons,
                                         return_contributions=self.need_atomic, mean=mean[Properties.energy],
                                         stddev=stddev[Properties.energy],
                                         atomref=atomref, create_graph=True, n_layers=n_layers)
@@ -123,13 +124,13 @@ class MultiStatePropertyModel(nn.Module):
         # Dipole moments and transition dipole moments
         if self.need_dipole:
             n_dipoles = int((self.n_singlets+self.n_triplets) * (self.n_singlets+self.n_triplets + 1) / 2)  # Between ALL states
-            dipole_module = MultiDipole(n_in, n_states, n_layers=n_layers)
+            dipole_module = MultiDipole(n_in, n_states, n_layers=n_layers, n_neurons=n_neurons)
             outputs[Properties.dipole_moment] = dipole_module
 
         # Nonadiabatic couplings
         if self.need_nacs:
             #n_couplings = int(self.n_singlets * (self.n_singlets - 1) / 2 + self.n_triplets * (self.n_triplets - 1) / 2)  # Between all different states
-            nacs_module = MultiNac(n_in, n_states, n_layers=n_layers, use_inverse=self.inverse_energy)
+            nacs_module = MultiNac(n_in, n_states, n_layers=n_layers, use_inverse=self.inverse_energy, n_neurons=n_neurons)
             outputs[Properties.nacs] = nacs_module
 
         # Spinorbit couplings
@@ -137,7 +138,7 @@ class MultiStatePropertyModel(nn.Module):
             n_socs = int(
                 (self.n_singlets+3*self.n_triplets) * (self.n_singlets+3*self.n_triplets-1))  # Between all different states - including imaginary numbers
             socs_module = MultiSoc(n_in, n_socs, n_layers=n_layers, real=real, mean=mean[Properties.socs],
-                                   stddev=stddev[Properties.socs])
+                                   stddev=stddev[Properties.socs], n_neurons=n_neurons)
             outputs[Properties.socs] = socs_module
 
         self.output_dict = nn.ModuleDict(outputs)
@@ -328,6 +329,7 @@ class MultiEnergy(MultiState):
         if self.return_hessian == False:
           self.return_hessian=[False,1,0,1,0]
         result = super(MultiEnergy, self).forward(inputs)
+
         # Apply negative gradient for forces
         if self.derivative:
             result['dydx'] = -result['dydx']

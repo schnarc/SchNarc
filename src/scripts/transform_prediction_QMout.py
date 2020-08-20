@@ -20,8 +20,8 @@ def QMout(prediction,modelpath,nac_approx,n_states):
             if property == "energy":
                 QMout_energy=get_energy(prediction['energy'][0],n_states)
                 QMout_force=get_force(prediction['forces'][0],n_states,prediction['energy'][0])
-            elif property == "diab":
-                QMout_energy=get_diab(prediction['diab2'][0],n_states)
+            #elif property == "diab":
+            #    QMout_energy=get_diab(prediction['diab2'][0],n_states)
             elif property == "dipoles":
                 QMout_dipoles=get_dipoles(prediction['dipoles'][0],n_states,prediction['energy'][0])
             elif property == "nacs":

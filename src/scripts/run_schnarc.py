@@ -66,6 +66,7 @@ def get_parser():
     train_parser.add_argument('--phase_loss', action='store_true', help='Use special loss, which ignores phase.')
     train_parser.add_argument('--inverse_nacs', action='store_true', help='Weight NACs with inverse energies.')
     train_parser.add_argument('--min_loss', action='store_true', help='Use phase independent min loss.')
+    train_parser.add_argument('--diagonal', action='store_true', help='Train SOCs via diagonal elements. Must be included in the training data base', default=None)
     train_parser.add_argument('--L1', action='store_true', help='Use L1 norm')
     train_parser.add_argument('--Huber', action='store_true', help='Use L1 norm')
 
@@ -79,8 +80,12 @@ def get_parser():
 
     pred_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     pred_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
+    pred_parser.add_argument('--print_uncertainty',action='store_true', help='Print uncertainty of each property',default=False)
+    pred_parser.add_argument('--thresholds',type=float,nargs=5, help='Percentage of mean predicted by NNs taken as thresholds for adaptive sampling - first value for energy, second for forces, third for dipoles, fourth for nacs, fifth for socs', default=None)
+    pred_parser.add_argument('--modelpaths',type=str, help='Path of stored models')
     pred_parser.add_argument('modelpath', help='Path of stored model')
     pred_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
+    pred_parser.add_argument('--adaptive',type=float, nargs=1,help='Adaptive Sampling initializer + float for reducing the step size')
     pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     # model-specific parsers
     model_parser = argparse.ArgumentParser(add_help=False)
@@ -98,7 +103,15 @@ def get_parser():
     schnet_parser.add_argument('--n_layers', type=int, default=3,
                                help='Number of layers in output networks (default: %(default)s)')
 
-    #######  wACSF  ########
+    #######  invD  ########
+    invD_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
+    invD_parser.add_argument('--n_atoms', type=int, help='Number of atoms in the molecule',
+                             default="ADD NUMBER OF ATOMS WITH ARGUENT --n_atoms")
+    invD_parser.add_argument('--n_layers', type=int, default=3,
+                               help='Number of layers in output networks (default: %(default)s)')
+    invD_parser.add_argument('--n_neurons', type=int, default=100,
+                              help='Number of nodes in atomic networks (default: %(default)s)')
+     #######  wACSF  ########
     wacsf_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
     # wACSF parameters
     wacsf_parser.add_argument('--radial', type=int, default=22,
@@ -133,11 +146,13 @@ def get_parser():
 
     train_subparsers = subparser_train.add_subparsers(dest='model', help='Model-specific arguments')
     train_subparsers.required = True
+    train_subparsers.add_parser('invD', help='invD help', parents=[train_parser, invD_parser])
     train_subparsers.add_parser('schnet', help='SchNet help', parents=[train_parser, schnet_parser])
     train_subparsers.add_parser('wacsf', help='wACSF help', parents=[train_parser, wacsf_parser])
 
     eval_subparsers = subparser_eval.add_subparsers(dest='model', help='Model-specific arguments')
     eval_subparsers.required = True
+    eval_subparsers.add_parser('invD', help='invD help', parents=[eval_parser, invD_parser])
     eval_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser, schnet_parser])
     eval_subparsers.add_parser('wacsf', help='wACSF help', parents=[eval_parser, wacsf_parser])
 
@@ -213,7 +228,13 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs )
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
-                elif prop == "socs" and combined_phaseless_loss == False:
+                #diagonal energies included for training of socs
+                elif prop == "socs" and args.diagonal == True:
+                    #indicate true to only include the error in the diagonal for training of socs
+                    #indicate false to include also the error on socs (minimum function)
+                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result, n_states,props_phase[2],False)
+                    prop_err = prop_diff #torch.mean(prop_diff.view(-1))
+                elif prop == "socs" and combined_phaseless_loss == False and args.diagonal==False:
                     prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
                     #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
@@ -396,6 +417,17 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
 
         model = spk.atomistic.AtomisticModel(representation, property_output)
 
+
+    elif args.model == 'invD':
+        representation = spk.representation.schnet.invD()
+        n_in = (args.n_atoms*args.n_atoms-args.n_atoms)
+        #neurons = number of neurons in each layer of the network; if None, it is divided by two in each layer
+        property_output = schnarc.model.MultiStatePropertyModel(n_in, n_states,n_neurons=args.n_neurons, properties=properties,
+                                                                mean=mean, stddev=stddev, atomref=atomref,
+                                                                n_layers=args.n_layers, real=args.real_socs,
+                                                                inverse_energy=args.inverse_nacs)
+
+        model = spk.atomistic.AtomisticModel(representation, property_output)
     elif args.model == 'wacsf':
         raise NotImplementedError
         # from ase.data import atomic_numbers
@@ -667,6 +699,6 @@ if __name__ == '__main__':
         socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2 = generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device)
 
         props_phase=[n_phases,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
-        train(args, model, tradeoffs, train_loader, val_loader, device, n_states,props_phase)
+        train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase)
         logging.info("...training done!")
 
