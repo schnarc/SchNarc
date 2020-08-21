@@ -1191,11 +1191,14 @@ def get_SchNet(INFOS):
         deltaH=question('Which NAC approximation do you want to use? Set 1 for an accurate ML model and 2 for a model that slightly overestimates energy gaps',float)[0]
         threshold_dE_S=question('Which energy gap do you want to use for computation of singlet-singlet couplings? 0.02H (0.5eV) is the default.',float)[0]
         threshold_dE_T=question('Which energy gap do you want to use for computation of triplet-triplet couplings? 0.02H (0.5eV) is the default.',float)[0]
+        INFOS['deltaH'] = deltaH
+        INFOS['threshold_dE_S'] = threshold_dE_S
+        INFOS['threshold_dE_T'] = threshold_dE_T
       else:
         INFOS['NACapprox'] = ""
-      INFOS['deltaH']=""
-      INFOS['threshold_dE_S']=""
-      INFOS['threshold_dE_T']=""
+        INFOS['deltaH']=""
+        INFOS['threshold_dE_S']=""
+        INFOS['threshold_dE_T']=""
       break
 
     num=float(0.1)
