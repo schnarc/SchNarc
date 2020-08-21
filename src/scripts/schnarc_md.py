@@ -15,10 +15,6 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data.sampler import RandomSampler
-sharc_path = '/user/julia/bin/py_sharc/sharc_main-py_sharc/DEVELOPMENT/pysharc/bin'
-sys.path.append(sharc_path)
-sys.path.append(os.path.join(sharc_path,'..','lib'))
-sys.path.append(os.path.join(sharc_path,'..','lib', 'sharc'))
 from sharc.pysharc.interface import SHARC_INTERFACE
 import run_schnarc as rs
 #import sharc and schnarc
