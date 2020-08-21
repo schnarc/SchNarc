@@ -73,145 +73,6 @@ IToMult={
          'Octet': 8
          }
 
-# ======================================================================= #
-
-Interfaces={
-  1: {'script':          'SHARC_MOLPRO.py',
-      'description':     'MOLPRO (only CASSCF)',
-      'get_routine':     'get_MOLPRO',
-      'prepare_routine': 'prepare_MOLPRO',
-      'features':        {'overlap': ['wfoverlap'],
-                          'dyson':   ['wfoverlap'],
-                          'nacdr':   ['wfoverlap'],
-                          'phases':  ['wfoverlap'],
-                          'soc':     []             }
-     },
-  2: {'script':          'SHARC_COLUMBUS.py',
-      'description':     'COLUMBUS (CASSCF, RASSCF and MRCISD)',
-      'get_routine':     'get_COLUMBUS',
-      'prepare_routine': 'prepare_COLUMBUS',
-      'features':        {'overlap': ['wfoverlap'],
-                          'dyson':   ['wfoverlap'],
-                          'phases':  ['wfoverlap'],
-                          'nacdr':   [],
-                          'soc':     []               }
-     },
-  3: {'script':          'SHARC_Analytical.py',
-      'description':     'Analytical PESs',
-      'get_routine':     'get_Analytical',
-      'prepare_routine': 'prepare_Analytical',
-      'features':        {'overlap': [],
-                          'dipolegrad':[],
-                          'phases':  [],
-                          'soc':     []             }
-     },
-  4: {'script':          'SHARC_MOLCAS.py',
-      'description':     'MOLCAS (CASSCF, CASPT2, MS-CASPT2)',
-      'get_routine':     'get_MOLCAS',
-      'prepare_routine': 'prepare_MOLCAS',
-      'features':        {'overlap': [],
-                          'dyson':   ['wfoverlap'],
-                          'dipolegrad':[],
-                          'phases':  [],
-                          'soc':     []             }
-     },
-  5: {'script':          'SHARC_ADF.py',
-      'description':     'ADF (DFT, TD-DFT)',
-      'get_routine':     'get_ADF',
-      'prepare_routine': 'prepare_ADF',
-      'features':        {'overlap': ['wfoverlap'],
-                          'dyson':   ['wfoverlap'],
-                          'theodore':['theodore'],
-                          'phases':  ['wfoverlap'],
-                          'soc':     []                 }
-     },
-  6: {'script':          'SHARC_RICC2.py',
-      'description':     'TURBOMOLE (ricc2 with CC2 and ADC(2))',
-      'get_routine':     'get_RICC2',
-      'prepare_routine': 'prepare_RICC2',
-      'features':        {'overlap': ['wfoverlap'],
-                          'theodore':['theodore'],
-                          'phases':  ['wfoverlap'],
-                          'soc':     []                 }
-     },
-  7: {'script':          'SHARC_LVC.py',
-      'description':     'LVC Hamiltonian',
-      'get_routine':     'get_LVC',
-      'prepare_routine': 'prepare_LVC',
-      'features':        {'overlap': [],
-                          'nacdr':   [],
-                          'phases':  [],
-                          'soc':     []                 }
-     },
-  8: {'script':          'schnarc_md',
-      'description':     'SchNet',
-      'get_routine':     'get_SchNet',
-      'prepare_routine': 'prepare_SchNet',
-      'features':        {'overlap': ['wfoverlap'],
-			  'phases':  ['wfoverlap'],
-			  'nacdr':   ['wfoverlap'],
-			  'dipolegrad': [] }
-     }
-  }
-
-
-#Interfaces={
-  #1: {'script':          'SHARC_MOLPRO.py',
-      #'description':     'MOLPRO (only CASSCF)',
-      #'get_routine':     'get_MOLPRO',
-      #'prepare_routine': 'prepare_MOLPRO',
-      #'couplings':       [2,3],
-      #'dipolegrad':      False
-     #},
-  #2: {'script':          'SHARC_COLUMBUS.py',
-      #'description':     'COLUMBUS (CASSCF, RASSCF and MRCISD), using SEWARD integrals',
-      #'get_routine':     'get_COLUMBUS',
-      #'prepare_routine': 'prepare_COLUMBUS',
-      #'couplings':       [3],
-      #'dipolegrad':      False
-     #},
-  #3: {'script':          'SHARC_Analytical.py',
-      #'description':     'Analytical PESs',
-      #'get_routine':     'get_Analytical',
-      #'prepare_routine': 'prepare_Analytical',
-      #'couplings':       [3],
-      #'dipolegrad':      True
-     #},
-  #4: {'script':          'SHARC_MOLCAS.py',
-      #'description':     'MOLCAS (CASSCF, CASPT2, MS-CASPT2)',
-      #'get_routine':     'get_MOLCAS',
-      #'prepare_routine': 'prepare_MOLCAS',
-      #'couplings':       [3],
-      #'dipolegrad':      False
-     #},
-  ##4: {'script':          'SHARC_MOLCAS_QMMM.py',
-      ##'description':     'MOLCAS (with QM/MM)',
-      ##'get_routine':     'get_MOLCAS_QMMM',
-      ##'prepare_routine': 'prepare_MOLCAS_QMMM',
-      ##'couplings':       []
-     ##},
-  #5: {'script':          'SHARC_ADF.py',
-      #'description':     'ADF (DFT, TD-DFT)',
-      #'get_routine':     'get_ADF',
-      #'prepare_routine': 'prepare_ADF',
-      #'couplings':       [3],
-      #'dipolegrad':      False
-     #},
-  #6: {'script':          'SHARC_RICC2.py',
-      #'description':     'TURBOMOLE (ricc2 with CC2 and ADC(2))',
-      #'get_routine':     'get_RICC2',
-      #'prepare_routine': 'prepare_RICC2',
-      #'couplings':       [3],
-      #'dipolegrad':      False
-     #},
-  #7: {'script':          'SHARC_LVC.py',
-      #'description':     'LVC Hamiltonian',
-      #'get_routine':     'get_LVC',
-      #'prepare_routine': 'prepare_LVC',
-      #'couplings':       [2,3],
-      #'dipolegrad':      False
-     #}
-  #}
 
 Couplings={
   1: {'name':        'nacdt',
@@ -453,26 +314,6 @@ class INITCOND:
     s+='\n\n'
     return s
 
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def check_initcond_version(string,must_be_excited=False):
-  if not 'sharc initial conditions file' in string.lower():
-    return False
-  f=string.split()
-  for i,field in enumerate(f):
-    if 'version' in field.lower():
-      try:
-        v=float(f[i+1])
-        if not v in versionneeded:
-          return False
-      except IndexError:
-        return False
-  if must_be_excited:
-    if not 'excited' or 'Excited' in string.lower():
-      return False
-  return True
 
 
 # ======================================================================================================================
@@ -728,32 +569,6 @@ def get_initconds(INFOS):
   INFOS['n_issel']=analyze_initconds(initlist,INFOS)
   return INFOS
 
-# ======================================================================================================================
-
-def check_laserfile(filename,nsteps,dt):
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    print 'Could not open laser file %s' % (filename)
-    return False
-  n=0
-  for line in data:
-    if len(line.split())>=8:
-      n+=1
-    else:
-      break
-  if n<nsteps:
-    print 'File %s has only %i timesteps, %i steps needed!' % (filename,n,nsteps)
-    return False
-  for i in range(int(nsteps)-1):
-    t0=float(data[i].split()[0])
-    t1=float(data[i+1].split()[0])
-    if abs(abs(t1-t0)-dt)>1e-6:
-      print 'Time step wrong in file %s at line %i.' % (filename,i+1)
-      return False
-  return True
 
 # ======================================================================================================================
 # ======================================================================================================================
@@ -767,8 +582,6 @@ def get_general():
   - interface to use'''
 
   INFOS={}
-  INFOS.update({'QM_NN'  : False})
-  INFOS['QMNN']={}
   string='\n  '+'='*80+'\n'
   string+='||'+centerstring('Initial conditions',80)+'||\n'
   string+='  '+'='*80+'\n\n'
@@ -783,14 +596,6 @@ from the initconds.excited files as provided by excite.py.
     initf=open(initfile)
     INFOS['initcondsexcited']="%s/initconds.excited" %(os.getcwd())
     line=initf.readline()
-    if check_initcond_version(line,must_be_excited=True):
-      print 'Initial conditions file "initconds.excited" detected. Do you want to use this?'
-      if not question('Use file "initconds.excited"?',bool,True):
-        initf.close()
-        raise IOError
-    else:
-      initf.close()
-      raise IOError
   except IOError:
     print 'Please enter the filename of the initial conditions file.'
     while True:
@@ -808,11 +613,6 @@ from the initconds.excited files as provided by excite.py.
         print 'Could not open: %s' % (initfile)
         continue
       line=initf.readline()
-      if check_initcond_version(line,must_be_excited=True):
-        break
-      else:
-        print 'File does not contain initial conditions!'
-        continue
   # read the header
   INFOS['ninit']=int(initf.readline().split()[1])
   INFOS['natom']=int(initf.readline().split()[1])
@@ -1018,34 +818,11 @@ from the initconds.excited files as provided by excite.py.
 
 
 
-
-  # Interface
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('Choose the quantum chemistry interface',80)+'||\n'
-  string+='  '+'='*80+'\n'
-  print string
-  print '\nPlease specify the quantum chemistry interface (enter any of the following numbers):'
-  for i in Interfaces:
-    print '%i\t%s' % (i, Interfaces[i]['description'])
-  print ''
-  while True:
-    num=question('Interface number:',int)[0]
-    if num in Interfaces:
-      break
-    else:
-      print 'Please input one of the following: %s!' % ([i for i in Interfaces])
-  INFOS['interface']=num
+  INFOS['interface']=int(8)
 
   INFOS['needed']=[]
 
-  if INFOS['interface']==1:
-    INFOS['nn_trainingsdata']=question('Are the trajectories used for training neural networks?',bool,False)
-    #print INFOS['nn_trainingsdata']
-    if INFOS['nn_trainingsdata']:
-      icondpath=question('The phases will be taken from the same initial geometry. Therefore, please specify the path to the restart-folder (usually called "SAVE") of the equilibrium geometry of the initial conditions (ICOND_00000):',str)[:]
-      INFOS['icondpath']=icondpath
-  else:
-    INFOS['nn_trainingsdata']=False
+  INFOS['nn_trainingsdata']=False
 
 
   # Dynamics options
@@ -1121,14 +898,10 @@ from the initconds.excited files as provided by excite.py.
 
   # Setup SOCs
   if len(INFOS['states'])>1:
-    if 'soc' in Interfaces[INFOS['interface']]['features']:
       print 'Do you want to include spin-orbit couplings in the dynamics?\n'
       soc=question('Spin-Orbit calculation?',bool,True)
       if soc:
         print 'Will calculate spin-orbit matrix.'
-    else:
-      print 'Interface cannot provide SOCs: not calculating spin-orbit matrix.'
-      soc=False
   else:
     print 'Only singlets specified: not calculating spin-orbit matrix.'
     soc=False
@@ -1136,67 +909,26 @@ from the initconds.excited files as provided by excite.py.
   INFOS['states']=states
   INFOS['nstates']=nstates
   INFOS['soc']=soc
-  INFOS['QMNN']['soc']=soc
-  if INFOS['soc']:
-    INFOS['needed'].extend(Interfaces[INFOS['interface']]['features']['soc'])
-
   # Coupling
   print '\nPlease choose the quantities to describe non-adiabatic effects between the states:'
   for i in Couplings:
-    print '%i\t%s%s' % (i, 
-                        Couplings[i]['description'],
-                        ['(not available)',''][Couplings[i]['name'] in Interfaces[INFOS['interface']]['features']]
-                        )
+    print '%i\t%s' % (i,Couplings[i]['description'])
   print ''
-  while True:
-    default=None
-    for i in Couplings:
-      if Couplings[i]['name'] in Interfaces[INFOS['interface']]['features']:
-        default=[i]
-    #if len(Interfaces[INFOS['interface']]['couplings'])==1:
-      #default=Interfaces[INFOS['interface']]['couplings']
-    #else:
-      #default=None
-    num=question('Coupling number:',int,default)[0]
-    if num in Couplings and Couplings[num]['name'] in Interfaces[INFOS['interface']]['features']:
-      break
-    else:
-      l=[]
-      for i in Couplings:
-        if Couplings[i]['name'] in Interfaces[INFOS['interface']]['features']:
-          l.append(i)
-      print 'Please input one of the following: %s!' % (l)
+  default=None
+  num=question('Coupling number:',int,default)[0]
   INFOS['coupling']=num
-  INFOS['needed'].extend(Interfaces[INFOS['interface']]['features'][Couplings[i]['name']])
 
 
   # Phase tracking
   INFOS['phases_from_interface']=False
-  if Couplings[INFOS['coupling']]['name']!='overlap':
-    if 'phases' in Interfaces[INFOS['interface']]['features']:
-      INFOS['phases_from_interface']=question('Do you want to track wavefunction phases through overlaps?',bool,True)
-      if INFOS['phases_from_interface']:
-        INFOS['needed'].extend(Interfaces[INFOS['interface']]['features']['phases'])
 
   # Gradient correction (only for SHARC)
   if INFOS['surf']=='diagonal':
-    possible= ('nacdr' in Interfaces[INFOS['interface']]['features'])
     recommended=Couplings[INFOS['coupling']]['name']=='nacdr'
     print '\nFor SHARC dynamics, the evaluation of the mixed gradients necessitates to calculate non-adiabatic coupling vectors %s.' % (['(Extra computational cost)',' (Recommended)'][recommended])
-    if possible:
-      #while True:
-        INFOS['gradcorrect']=question('Include non-adiabatic couplings in the gradient transformation?',bool,recommended)
-        #if INFOS['gradcorrect'] and not 'nacdr' in Interfaces[INFOS['interface']]['features']:
-          #print 'Not possible with the chosen interface!'
-        #else:
-          #break
-    else:
-      print '... but interface cannot provide non-adiabatic coupling vectors, turning option off.'
-      INFOS['gradcorrect']=False
+    INFOS['gradcorrect']=question('Include non-adiabatic couplings in the gradient transformation?',bool,recommended)
   else:
     INFOS['gradcorrect']=False
-  if INFOS['gradcorrect']:
-    INFOS['needed'].extend(Interfaces[INFOS['interface']]['features']['nacdr'])
 
 
   # Kinetic energy modification
@@ -1204,13 +936,8 @@ from the initconds.excited files as provided by excite.py.
   cando=[]
   for i in EkinCorrect:
     recommended=len(EkinCorrect[i]['required'])==0  or  Couplings[INFOS['coupling']]['name'] in EkinCorrect[i]['required']
-    possible= all([ j in Interfaces[INFOS['interface']]['features']  for j in EkinCorrect[i]['required']])
-    if possible:
-      cando.append(i)
-    if not possible:
-      print '%i\t%s%s' % (i, EkinCorrect[i]['description'],'\n\t(not possible)' )
-    else:
-      print '%i\t%s%s' % (i, EkinCorrect[i]['description'],['\n\t(extra computational cost)',''][ recommended ])
+    cando.append(i)
+    print '%i\t%s%s' % (i, EkinCorrect[i]['description'],['\n\t(extra computational cost)',''][ recommended ])
   while True:
     ekinc=question('EkinCorrect:',int,[2])[0]
     if ekinc in EkinCorrect and ekinc in cando:
@@ -1218,9 +945,6 @@ from the initconds.excited files as provided by excite.py.
     else:
       print 'Please input one of the following: %s!' % ([i for i in cando])
   INFOS['ekincorrect']=ekinc
-  if INFOS['ekincorrect']:
-    for i in EkinCorrect[INFOS['ekincorrect']]['required']:
-      INFOS['needed'].extend(Interfaces[INFOS['interface']]['features'][i])
 
 
   # frustrated reflection
@@ -1228,23 +952,10 @@ from the initconds.excited files as provided by excite.py.
   cando=[]
   for i in EkinCorrect:
     recommended=len(EkinCorrect[i]['required'])==0  or  Couplings[INFOS['coupling']]['name'] in EkinCorrect[i]['required']
-    possible= all([ j in Interfaces[INFOS['interface']]['features']  for j in EkinCorrect[i]['required']])
-    if possible:
-      cando.append(i)
-    if not possible:
-      print '%i\t%s%s' % (i, EkinCorrect[i]['description_refl'],'\n\t(not possible)' )
-    else:
-      print '%i\t%s%s' % (i, EkinCorrect[i]['description_refl'],['\n\t(extra computational cost)',''][ recommended ])
   while True:
     reflect=question('Reflect frustrated:',int,[1])[0]
-    if reflect in EkinCorrect and reflect in cando:
-      break
-    else:
-      print 'Please input one of the following: %s!' % ([i for i in cando])
+    break
   INFOS['reflect']=reflect
-  if INFOS['reflect']:
-    for i in EkinCorrect[INFOS['ekincorrect']]['required']:
-      INFOS['needed'].extend(Interfaces[INFOS['interface']]['features'][i])
 
 
   # decoherence
@@ -1252,23 +963,11 @@ from the initconds.excited files as provided by excite.py.
   cando=[]
   for i in Decoherences:
     recommended=len(Decoherences[i]['required'])==0  or  Couplings[INFOS['coupling']]['name'] in Decoherences[i]['required']
-    possible= all([ j in Interfaces[INFOS['interface']]['features']  for j in Decoherences[i]['required']])
-    if possible:
-      cando.append(i)
-    if not possible:
-      print '%i\t%s%s' % (i, Decoherences[i]['description'],'\n\t(not possible)' )
-    else:
-      print '%i\t%s%s' % (i, Decoherences[i]['description'],['\n\t(extra computational cost)',''][ recommended ])
+    print '%i\t%s' % (i, Decoherences[i]['description'] )
   while True:
     decoh=question('Decoherence scheme:',int,[2])[0]
-    if decoh in Decoherences and decoh in cando:
-      break
-    else:
-      print 'Please input one of the following: %s!' % ([i for i in cando])
+    break
   INFOS['decoherence']=[Decoherences[decoh]['name'],Decoherences[decoh]['params']]
-  for i in Decoherences[decoh]['required']:
-    INFOS['needed'].extend(Interfaces[INFOS['interface']]['features'][i])
-
 
   # surface hopping scheme
   print '\nPlease choose a surface hopping scheme for the %s states:' % (['MCH','diagonal'][INFOS['surf']=='diagonal'])
@@ -1352,75 +1051,8 @@ from the initconds.excited files as provided by excite.py.
       INFOS['eselect']=abs(eselect)
 
 
-  # Laser file
-  print '\n\n'+centerstring('Laser file',60,'-')+'\n'
-  INFOS['laser']=question('Do you want to include a laser field in the simulation?',bool,False)
-  if INFOS['laser']:
-    print '''Please specify the file containing the complete laser field. The timestep in the file and the length of the file must fit to the simulation time, time step and number of substeps given above. 
-
-Laser files can be created using $SHARC/laser.x
-'''
-    if os.path.isfile('laser'):
-      if check_laserfile('laser',INFOS['tmax']/INFOS['dtstep']*INFOS['nsubstep']+1,INFOS['dtstep']/INFOS['nsubstep']):
-        print 'Valid laser file "laser" detected. '
-        usethisone=question('Use this laser file?',bool,True)
-        if usethisone:
-          INFOS['laserfile']='laser'
-    if not 'laserfile' in INFOS:
-      while True:
-        filename=question('Laser filename:',str)
-        if not os.path.isfile(filename):
-          print 'File %s does not exist!' % (filename)
-          continue
-        if check_laserfile(filename,INFOS['tmax']/INFOS['dtstep']*INFOS['nsubstep']+1,INFOS['dtstep']/INFOS['nsubstep']):
-          break
-      INFOS['laserfile']=filename
-    # only the analytical interface can do dipole gradients
-    if 'dipolegrad' in Interfaces[INFOS['interface']]['features']:
-      INFOS['dipolegrad']=question('Do you want to use dipole moment gradients?',bool,False)
-    else:
-      INFOS['dipolegrad']=False
-    print ''
-  else:
-    INFOS['dipolegrad']=False
-  if INFOS['dipolegrad']:
-    INFOS['needed'].extend(Interfaces[INFOS['interface']]['features']['dipolegrad'])
-
-
-
-  # Setup Dyson computation
-  INFOS['ion']=False
-  if 'dyson' in Interfaces[INFOS['interface']]['features']:
-    n=[0,0]
-    for i,j in enumerate(INFOS['states']):
-      n[i%2]+=j
-    if n[0]>=1 and n[1]>=1:
-      print '\n'+centerstring('Ionization probability by Dyson norms',60,'-')+'\n'
-      print 'Do you want to compute Dyson norms between neutral and ionic states?'
-      INFOS['ion']=question('Dyson norms?',bool,False)
-      if INFOS['ion']:
-        INFOS['needed'].extend(Interfaces[INFOS['interface']]['features']['dyson'])
-
-
-  # Setup theodore
-  if 'theodore' in Interfaces[INFOS['interface']]['features']:
-    print '\n'+centerstring('TheoDORE wave function analysis',60,'-')+'\n'
-    print 'Do you want to run TheoDORE to obtain one-electron descriptors for the electronic wave functions?'
-    INFOS['theodore']=question('TheoDORE?',bool,False)
-    if INFOS['theodore']:
-      INFOS['needed'].extend(Interfaces[INFOS['interface']]['features']['theodore'])
-
-
-  #for Interface NN
-  #append INFOS['QMNN']
-  if INFOS['interface']==8:
-    INFOS['QMNN']=copy.deepcopy(INFOS)
-   # INFOS['QMNN']=INFOS
-  #print INFOS['needed']
-
-
   # Interface-specific section
-  INFOS=globals()[Interfaces[ INFOS['interface']]['get_routine'] ](INFOS)
+  INFOS=get_SchNet(INFOS)
 
 
   # Dynamics options
@@ -1469,1995 +1101,114 @@ Laser files can be created using $SHARC/laser.x
   print '\nDo you want to write the overlap matrix to the output.dat file ?'
   INFOS['write_overlap']=question('Write overlap matrix?',bool, (Couplings[INFOS['coupling']]['name']=='overlap') )
 
-  if INFOS['interface']==8:
-    INFOS['QMNN']['write_grad']=INFOS['write_grad']
-    INFOS['QMNN']['write_NAC']=INFOS['write_NAC']
-    INFOS['QMNN']['write_property1d']=INFOS['write_property1d']
-    INFOS['QMNN']['write_property2d']=INFOS['write_property2d']
-    INFOS['QMNN']['write_overlap']=INFOS['write_overlap']
-    INFOS['sel_g']=False
-    INFOS['QMNN']['write_qminqmout']=INFOS['write_qminqmout']
-    INFOS['QMNN']['sel_g']=INFOS['sel_g']
   # Add some simple keys
   INFOS['printlevel']=2
   INFOS['cwd']=os.getcwd()
   print ''
   return INFOS
 
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def checktemplate_MOLPRO(filename):
-  necessary=['basis','closed','occ','nelec','roots']
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    print 'Could not open template file %s' % (filename)
-    return False
-  i=0
-  for l in data:
-    if necessary[i] in l:
-      i+=1
-      if i+1==len(necessary):
-        return True
-  print 'The template %s seems to be incomplete! It should contain: ' % (filename) +str(necessary)
-  return False
-
-# =================================================
-
-def get_MOLPRO(INFOS):
-  '''This routine asks for all questions specific to MOLPRO:
-  - path to molpro
-  - scratch directory
-  - MOLPRO.template
-  - wf.init
-  '''
-
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('MOLPRO Interface setup',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
-
-
-  # MOLPRO executable
-  print centerstring('Path to MOLPRO',60,'-')+'\n'
-  path=os.getenv('MOLPRO')
-  path=os.path.expanduser(os.path.expandvars(path))
-  if not path=='':
-    path='$MOLPRO/'
-  else:
-    path=None
-  #if path!='':
-    #print 'Environment variable $MOLPRO detected:\n$MOLPRO=%s\n' % (path)
-    #if question('Do you want to use this MOLPRO installation?',bool,True):
-      #INFOS['molpro']=path
-  #if not 'molpro' in INFOS:
-  print '\nPlease specify path to MOLPRO directory (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
-  INFOS['molpro']=question('Path to MOLPRO executable:',str,path)
-  print ''
-
-
-  # Scratch directory
-  print centerstring('Scratch directory',60,'-')+'\n'
-  print 'Please specify an appropriate scratch directory. This will be used to temporally store the integrals. The scratch directory will be deleted after the calculation. Remember that this script cannot check whether the path is valid, since you may run the calculations on a different machine. The path will not be expanded by this script.'
-  INFOS['scratchdir']=question('Path to scratch directory:',str)
-  print ''
-
-
-  # MOLPRO input template
-  print centerstring('MOLPRO input template file',60,'-')+'\n'
-  print '''Please specify the path to the MOLPRO.template file. This file must be a valid MOLPRO input file for a CASSCF calculation. It should contain the following settings:
-- memory settings
-- Basis set (possibly also Douglas-Kroll settings etc.)
-- CASSCF calculation with:
-  * Number of frozen, closed and occupied orbitals
-  * wf and state cards for the specification of the wavefunction
-MOLPRO.template files can easily be created using molpro_input.py (Open a second shell if you need to create one now).
-
-The MOLPRO interface will generate the remaining MOLPRO input automatically.
-'''
-  if os.path.isfile('MOLPRO.template'):
-    if checktemplate_MOLPRO('MOLPRO.template'):
-      print 'Valid file "MOLPRO.template" detected. '
-      usethisone=question('Use this template file?',bool,True)
-      if usethisone:
-        INFOS['molpro.template']='MOLPRO.template'
-  if not 'molpro.template' in INFOS:
-    while True:
-      filename=question('Template filename:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-      if checktemplate_MOLPRO(filename):
-        break
-    INFOS['molpro.template']=filename
-  print ''
-
-
-  # Initial wavefunction
-  print centerstring('Initial wavefunction: MO Guess',60,'-')+'\n'
-  print '''Please specify the path to a MOLPRO wavefunction file containing suitable starting MOs for the CASSCF calculation. Please note that this script cannot check whether the wavefunction file and the Input template are consistent!
-
-If you optimized your geometry with MOLPRO/CASSCF you can reuse the "wf" file from the optimization.
-'''
-  if question('Do you have an initial wavefunction file?',bool,True):
-    while True:
-      filename=question('Initial wavefunction file:',str,'wf.init')
-      if os.path.isfile(filename):
-        break
-      else:
-        print 'File not found!'
-    INFOS['molpro.guess']=filename
-  else:
-    print 'WARNING: Remember that CASSCF calculations may run very long and/or yield wrong results without proper starting MOs.'
-    time.sleep(2)
-    INFOS['molpro.guess']=False
-
-
-  print centerstring('MOLPRO Ressource usage',60,'-')+'\n'
-  print '''Please specify the amount of memory available to MOLPRO (in MB). For calculations including moderately-sized CASSCF calculations and less than 150 basis functions, around 2000 MB should be sufficient.
-'''
-  INFOS['molpro.mem']=abs(question('MOLPRO memory:',int,[500])[0])
-  print '''Please specify the number of CPUs to be used by EACH trajectory.
-'''
-  INFOS['molpro.ncpu']=abs(question('Number of CPUs:',int,[1])[0])
-  INFOS['CPU']=INFOS['molpro.ncpu']
-
-  # Ionization
-  #print centerstring('Ionization probability by Dyson norms',60,'-')+'\n'
-  #INFOS['ion']=question('Dyson norms?',bool,False)
-
-  # wfoverlap
-  if 'wfoverlap' in INFOS['needed']:
-    print '\n'+centerstring('Wfoverlap code setup',60,'-')+'\n'
-    INFOS['molpro.wfpath']=question('Path to wavefunction overlap executable:',str,'$SHARC/wfoverlap.x')
-
-
-  # Other settings
-  INFOS['molpro.gradaccudefault']=1.e-7
-  INFOS['molpro.gradaccumax']=1.e-4
-  INFOS['molpro.ncore']=-1
-  INFOS['molpro.ndocc']=0
-
-  return INFOS
-
-# =================================================
-
-def prepare_MOLPRO(INFOS,iconddir):
-  # write MOLPRO.resources
-  try:
-    sh2pro=open('%s/QM/MOLPRO.resources' % (iconddir), 'w')
-  except IOError:
-    print 'IOError during prepareMOLPRO, iconddir=%s' % (iconddir)
-    quit(1)
-  string='''molpro %s
-scratchdir %s/%s/
-savedir %s/%s/restart
-gradaccudefault %.8f
-gradaccumax %f
-memory %i
-ncpu %i
-''' % (
-       INFOS['molpro'],
-       INFOS['scratchdir'],
-       iconddir,
-       INFOS['copydir'],
-       iconddir,
-       INFOS['molpro.gradaccudefault'],
-       INFOS['molpro.gradaccumax'],
-       INFOS['molpro.mem'],
-       INFOS['molpro.ncpu']
-       )
-  if 'wfoverlap' in INFOS['needed']:
-    string+='wfoverlap %s\n' % (INFOS['molpro.wfpath'])
-  sh2pro.write(string)
-  sh2pro.close()
-
-  # copy MOs and template
-  cpfrom=INFOS['molpro.template']
-  cpto='%s/QM/MOLPRO.template' % (iconddir)
-  shutil.copy(cpfrom,cpto)
-  if INFOS['molpro.guess']:
-    cpfrom=INFOS['molpro.guess']
-    cpto='%s/QM/wf.init' % (iconddir)
-    shutil.copy(cpfrom,cpto)
-
-  # runQM.sh
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  if INFOS['QM_NN']==True:
-    s='''cd QM
-/user/maximilian/anaconda2/bin/python $SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  else:
-    s='''cd QM
-$SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-  return
-
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def checktemplate_COLUMBUS(TEMPLATE, mult):
-  '''Checks whether TEMPLATE is a file or directory. If a file or does not exist, it quits with exit code 1, if it is a directory, it checks whether all important input files are there. Does not check for all input files, since runc does this, too.
-
-  Arguments:
-  1 string: path to TEMPLATE
-
-  returns whether input is for isc keyword or socinr keyword
-  and returns the DRT of the given multiplicity'''
-
-  exist=os.path.exists(TEMPLATE)
-  if exist:
-    isfile=os.path.isfile(TEMPLATE)
-    if isfile:
-      #print 'TEMPLATE=%s exists and is a file!' % (TEMPLATE)
-      return None,None,None
-    necessary=['control.run','mcscfin','tranin','propin']
-    lof=os.listdir(TEMPLATE)
-    for i in necessary:
-      if not i in lof:
-        #print 'Did not find input file %s! Did you prepare the input according to the instructions?' % (i)
-        return None,None,None
-    cidrtinthere=False
-    ciudginthere=False
-    for i in lof:
-      if 'cidrtin' in i:
-        cidrtinthere=True
-      if 'ciudgin' in i:
-        ciudginthere=True
-    if not cidrtinthere or not ciudginthere:
-      #print 'Did not find input file %s.*! Did you prepare the input according to the instructions?' % (i)
-      return None,None,None
-  else:
-    #print 'Directory %s does not exist!' % (TEMPLATE)
-    return None,None,None
-
-  # get integral program
-  try:
-    intprog=open(TEMPLATE+'/intprogram')
-    line=intprog.readline()
-    if 'hermit' in line:
-      INTPROG='dalton'
-    elif 'seward' in line:
-      INTPROG='seward'
-    else:
-      return None,None,None
-  except IOError:
-    return None,None,None
-
-  # check cidrtin and cidrtin* for the multiplicity
-  try:
-    cidrtin=open(TEMPLATE+'/cidrtin')
-    line=cidrtin.readline().split()
-    if line[0].lower()=='y':
-      maxmult=int(cidrtin.readline().split()[0])
-      cidrtin.readline()
-      nelec=int(cidrtin.readline().split()[0])
-      if mult<=maxmult and (mult+nelec)%2!=0:
-        return 1, (mult+1)/2,INTPROG    # socinr=1, single=-1, isc=0
-      else:
-        return None,None,None
-    else:
-      mult2=int(cidrtin.readline().split()[0])
-      if mult!=mult2:
-        #print 'Multiplicity %i cannot be treated in directory %s (single DRT)!'  % (mult,TEMPLATE)
-        return None,None,None
-      return -1,1,INTPROG
-  except IOError:
-    # find out in which DRT the requested multiplicity is
-    for i in range(1,9):        # COLUMBUS can treat at most 8 DRTs
-      try:
-        cidrtin=open(TEMPLATE+'/cidrtin.%i' % i)
-      except IOError:
-        return None,None,None
-      cidrtin.readline()
-      mult2=int(cidrtin.readline().split()[0])
-      if mult==mult2:
-        return 0,i,INTPROG
-      cidrtin.close()
-
-# =================================================
-
-def get_COLUMBUS(INFOS):
-  '''This routine asks for all questions specific to COLUMBUS:
-  - path to COLUMBUS
-  - scratchdir
-  - path to template directory
-  - mocoef
-  - memory
-  '''
-
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('COLUMBUS Interface setup',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
-
-
-  # Path to COLUMBUS directory
-  print centerstring('Path to COLUMBUS',60,'-')+'\n'
-  path=os.getenv('COLUMBUS')
-  if path=='':
-    path=None
-  else:
-    path='$COLUMBUS/'
-  #path=os.path.expanduser(os.path.expandvars(path))
-  #if path!='':
-    #print 'Environment variable $COLUMBUS detected:\n$COLUMBUS=%s\n' % (path)
-    #if question('Do you want to use this COLUMBUS installation?',bool,True):
-      #INFOS['columbus']=path
-  #if not 'columbus' in INFOS:
-  print '\nPlease specify path to COLUMBUS directory (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
-  INFOS['columbus']=question('Path to COLUMBUS:',str,path)
-  print ''
-
-
-  # Scratch directory
-  print centerstring('Scratch directory',60,'-')+'\n'
-  print 'Please specify an appropriate scratch directory. This will be used to temporally store all COLUMBUS files. The scratch directory will be deleted after the calculation. Remember that this script cannot check whether the path is valid, since you may run the calculations on a different machine. The path will not be expanded by this script.'
-  INFOS['scratchdir']=question('Path to scratch directory:',str)
-  print ''
-
-
-  # COLUMBUS template directory
-  print centerstring('COLUMBUS input template directory',60,'-')+'\n'
-  print '''Please specify the path to the COLUMBUS template directory.
-The directory must contain subdirectories with complete COLUMBUS input file sets for the following steps:
-- Integrals with SEWARD/MOLCAS
-- SCF
-- MCSCF
-- SO-MRCI (even if no Spin-Orbit couplings will be calculated)
-The COLUMBUS interface will generate the remaining COLUMBUS input automatically, depending on the number of states.
-
-In order to setup the COLUMBUS input, use COLUMBUS' input facility colinp. For further information, see the Spin-orbit tutorial for COLUMBUS [1].
-
-[1] http://www.univie.ac.at/columbus/docs_COL70/tutorial-SO.pdf
-'''
-  while True:
-    path=question('Path to templates:',str)
-    path=os.path.expanduser(os.path.expandvars(path))
-    path=os.path.abspath(path)
-    if not os.path.isdir(path):
-      print 'Directory %s does not exist!' % (path)
-      continue
-
-    content=os.listdir(path)
-    multmap={}
-    allOK=True
-    for mult in range(1,1+len(INFOS['states'])):
-      if INFOS['states'][mult-1]==0:
-        continue
-      found=False
-      for d in content:
-        template=path+'/'+d
-        socitype,drt,intprog=checktemplate_COLUMBUS(template,mult)
-        if socitype==None:
-          continue
-        if not d[-1]=='/':
-          d+='/'
-        multmap[mult]=d
-        found=True
-        break
-      if not found:
-        print 'No input directory for multiplicity %i!' % (mult)
-        allOK=False
-        continue
-    if allOK:
-      break
-  print ''
-
-  print '''Check whether the jobs are assigned correctly to the multiplicities. Use the following commands:
-  mult job        make <mult> use the input in <job>
-  show            show the mapping of multiplicities to jobs
-  end             confirm this mapping
-'''
-  for i in multmap:
-    print '%i ==> %s' % (i,multmap[i])
-  while True:
-    line=question('Adjust job mapping:',str,'end',False)
-    if 'show' in line.lower():
-      for i in multmap:
-        print '%i ==> %s' % (i,multmap[i])
-      continue
-    elif 'end' in line.lower():
-      break
-    else:
-      f=line.split()
-      try:
-        m=int(f[0])
-        j=f[1]
-      except (ValueError,IndexError):
-        continue
-      if not m in multmap:
-        print 'Multiplicity %i not necessary!' % (m)
-        continue
-      if not os.path.isdir(path+'/'+j):
-        print 'No template subdirectory %s!' % (j)
-        continue
-      if not j[-1]=='/':
-        j+='/'
-      multmap[m]=j
-  print ''
-
-  mocoefmap={}
-  for job in set([ multmap[i] for i in multmap]):
-    mocoefmap[job]=multmap[1]
-  print '''Check whether the mocoeffiles are assigned correctly to the jobs. Use the following commands:
-  job mocoefjob   make <job> use the mocoeffiles from <mocoefjob>
-  show            show the mapping of multiplicities to jobs
-  end             confirm this mapping
-'''
-  width=max([ len(i) for i in mocoefmap] )
-  for i in mocoefmap:
-    print '%s' % (i) +' '*(width-len(i))+ ' <== %s' % (mocoefmap[i])
-  while True:
-    line=question('Adjust mocoef mapping:',str,'end',False)
-    if 'show' in line.lower():
-      for i in mocoefmap:
-        print '%s <== %s' % (i,mocoefmap[i])
-      continue
-    elif 'end' in line.lower():
-      break
-    else:
-      f=line.split()
-      try:
-        j=f[0]
-        m=f[1]
-      except (ValueError,IndexError):
-        continue
-      if not m[-1]=='/':
-        m+='/'
-      if not j[-1]=='/':
-        j+='/'
-      mocoefmap[j]=m
-  print ''
-
-  INFOS['columbus.template']=path
-  INFOS['columbus.multmap']=multmap
-  INFOS['columbus.mocoefmap']=mocoefmap
-  INFOS['columbus.intprog']=intprog
-
-  INFOS['columbus.copy_template']=question('Do you want to copy the template directory to each trajectory (Otherwise it will be linked)?',bool,False)
-  if INFOS['columbus.copy_template']:
-    INFOS['columbus.copy_template_from']=INFOS['columbus.template']
-    INFOS['columbus.template']='./COLUMBUS.template/'
-
-
-  # Initial mocoef
-  print centerstring('Initial wavefunction: MO Guess',60,'-')+'\n'
-  print '''Please specify the path to a COLUMBUS mocoef file containing suitable starting MOs for the CASSCF calculation.
-'''
-  init=question('Do you have an initial mocoef file?',bool,True)
-  if init:
-    while True:
-      line=question('Mocoef filename:',str,'mocoef_mc.init')
-      line=os.path.expanduser(os.path.expandvars(line))
-      if os.path.isfile(line):
-          break
-      else:
-        print 'File not found!'
-        continue
-    INFOS['columbus.guess']=line
-  else:
-    print 'WARNING: Remember that CASSCF calculations may run very long and/or yield wrong results without proper starting MOs.'
-    time.sleep(2)
-    INFOS['columbus.guess']=False
-  print ''
-
-
-  # Memory
-  print centerstring('COLUMBUS Memory usage',60,'-')+'\n'
-  print '''Please specify the amount of memory available to COLUMBUS (in MB). For calculations including moderately-sized CASSCF calculations and less than 150 basis functions, around 2000 MB should be sufficient.
-'''
-  INFOS['columbus.mem']=abs(question('COLUMBUS memory:',int)[0])
-  INFOS['columbus.ncpu']=abs(question('Number of CPUs:',int,[1])[0])
-  INFOS['CPU']=INFOS['columbus.ncpu']
-
-  #need_wfoverlap=False
-  # Ionization
-  #print centerstring('Ionization probability by Dyson norms',60,'-')+'\n'
-  #INFOS['ion']=question('Dyson norms?',bool,False)
-  #if 'ion' in INFOS and INFOS['ion']:
-    #need_wfoverlap=True
-  # cioverlaps
-  #if Couplings[INFOS['coupling']]['name']=='overlap':
-    #need_wfoverlap=True
-
-  # wfoverlap
-  #if need_wfoverlap:
-  if 'wfoverlap' in INFOS['needed']:
-    if 'ion' in INFOS and INFOS['ion']:
-      print 'Dyson norms requested.'
-    if Couplings[INFOS['coupling']]['name']=='overlap':
-      print 'Wavefunction overlaps requested.'
-    print '\n'+centerstring('Wfoverlap code setup',60,'-')+'\n'
-    INFOS['columbus.wfpath']=question('Path to wavefunction overlap executable:',str,'$SHARC/wfoverlap.x')
-    INFOS['columbus.wfthres']=question('Determinant screening threshold:',float,[0.97])[0]
-    INFOS['columbus.numfrozcore']=question('Number of frozen core orbitals for overlaps (-1=as in template):',int,[-1])[0]
-    if 'ion' in INFOS and INFOS['ion']:
-      INFOS['columbus.numocc']=question('Number of doubly occupied orbitals for Dyson:',int,[0])[0]
-
-  return INFOS
-
-# =================================================
-
-def prepare_COLUMBUS(INFOS,iconddir):
-  # write COLUMBUS.resources
-  try:
-    sh2col=open('%s/QM/COLUMBUS.resources' % (iconddir), 'w')
-  except IOError:
-    print 'IOError during prepareCOLUMBUS, directory=%i' % (iconddir)
-    quit(1)
-  string='''columbus %s
-scratchdir %s/%s/
-savedir %s/%s/restart
-memory %i
-template %s
-''' % (INFOS['columbus'], INFOS['scratchdir'], iconddir, INFOS['copydir'], iconddir, INFOS['columbus.mem'], INFOS['columbus.template'])
-  string+='integrals %s\n' % (INFOS['columbus.intprog'])
-  for mult in INFOS['columbus.multmap']:
-    string+='DIR %i %s\n' % (mult,INFOS['columbus.multmap'][mult])
-  string+='\n'
-  for job in INFOS['columbus.mocoefmap']:
-    string+='MOCOEF %s %s\n' % (job,INFOS['columbus.mocoefmap'][job])
-  string+='\n'
-  if 'wfoverlap' in INFOS['needed']:
-    string+='wfoverlap %s\n' % (INFOS['columbus.wfpath'])
-    string+='wfthres %f\n' % (INFOS['columbus.wfthres'])
-    if INFOS['columbus.numfrozcore']>=0:
-      string+='numfrozcore %i\n' % (INFOS['columbus.numfrozcore'])
-    if 'columbus.numocc' in INFOS:
-      string+='numocc %i\n' % (INFOS['columbus.numocc'])
-  else:
-    string+='nooverlap\n'
-  sh2col.write(string)
-  sh2col.close()
-
-  # copy MOs and template
-  if INFOS['columbus.guess']:
-    cpfrom=INFOS['columbus.guess']
-    cpto='%s/QM/mocoef_mc.init' % (iconddir)
-    shutil.copy(cpfrom,cpto)
-
-  if INFOS['columbus.copy_template']:
-    copy_from=INFOS['columbus.copy_template_from']
-    copy_to=iconddir+'/QM/COLUMBUS.template/'
-    if os.path.exists(copy_to):
-      shutil.rmtree(copy_to)
-    shutil.copytree(copy_from,copy_to)
-
-  # runQM.sh
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  s='''cd QM
-/user/maximilian/anaconda2/bin/python $SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-  return
-
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def check_Analytical_block(data,identifier,nstates,eMsg):
-  iline=-1
-  while True:
-    iline+=1
-    if iline==len(data):
-      if eMsg:
-        print 'No matrix %s defined!' % (identifier)
-      return False
-    line=re.sub('#.*$','',data[iline]).split()
-    if line==[]:
-      continue
-    ident=identifier.split()
-    fits=True
-    for i,el in enumerate(ident):
-      if not el.lower() in line[i].lower():
-        fits=False
-        break
-    if fits:
-      break
-  strings=data[iline+1:iline+1+nstates]
-  for i,el in enumerate(strings):
-    a=el.strip().split(',')
-    if len(a)<i+1:
-      if eMsg:
-        print '%s matrix is not a lower triangular matrix with n=%i!' % (identifier,nstates)
-      return False
-  return True
-
-# =================================================
-
-def checktemplate_Analytical(filename,req_nstates,eMsg=True,dipolegrad=False):
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    if eMsg:
-      print 'Could not open %s' % (filename)
-    return False
-
-  # check whether first two lines are positive integers
-  try:
-    natom=int(data[0])
-    nstates=int(data[1])
-  except ValueError:
-    if eMsg:
-      print 'First two lines must contain natom and nstates!'
-    return False
-  if natom<1 or nstates<1:
-    if eMsg:
-      print 'natom and nstates must be positive!'
-    return False
-  if nstates!=req_nstates:
-    if eMsg:
-      print 'Template file is for %i states!' % (nstates)
-    return False
-
-  # check the next natom lines
-  variables=set()
-  for i in range(2,2+natom):
-    line=data[i]
-    match=re.match('\s*[a-zA-Z]*\s+[a-zA-Z0][a-zA-Z0-9_]*\s+[a-zA-Z0][a-zA-Z0-9_]*\s+[a-zA-Z0][a-zA-Z0-9_]*',line)
-    if not match:
-      if eMsg:
-        print 'Line %i malformatted!' % (i+1)
-      return False
-    else:
-      a=line.split()
-      for j in range(3):
-        match=re.match('\s*[a-zA-Z][a-zA-Z0-9_]*',a[j+1])
-        if match:
-          variables.add(a[j+1])
-
-  # check variable blocks
-  iline=-1
-  while True:
-    iline+=1
-    if iline==len(data):
-      break
-    line=re.sub('#.*$','',data[iline]).split()
-    if line==[]:
-      continue
-    if 'variables' in line[0].lower():
-      while True:
-        iline+=1
-        if iline==len(data):
-          if eMsg:
-            print 'Non-terminated variables block!'
-          return False
-        line=re.sub('#.*$','',data[iline]).split()
-        if line==[]:
-          continue
-        if 'end' in line[0].lower():
-          break
-        match=re.match('[a-zA-Z][a-zA-Z0-9_]*',line[0])
-        if not match:
-          if eMsg:
-            print 'Invalid variable name: %s' % (line[0])
-          return False
-        try:
-          a=float(line[1])
-        except ValueError:
-          if eMsg:
-            print 'Non-numeric value for variable %s' % (line[0])
-          return False
-        except IndexError:
-          if eMsg:
-            print 'No value for variable %s' % (line[0])
-          return False
-
-  # check hamiltonian block
-  line='hamiltonian'
-  a=check_Analytical_block(data,line,nstates,eMsg)
-  if not a:
-    return False
-
-  # check derivatives of each variable
-  for v in variables:
-    line='derivatives %s' % (v)
-    a=check_Analytical_block(data,line,nstates,eMsg)
-    if not a:
-      return False
-
-  ## check dipole derivatives of each variable
-  ## can be zero, hence commented out
-  #if dipolegrad:
-    #for v in variables:
-      #for p in range(3):
-        #line='dipolederivatives %i %s' % (p+1,v)
-        #a=check_Analytical_block(data,line,nstates,eMsg)
-        #if not a:
-          #return False
-
-  return True
-
-# =================================================
-
-def get_Analytical(INFOS):
-
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('Analytical PES Interface setup',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
-
-  if os.path.isfile('Analytical.template'):
-    if checktemplate_Analytical('Analytical.template',INFOS['nstates'],eMsg=False,dipolegrad=INFOS['dipolegrad']):
-      print 'Valid file "Analytical.template" detected. '
-      usethisone=question('Use this template file?',bool,True)
-      if usethisone:
-        INFOS['analytical.template']='Analytical.template'
-  if not 'analytical.template' in INFOS:
-    while True:
-      filename=question('Template filename:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-      if checktemplate_Analytical(filename,INFOS['nstates'],dipolegrad=INFOS['dipolegrad']):
-        break
-    INFOS['analytical.template']=filename
-  print ''
-  INFOS['CPU']=int(1)
-  
-
-  return INFOS
-
-# =================================================
-
-def prepare_Analytical(INFOS,iconddir):
-  # copy Analytical.template
-
-  # copy MOs and template
-  cpfrom=INFOS['analytical.template']
-  cpto='%s/QM/Analytical.template' % (iconddir)
-  shutil.copy(cpfrom,cpto)
-
-  # runQM.sh
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  if INFOS['QM_NN']==True:
-    s='''cd QM
-/user/maximilian/anaconda2/bin/python $SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  else:
-    s='''cd QM
-$SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-  return
-
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def get_LVC(INFOS):
-  # TODO: rename files for consistency with other interfaces
-
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('LVC Interface setup',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
-
-  if os.path.isfile('SH2LVC.inp'):
-    print 'File "SH2LVC.inp" detected. '
-    usethisone=question('Use this template file?',bool,True)
-    if usethisone:
-      INFOS['LVC.template']='SH2LVC.inp'
-  if not 'LVC.template' in INFOS:
-    while True:
-      filename=question('Template filename:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-
-      break
-    INFOS['LVC.template']=filename
-  print ''
-
-  return INFOS
-
-# =================================================
-
-def prepare_LVC(INFOS,iconddir):
-  # copy SH2LVC.inp
-
-  # copy MOs and template
-  cpfrom=INFOS['LVC.template']
-  cpto='%s/QM/SH2LVC.inp' % (iconddir)
-  shutil.copy(cpfrom,cpto)
-
-  # runQM.sh
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  s='''cd QM
-/user/maximilian/anaconda2/bin/python $SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-  return
-
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def checktemplate_MOLCAS(filename,INFOS):
-  necessary=['basis','ras2','nactel','inactive']
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    print 'Could not open template file %s' % (filename)
-    return False
-  valid=[]
-  for i in necessary:
-    for l in data:
-      if i in re.sub('#.*$','',l):
-        valid.append(True)
-        break
-    else:
-      valid.append(False)
-  if not all(valid):
-    print 'The template %s seems to be incomplete! It should contain: ' % (filename) +str(necessary)
-    return False
-  roots_there=False
-  for l in data:
-    l=re.sub('#.*$','',l).lower().split()
-    if len(l)==0:
-      continue
-    if 'roots' in l[0]:
-      roots_there=True
-  if not roots_there:
-    for mult,state in enumerate(INFOS['states']):
-      if state<=0:
-        continue
-      valid=[]
-      for l in data:
-        if 'spin' in re.sub('#.*$','',l).lower():
-          f=l.split()
-          if int(f[1])==mult+1:
-            valid.append(True)
-            break
-      else:
-        valid.append(False)
-  if not all(valid):
-    string='The template %s seems to be incomplete! It should contain the keyword "spin" for ' % (filename)
-    for mult,state in enumerate(INFOS['states']):
-      if state<=0:
-        continue
-      string+='%s, ' % (IToMult[mult+1])
-    string=string[:-2]+'!'
-    print string
-    return False
-  return True
-
-# =================================================
-
-def get_MOLCAS(INFOS):
-  '''This routine asks for all questions specific to MOLPRO:
-  - path to molpro
-  - scratch directory
-  - MOLPRO.template
-  - wf.init
-  '''
-
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('MOLCAS Interface setup',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
-
-  print centerstring('Path to MOLCAS',60,'-')+'\n'
-  path=os.getenv('MOLCAS')
-  #path=os.path.expanduser(os.path.expandvars(path))
-  if path=='':
-    path=None
-  else:
-    path='$MOLCAS/'
-      #print 'Environment variable $MOLCAS detected:\n$MOLCAS=%s\n' % (path)
-      #if question('Do you want to use this MOLCAS installation?',bool,True):
-        #INFOS['molcas']=path
-    #if not 'molcas' in INFOS:
-  print '\nPlease specify path to MOLCAS directory (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
-  INFOS['molcas']=question('Path to MOLCAS:',str,path)
-  print ''
-
-
-  print centerstring('Scratch directory',60,'-')+'\n'
-  print 'Please specify an appropriate scratch directory. This will be used to temporally store the integrals. The scratch directory will be deleted after the calculation. Remember that this script cannot check whether the path is valid, since you may run the calculations on a different machine. The path will not be expanded by this script.'
-  INFOS['scratchdir']=question('Path to scratch directory:',str)
-  print ''
-
-
-  print centerstring('MOLCAS input template file',60,'-')+'\n'
-  print '''Please specify the path to the MOLcas.template file. This file must contain the following settings:
-  
-basis <Basis set>
-ras2 <Number of active orbitals>
-nactel <Number of active electrons>
-inactive <Number of doubly occupied orbitals>
-roots <Number of roots for state-averaging>
-
-The MOLCAS interface will generate the appropriate MOLCAS input automatically.
-'''
-  if os.path.isfile('MOLCAS.template'):
-    if checktemplate_MOLCAS('MOLCAS.template',INFOS):
-      print 'Valid file "MOLCAS.template" detected. '
-      usethisone=question('Use this template file?',bool,True)
-      if usethisone:
-        INFOS['molcas.template']='MOLCAS.template'
-  if not 'molcas.template' in INFOS:
-    while True:
-      filename=question('Template filename:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-      if checktemplate_MOLCAS(filename,INFOS):
-        break
-    INFOS['molcas.template']=filename
-  print ''
-
-
-  print centerstring('Initial wavefunction: MO Guess',60,'-')+'\n'
-  print '''Please specify the path to a MOLCAS JobIph file containing suitable starting MOs for the CASSCF calculation. Please note that this script cannot check whether the wavefunction file and the Input template are consistent!
-'''
-  string='Do you have initial wavefunction files for '
-  for mult,state in enumerate(INFOS['states']):
-    if state<=0:
-      continue
-    string+='%s, ' % (IToMult[mult+1])
-  string=string[:-2]+'?'
-  if question(string,bool,True):
-    while True:
-      jobiph_or_rasorb=question('JobIph files (1) or RasOrb files (2)?',int)[0]
-      if jobiph_or_rasorb in [1,2]:
-        break
-    INFOS['molcas.jobiph_or_rasorb']=jobiph_or_rasorb
-    INFOS['molcas.guess']={}
-    for mult,state in enumerate(INFOS['states']):
-      if state<=0:
-        continue
-      while True:
-        if jobiph_or_rasorb==1:
-          guess_file='MOLCAS.%i.JobIph.init' % (mult+1)
-        else:
-          guess_file='MOLCAS.%i.RasOrb.init' % (mult+1)
-        filename=question('Initial wavefunction file for %ss:' % (IToMult[mult+1]),str,guess_file)
-        if os.path.isfile(filename):
-          INFOS['molcas.guess'][mult+1]=filename
-          break
-        else:
-          print 'File not found!'
-  else:
-    print 'WARNING: Remember that CASSCF calculations may run very long and/or yield wrong results without proper starting MOs.'
-    time.sleep(2)
-    INFOS['molcas.guess']={}
-
-
-  print centerstring('MOLCAS Ressource usage',60,'-')+'\n'
-  print '''Please specify the amount of memory available to MOLCAS (in MB). For calculations including moderately-sized CASSCF calculations and less than 150 basis functions, around 2000 MB should be sufficient.
-'''
-  INFOS['molcas.mem']=abs(question('MOLCAS memory:',int)[0])
-  print '''Please specify the number of CPUs to be used by EACH calculation.
-'''
-  INFOS['molcas.ncpu']=abs(question('Number of CPUs:',int)[0])
-
-
-
-
-  ## Ionization
-  #need_wfoverlap=False
-  #print centerstring('Ionization probability by Dyson norms',60,'-')+'\n'
-  #INFOS['ion']=question('Dyson norms?',bool,False)
-  #if 'ion' in INFOS and INFOS['ion']:
-    #need_wfoverlap=True
-
-  # wfoverlap
-  if 'wfoverlap' in INFOS['needed']:
-    print '\n'+centerstring('Wfoverlap code setup',60,'-')+'\n'
-    if 'ion' in INFOS and INFOS['ion']:
-      print 'Dyson norms requested.'
-    INFOS['molcas.wfpath']=question('Path to wavefunction overlap executable:',str,'$SHARC/wfoverlap.x')
-    # TODO not asked for: numfrozcore, numocc
-
-
-  return INFOS
-
-# =================================================
-
-def prepare_MOLCAS(INFOS,iconddir):
-  # write MOLCAS.resources
-  try:
-    sh2cas=open('%s/QM/MOLCAS.resources' % (iconddir), 'w')
-  except IOError:
-    print 'IOError during prepareMOLCAS, iconddir=%s' % (iconddir)
-    quit(1)
-  project='MOLCAS'
-  string='''molcas %s
-scratchdir %s/%s/
-savedir %s/%s/restart
-memory %i
-ncpu %i
-project %s''' % (INFOS['molcas'],
-                 INFOS['scratchdir'],
-                 iconddir,
-                 INFOS['copydir'],
-                 iconddir,
-                 INFOS['molcas.mem'],
-                 INFOS['molcas.ncpu'],
-                 project)
-  if 'wfoverlap' in INFOS['needed']:
-    string+='\nwfoverlap %s\n' % INFOS['molcas.wfpath']
-  sh2cas.write(string)
-  sh2cas.close()
-
-  # copy MOs and template
-  cpfrom=INFOS['molcas.template']
-  cpto='%s/QM/MOLCAS.template' % (iconddir)
-  shutil.copy(cpfrom,cpto)
-  if not INFOS['molcas.guess']=={}:
-    for i in INFOS['molcas.guess']:
-      if INFOS['molcas.jobiph_or_rasorb']==1:
-        cpfrom=INFOS['molcas.guess'][i]
-        cpto='%s/QM/%s.%i.JobIph.init' % (iconddir,project,i)
-      else:
-        cpfrom=INFOS['molcas.guess'][i]
-        cpto='%s/QM/%s.%i.RasOrb.init' % (iconddir,project,i)
-      shutil.copy(cpfrom,cpto)
-
-  # runQM.sh
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  s='''cd QM
-/user/maximilian/anaconda2/bin/python $SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-  return
-
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def checktemplate_ADF(filename,INFOS):
-  necessary=['basis','functional','charge']
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    print 'Could not open template file %s' % (filename)
-    return False
-  valid=[]
-  for i in necessary:
-    for l in data:
-      line=l.lower().split()
-      if len(line)==0:
-        continue
-      line=line[0]
-      if i==re.sub('#.*$','',line):
-        valid.append(True)
-        break
-    else:
-      valid.append(False)
-  if not all(valid):
-    print 'The template %s seems to be incomplete! It should contain: ' % (filename) +str(necessary)
-    return False
-  return True
-
-# =================================================
-
-def qmmm_job(filename,INFOS):
-  necessary=['qmmm']
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    print 'Could not open template file %s' % (filename)
-    return False
-  valid=[]
-  for i in necessary:
-    for l in data:
-      line=l.lower().split()
-      if len(line)==0:
-        continue
-      line=line[0]
-      if i==re.sub('#.*$','',line):
-        valid.append(True)
-        break
-    else:
-      valid.append(False)
-  if not all(valid):
-    return False
-  return True
-
-## =================================================
-
-#def get_qmmm_filenames(filename):
-  #try:
-    #f=open(filename)
-    #data=f.readlines()
-    #f.close()
-  #except IOError:
-    #print 'Could not open template file %s' % (filename)
-    #return False
-  #results={}
-  #for line in data:
-    #if 'qmmm_table' in line.lower() and not '/' in line:
-      #s=line.split()
-      #if len(s)>=2:
-        #results['ctfile']=s[1]
-    #if 'qmmm_ff_file' in line.lower() and not '/' in line:
-      #s=line.split()
-      #if len(s)>=2:
-        #results['fffile']=s[1]
-  #return results
-
-# =================================================
-
-def get_ADF(INFOS):
-  '''This routine asks for all questions specific to ADF:
-  - path to ADF
-  - scratch directory
-  - ADF.template
-  - TAPE21
-  '''
-
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('ADF Interface setup',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
-
-  print centerstring('Path to ADF',60,'-')+'\n'
-  path=os.getenv('ADFHOME')
-  if path:
-    path='$ADFHOME/'
-  adfrc=question('Setup from adfrc.sh file?',bool,True)
-  if adfrc:
-    if path:
-      path='$ADFHOME/adfrc.sh'
-    print '\nPlease specify path to the adfrc.sh file (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
-    path=question('Path to ADF:',str,path)
-    INFOS['adfrc']=os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
-    print 'Will use adfrc= %s' % INFOS['adfrc']
-    INFOS['adf']='$ADFHOME'
-    INFOS['scmlicense']='$SCMLICENSE'
-    print ''
-  else:
-    print '\nPlease specify path to ADF directory (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
-    INFOS['adf']=question('Path to ADF:',str,path)
-    print ''
-    print centerstring('Path to ADF license file',60,'-')+'\n'
-    path=os.getenv('SCMLICENSE')
-    #path=os.path.expanduser(os.path.expandvars(path))
-    if path=='':
-      path=None
-    else:
-      path='$SCMLICENSE'
-    print'\nPlease specify path to ADF license.txt\n'
-    INFOS['scmlicense']=question('Path to license:',str,path)
-    print ''
-
-
-  # scratch
-  print centerstring('Scratch directory',60,'-')+'\n'
-  print 'Please specify an appropriate scratch directory. This will be used to run the ADF calculations. The scratch directory will be deleted after the calculation. Remember that this script cannot check whether the path is valid, since you may run the calculations on a different machine. The path will not be expanded by this script.'
-  INFOS['scratchdir']=question('Path to scratch directory:',str)
-  print ''
-
-
-  # template file
-  print centerstring('ADF input template file',60,'-')+'\n'
-  print '''Please specify the path to the ADF.template file. This file must contain the following keywords:
-  
-basis <basis>
-functional <type> <name>
-charge <x> [ <x2> [ <x3> ...] ] 
-
-The ADF interface will generate the appropriate ADF input automatically.
-'''
-  if os.path.isfile('ADF.template'):
-    if checktemplate_ADF('ADF.template',INFOS):
-      print 'Valid file "ADF.template" detected. '
-      usethisone=question('Use this template file?',bool,True)
-      if usethisone:
-        INFOS['ADF.template']='ADF.template'
-  if not 'ADF.template' in INFOS:
-    while True:
-      filename=question('Template filename:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-      if checktemplate_ADF(filename,INFOS):
-        break
-    INFOS['ADF.template']=filename
-  print ''
-
-
-
-  # QMMM
-  if qmmm_job(INFOS['ADF.template'],INFOS):
-    print centerstring('ADF QM/MM setup',60,'-')+'\n'
-    print 'Your template specifies a QM/MM calculation. Please give the force field and connection table files.'
-    while True:
-      filename=question('Force field file:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-      else:
-        break
-    INFOS['ADF.fffile']=filename
-    while True:
-      filename=question('Connection table file:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-      else:
-        break
-    INFOS['ADF.ctfile']=filename
-    #files=get_qmmm_filenames(INFOS['ADF.template'])
-    #if 'ctfile' in files:
-      #INFOS['ADF.ctfile.dest']=files['ctfile']
-    #if 'fffile' in files:
-      #INFOS['ADF.fffile.dest']=files['fffile']
-
-
-  # initial MOs
-  print centerstring('Initial restart: MO Guess',60,'-')+'\n'
-  print '''Please specify the path to an ADF TAPE21 file containing suitable starting MOs for the ADF calculation. Please note that this script cannot check whether the wavefunction file and the Input template are consistent!
-'''
-  if question('Do you have a restart file?',bool,True):
-     if True:
-       filename=question('Restart file:',str,'ADF.t21.init')
-       INFOS['adf.guess']=filename
-  else:
-    print 'WARNING: Remember that the calculations may take longer without an initial guess for the MOs.'
-    #time.sleep(2)
-    INFOS['adf.guess']={}
-
-
-
-  # Resources
-  print centerstring('ADF Ressource usage',60,'-')+'\n'
-  print '''Please specify the number of CPUs to be used by EACH calculation.
-'''
-  INFOS['adf.ncpu']=abs(question('Number of CPUs:',int)[0])
-
-  if INFOS['adf.ncpu']>1:
-    print '''Please specify how well your job will parallelize.
-A value of 0 means that running in parallel will not make the calculation faster, a value of 1 means that the speedup scales perfectly with the number of cores.
-Typical values for ADF are 0.90-0.98 for LDA/GGA functionals and 0.50-0.80 for hybrids (better if RIHartreeFock is used).'''
-    INFOS['adf.scaling']=min(1.0,max(0.0,question('Parallel scaling:',float,[0.8])[0] ))
-  else:
-    INFOS['adf.scaling']=0.9
-
-
-  # Ionization
-  #need_wfoverlap=False
-  #print centerstring('Ionization probability by Dyson norms',60,'-')+'\n'
-  #INFOS['ion']=question('Dyson norms?',bool,False)
-  #if 'ion' in INFOS and INFOS['ion']:
-    #need_wfoverlap=True
-  #if Couplings[INFOS['coupling']]['name']=='overlap':
-    #need_wfoverlap=True
-
-
-  # Overlaps
-  #if need_wfoverlap:
-  if 'wfoverlap' in INFOS['needed']:
-    print '\n'+centerstring('Wfoverlap code setup',60,'-')+'\n'
-    INFOS['adf.wfoverlap']=question('Path to wavefunction overlap executable:',str,'$SHARC/wfoverlap.x')
-    print ''
-    print '''State threshold for choosing determinants to include in the overlaps'''
-    print '''For hybrids (and without TDA) one should consider that the eigenvector X may have a norm larger than 1'''
-    INFOS['adf.ciothres']=question('Threshold:',float,[0.99])[0]
-    # TODO not asked: numfrozcore and numocc
-
-    #print 'Please state the number of core orbitals you wish to freeze for the overlaps (recommended to use for at least the 1s orbital and a negative number uses default values)?'
-    #print 'A value of -1 will use the defaults used by ADF for a small frozen core and 0 will turn off the use of frozen cores'
-    #INFOS['frozcore_number']=question('How many orbital to freeze?',int,[-1])[0]
-
-
-  # TheoDORE
-  theodore_spelling=['Om', 
-                    'PRNTO', 
-                    'Z_HE', 'S_HE', 'RMSeh',
-                    'POSi', 'POSf', 'POS', 
-                    'PRi', 'PRf', 'PR', 'PRh',
-                    'CT', 'CT2', 'CTnt',
-                    'MC', 'LC', 'MLCT', 'LMCT', 'LLCT', 
-                    'DEL', 'COH', 'COHh']
-  print '\n'+centerstring('Wave function analysis by TheoDORE',60,'-')+'\n'
-  #INFOS['theodore']=question('TheoDORE analysis?',bool,False)
-  if 'theodore' in INFOS['needed']:
-
-    INFOS['adf.theodore']=question('Path to TheoDORE directory:',str,'$THEODIR')
-    print ''
-
-    print 'Please give a list of the properties to calculate by TheoDORE.\nPossible properties:'
-    string=''
-    for i,p in enumerate(theodore_spelling):
-      string+='%s ' % (p)
-      if (i+1)%8==0:
-        string+='\n'
-    print string
-    l=question('TheoDORE properties:',str,'Om  PRNTO  S_HE  Z_HE  RMSeh')
-    if '[' in l:
-      INFOS['theodore.prop']=ast.literal_eval(l)
-    else:
-      INFOS['theodore.prop']=l.split()
-    print ''
-
-    print 'Please give a list of the fragments used for TheoDORE analysis.'
-    print 'You can use the list-of-lists from dens_ana.in'
-    print 'Alternatively, enter all atom numbers for one fragment in one line. After defining all fragments, type "end".'
-    if qmmm_job(INFOS['ADF.template'],INFOS):
-      print 'You should only include the atom numbers of QM and link atoms.'
-    INFOS['theodore.frag']=[]
-    while True:
-      l=question('TheoDORE fragment:',str,'end')
-      if 'end' in l.lower():
-        break
-      if '[' in l:
-        try:
-          INFOS['theodore.frag']=ast.literal_eval(l)
-          break
-        except ValueError:
-          continue
-      f=[ int(i) for i in l.split() ]
-      INFOS['theodore.frag'].append(f)
-    INFOS['theodore.count']=len(INFOS['theodore.prop'])+len(INFOS['theodore.frag'])**2
-
-
-  return INFOS
-
-# =================================================
-
-def prepare_ADF(INFOS,iconddir):
-  # write ADF.resources
-  try:
-    sh2cas=open('%s/QM/ADF.resources' % (iconddir), 'w')
-  except IOError:
-    print 'IOError during prepareADF, iconddir=%s' % (iconddir)
-    quit(1)
-#  project='ADF'
-  string='adfhome %s\nscmlicense %s\nscratchdir %s/%s/\nsavedir %s/%s/restart\nncpu %i\nschedule_scaling %f\n' % (INFOS['adf'],INFOS['scmlicense'],INFOS['scratchdir'],iconddir,INFOS['copydir'],iconddir,INFOS['adf.ncpu'],INFOS['adf.scaling'])
-  if 'wfoverlap' in INFOS['needed']:
-    string+='wfoverlap %s\nwfthres %f\n' % (INFOS['adf.wfoverlap'],INFOS['adf.ciothres'])
-    string+='memory %i\n' % (INFOS['adf.mem'])
-    #string+='numfrozcore %i\n' %(INFOS['frozcore_number'])
-  else:
-    string+='nooverlap\n'
-  if INFOS['theodore']:
-    string+='theodir %s\n' % (INFOS['adf.theodore'])
-    string+='theodore_prop %s\n' % (INFOS['theodore.prop'])
-    string+='theodore_fragment %s\n' % (INFOS['theodore.frag'])
-  if 'ADF.fffile' in INFOS:
-    string+='qmmm_ff_file ADF.qmmm.ff\n'
-  if 'ADF.ctfile' in INFOS:
-    string+='qmmm_table ADF.qmmm.table\n'
-  sh2cas.write(string)
-  sh2cas.close()
-
-  # copy MOs and template
-  cpfrom=INFOS['ADF.template']
-  cpto='%s/QM/ADF.template' % (iconddir)
-  shutil.copy(cpfrom,cpto)
-
-  if INFOS['adf.guess']:
-    cpfrom1=INFOS['adf.guess']
-    cpto1='%s/ADF.t21_init' % (iconddir)
-    shutil.copy(cpfrom1,cpto1)
-
-  if 'ADF.fffile' in INFOS:
-    cpfrom1=INFOS['ADF.fffile']
-    cpto1='%s/QM/ADF.qmmm.ff' % (iconddir)
-    shutil.copy(cpfrom1,cpto1)
-
-  if 'ADF.ctfile' in INFOS:
-    cpfrom1=INFOS['ADF.ctfile']
-    cpto1='%s/QM/ADF.qmmm.table' % (iconddir)
-    shutil.copy(cpfrom1,cpto1)
-
-  # runQM.sh
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  s='''cd QM
-/user/maximilian/anaconda2/bin/python $SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-
-  return
-
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def checktemplate_RICC2(filename,INFOS):
-  necessary=['basis']
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    print 'Could not open template file %s' % (filename)
-    return False
-  valid=[]
-  for i in necessary:
-    for l in data:
-      line=l.lower()
-      if i in re.sub('#.*$','',line):
-        valid.append(True)
-        break
-    else:
-      valid.append(False)
-  if not all(valid):
-    print 'The template %s seems to be incomplete! It should contain: ' % (filename) +str(necessary)
-    return False
-  return True
-
-# =================================================
-
-def get_RICC2(INFOS):
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('Turbomole RICC2 Interface setup',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
-
-  print centerstring('Path to TURBOMOLE',60,'-')+'\n'
-  path=os.getenv('TURBODIR')
-  if path=='':
-    path=None
-  else:
-    path='$TURBODIR/'
-  print '\nPlease specify path to TURBOMOLE directory (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
-  INFOS['turbomole']=question('Path to TURBOMOLE:',str,path)
-  print ''
-
-  print centerstring('Path to ORCA',60,'-')+'\n'
-  path=os.getenv('ORCADIR')
-  if path=='':
-    path=None
-  else:
-    path='$ORCADIR/'
-  print '\nPlease specify path to ORCA directory (SHELL variables and ~ can be used, will be expanded when interface is started).\nORCA is necessary for the calculation of spin-orbit couplings with ricc2.\n'
-  INFOS['orca']=question('Path to ORCA:',str,path)
-  print ''
-
-
-  print centerstring('Scratch directory',60,'-')+'\n'
-  print 'Please specify an appropriate scratch directory. This will be used to temporally store the integrals. The scratch directory will be deleted after the calculation. Remember that this script cannot check whether the path is valid, since you may run the calculations on a different machine. The path will not be expanded by this script.'
-  INFOS['scratchdir']=question('Path to scratch directory:',str)
-  print ''
-
-
-  print centerstring('RICC2 input template file',60,'-')+'\n'
-  print '''Please specify the path to the RICC2.template file. This file must contain the following settings:
-
-basis <Basis set>
-
-In addition, it can contain the following:
-
-auxbasis <Basis set>
-charge <integer>
-method <"ADC(2)" or "CC2">                      # only ADC(2) can calculate spin-orbit couplings
-frozen <number of frozen core orbitals>
-spin-scaling <"none", "SCS", or "SOS">
-douglas-kroll                                   # DKH is only used if this keyword is given
-
-'''
-  if os.path.isfile('RICC2.template'):
-    if checktemplate_RICC2('RICC2.template',INFOS):
-      print 'Valid file "RICC2.template" detected. '
-      usethisone=question('Use this template file?',bool,True)
-      if usethisone:
-        INFOS['ricc2.template']='RICC2.template'
-  if not 'ricc2.template' in INFOS:
-    while True:
-      filename=question('Template filename:',str)
-      if not os.path.isfile(filename):
-        print 'File %s does not exist!' % (filename)
-        continue
-      if checktemplate_RICC2(filename,INFOS):
-        break
-    INFOS['ricc2.template']=filename
-  print ''
-
-
-  print centerstring('Initial wavefunction: MO Guess',60,'-')+'\n'
-  print '''Please specify the path to a Turbomole "mos" file containing suitable starting MOs for the calculation. Please note that this script cannot check whether the file and the input template are consistent!
-'''
-  string='Do you have an initial orbitals file?'
-  if question(string,bool,True):
-    while True:
-      guess_file='mos'
-      filename=question('Initial wavefunction file:',str,guess_file)
-      if os.path.isfile(filename):
-        INFOS['ricc2.guess']=filename
-        break
-      else:
-        print 'File not found!'
-  else:
-    INFOS['ricc2.guess']=[]
-
-
-  print centerstring('RICC2 Ressource usage',60,'-')+'\n'
-  print '''Please specify the amount of memory available to Turbomole. 
-'''
-  INFOS['ricc2.mem']=abs(question('RICC2 memory (MB):',int,[1000])[0])
-  print '''Please specify the number of CPUs to be used by EACH trajectory.
-'''
-  INFOS['ricc2.ncpu']=abs(question('Number of CPUs:',int,[1])[0])
-  INFOS['CPU'] = INFOS['ricc2.ncpu']
-  if INFOS['laser']:
-    guess=2
-  else:
-    guess=1
-  a=['','(recommended)']
-  print 'For response-based methods like CC2 and ADC(2), dipole moments and transition dipole moments carry a significant computational cost. In order to speed up calculations, the interface can restrict the calculation of these properties.'
-  print '''Choose one of the following dipolelevels:
-0       only calculate dipole moments which are for free                                %s
-1       additionally, calculate transition dipole moments involving the ground state    %s
-2       calculate all elements possible with the method                                 %s
-''' % (a[guess==0],a[guess==1],a[guess==2])
-  INFOS['ricc2.dipolelevel']=question('Dipole level:',int,[guess])[0]
-
-
-  if 'wfoverlap' in INFOS['needed']:
-    print 'Wavefunction overlaps requested.'
-    INFOS['ricc2.wfpath']=question('Path to wfoverlap executable:',str,'$SHARC/wfoverlap.x')
-    print ''
-    print '''Give threshold for choosing determinants to include in the overlaps'''
-    INFOS['ricc2.wfthres']=question('Threshold:',float,[0.99])[0]
-
-
-
-  # TheoDORE
-  theodore_spelling=['Om', 
-                    'PRNTO', 
-                    'Z_HE', 'S_HE', 'RMSeh',
-                    'POSi', 'POSf', 'POS', 
-                    'PRi', 'PRf', 'PR', 'PRh',
-                    'CT', 'CT2', 'CTnt',
-                    'MC', 'LC', 'MLCT', 'LMCT', 'LLCT', 
-                    'DEL', 'COH', 'COHh']
-  #INFOS['theodore']=question('TheoDORE analysis?',bool,False)
-  if 'theodore' in INFOS['needed']:
-    print '\n'+centerstring('Wave function analysis by TheoDORE',60,'-')+'\n'
-
-    INFOS['ricc2.theodore']=question('Path to TheoDORE directory:',str,'$THEODIR')
-    print ''
-
-    print 'Please give a list of the properties to calculate by TheoDORE.\nPossible properties:'
-    string=''
-    for i,p in enumerate(theodore_spelling):
-      string+='%s ' % (p)
-      if (i+1)%8==0:
-        string+='\n'
-    print string
-    l=question('TheoDORE properties:',str,'Om  PRNTO  S_HE  Z_HE  RMSeh')
-    if '[' in l:
-      INFOS['theodore.prop']=ast.literal_eval(l)
-    else:
-      INFOS['theodore.prop']=l.split()
-    print ''
-
-    print 'Please give a list of the fragments used for TheoDORE analysis.'
-    print 'You can use the list-of-lists from dens_ana.in'
-    print 'Alternatively, enter all atom numbers for one fragment in one line. After defining all fragments, type "end".'
-    INFOS['theodore.frag']=[]
-    while True:
-      l=question('TheoDORE fragment:',str,'end')
-      if 'end' in l.lower():
-        break
-      if '[' in l:
-        try:
-          INFOS['theodore.frag']=ast.literal_eval(l)
-          break
-        except ValueError:
-          continue
-      f=[ int(i) for i in l.split() ]
-      INFOS['theodore.frag'].append(f)
-    INFOS['theodore.count']=len(INFOS['theodore.prop'])+len(INFOS['theodore.frag'])**2
-
-  return INFOS
-
-# =================================================
-
-def prepare_RICC2(INFOS,iconddir):
-  # write RICC2.resources
-  try:
-    sh2cc2=open('%s/QM/RICC2.resources' % (iconddir), 'w')
-  except IOError:
-    print 'IOError during prepare_RICC2, iconddir=%s' % (iconddir)
-    quit(1)
-  string='''turbodir %s
-orcadir %s
-scratchdir %s/%s
-memory %i
-ncpu %i
-dipolelevel %i
-''' % (INFOS['turbomole'],
-       INFOS['orca'],
-       INFOS['scratchdir'],
-       iconddir,
-       INFOS['ricc2.mem'],
-       INFOS['ricc2.ncpu'],
-       INFOS['ricc2.dipolelevel'])
-  if 'wfoverlap' in INFOS['needed']:
-    string+='wfoverlap %s\n' % (INFOS['ricc2.wfpath'])
-    string+='wfthres %f\n' %(INFOS['ricc2.wfthres'])
-  else:
-    string+='nooverlap\n'
-  if 'theodore' in INFOS['needed']:
-    string+='theodir %s\n' % (INFOS['ricc2.theodore'])
-    string+='theodore_prop %s\n' % (INFOS['theodore.prop'])
-    string+='theodore_fragment %s\n' % (INFOS['theodore.frag'])
-
-  sh2cc2.write(string)
-  sh2cc2.close()
-
-  # copy MOs and template
-  cpfrom=INFOS['ricc2.template']
-  cpto='%s/QM/RICC2.template' % (iconddir)
-  shutil.copy(cpfrom,cpto)
-  if INFOS['ricc2.guess']:
-    cpfrom1=INFOS['ricc2.guess']
-    cpto1='%s/QM/mos.init' % (iconddir)
-    shutil.copy(cpfrom1,cpto1)
-
-  # runQM.sh
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  s='''cd QM
-/user/maximilian/anaconda2/bin/python $SHARC/%s QM.in >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (Interfaces[INFOS['interface']]['script'])
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-  return
-
-# ======================================================================================================================
-# ======================================================================================================================
-# ======================================================================================================================
-
-def checktemplate_NN(filename):
-  necessary=['quantities', 'NumberOfNNs'] #'NN1_seed','NN1_size_energy', 'NN1_act_energy', 'NN1_L2_reg_energy', 'NN1_learn_energy', 'NN1_epochs', 'NN1_batch'
-  try:
-    f=open(filename)
-    data=f.readlines()
-    f.close()
-  except IOError:
-    print 'Could not open template file %s' % (filename)
-    return False
-  i=0
-  for l in data:
-    if necessary[i] in l:
-      i+=1
-      if i+1==len(necessary):
-        return True
-  print 'The template %s seems to be incomplete! It should contain: ' % (filename) +str(necessary)
-  return False
 
 # ======================================================================================================================   
 def get_SchNet(INFOS):
 
+    INFOS['script']='/schnarc_md.py'
     cwdpath=os.getcwd()
     INFOS['cwd']=cwdpath
     INFOS['cwdNN']=cwdpath+'/NN'
-    INFOS['cwdQM']=cwdpath+'/QM'
     #NN executable
     print centerstring('Path to SchNarc',60,'-')+'\n'
     path=os.getenv('SCHNARC')
     path=os.path.expanduser(os.path.expandvars(path))
     if not path=='':
-      path='/user/julia/bin/new/SchNarc/src/scripts'
+      path='$SCHNARC/'
     else:
       path=None
     print '\nPlease specify path to SchNarc directory (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
     pathNN=question('Path to NN executable:',str,path)
     pathNN=os.path.expanduser(os.path.expandvars(pathNN))
     INFOS['NN']=pathNN
-    INFOS['QMNN']['NN']=INFOS['NN']
     print ''
     #SHARC executable
     print centerstring('Path to SHARC',60,'-')+'\n'
     path=os.getenv('SHARC')
     path=os.path.expanduser(os.path.expandvars(path))
     if not path=='':
-      path='/user/julia/SHARC/bin/'
+      path='$SHARC'
     else:
       path=None
     print '\nPlease specify path to SHARC directory (SHELL variables and ~ can be used, will be expanded when interface is started).\n'
     pathNN=question('Path to SHARC executable:',str,path)
     pathNN=os.path.expanduser(os.path.expandvars(pathNN))
     INFOS['SHARCpath']=pathNN
-    INFOS['QMNN']['SHARCpath']=INFOS['NN']
     print ''
-    #for later: take options from SH2NN.inp
-    #weightpath=question('Please specify the path to the file of the trained weights for the NNs:',str)[0:]
-    #INFOS['weights']=weightpath
-    #get output.dat file
-    #get output.dat file
     print centerstring('Path to the training data base',60,'-')+'\n'
     print '\nPlease specify the path to the data base used for training of neural networks.\n'
     datapath=question('Training data base:',str)
     datapath=os.path.expandvars(os.path.expanduser(datapath))
     INFOS['datapath']=datapath
-    INFOS['QMNN']['datapath']=INFOS['datapath']
     print centerstring('Path to trained SchNet model',60,'-')+'\n'
     modelpath=question('Please specify the path to the SchNet model',str)[0:]
     INFOS['modelpath']=modelpath
-    # NN options file 
-    """print centerstring('SchNet tradeoff file',60,'-')+'\n'
-    print '''Please specify the path to the tradeoff file. This file should contain the following settings:
-    - Necessary quantities (energy, forces, socs, nacs, dipoles)
-    - influence of quantity for the loss function'''
-    tradeoff=question('SchNet tradeoff file:',str)
-    tradeoff=os.path.expandvars(os.path.expanduser(tradeoff))
-    INFOS['tradeoff']=tradeoff"""
-    #specify the path to Icond_00000 - this is necessary for phasecorrections when NNs need to be trained again
-    print centerstring('Path to NN-Reference calculation for phasecorrection',60,'-')+'\n'
-    icondpath=question('Please specify the path to the NN-reference calculation folder:',str)[0:]
-    icondpath=os.path.expandvars(os.path.expanduser(icondpath))
-    INFOS['icondpath']=icondpath
-    
-    #additional parameters
-
-    #options file
-    """if os.path.isfile('options_run.input'):
-      if checktemplate_NN('options_run.input'):
-        print 'Valid file "options_run.input" detected. '
-        usethisone=question('Use this input file?',bool,True)
-        if usethisone:
-          INFOS['NN_inputfile']='options_run.input'
-    if not 'NN_inputfile' in INFOS:
-      while True:
-        filename=question('Template filename:',str)
-        filename=os.path.expandvars(os.path.expanduser(filename))
-        if not os.path.isfile(filename):
-          print 'File %s does not exist!' % (filename)
-          continue
-        if checktemplate_NN(filename):
-          break
-      INFOS['NN_inputfile']=filename
-    print '' """
-
+    #Running on GPU 
+    print centerstring('GPU',60,'-')+'\n'
+    cuda=question('Do you want to calculate on a GPU?',bool,False)
+    if cuda == True:
+        INFOS['cuda']="--cuda"
+    else:
+        INFOS['cuda']=""
+    #adaptive sampling 
+    print centerstring('Adaptive Sampling',60,'-')+'\n'
+    Adaptive=question('Do you want to carry out adaptive sampling',bool,False)
+    if Adaptive:
+      INFOS['adaptive'] = "--adaptive 1.0"
+      pathNN2=question('Please specify the path to the second trained SchNet model',str)[0:]
+      INFOS['modelpath2'] = pathNN2
+      INFOS['adaptive_model'] = "--modelpaths"
+      threshold_E=question('Specify the threshold for energies in a.u.',float)[0]
+      threshold_F=question('Specify the threshold for forcess in a.u.',float)[0]
+      threshold_Mu=question('Specify the threshold for dipoles in a.u.',float)[0]
+      threshold_NAC=question('Specify the threshold for nacs in a.u.',float)[0]
+      threshold_SOC=question('Specify the threshold for socs in a.u.',float)[0]
+      INFOS['adaptive_thresholds'] = "--thresholds %s %s %s %s %s " %(threshold_E,threshold_F,threshold_Mu,threshold_NAC,threshold_SOC)
+      printuncertainty = question('Do you want to print the uncertainty between the networks?',bool,False)
+      if printuncertainty == True:
+          INFOS['print_uncertainty'] = "--print_uncertainty"
+      else:
+          INFOS['print_uncertainty'] = ""
+    else:
+      INFOS['adaptive'] = ""
+      INFOS['modelpath2'] = ""
+      INFOS['adaptive_model'] = ""
+      INFOS['adaptive_thresholds'] = ""
+      INFOS['print_uncertainty'] = ""
     #get options for the second interface used to generate trainingsdata
     #NAC approximation 
     while True:
       print centerstring('NN-NAC-Approximation',60,'-')+'\n'
       NACapprox=question('Do you want to approximate NAC vectors by using the direction from difference-Hessians and the magnitude from energy gaps?',bool,True)
       if NACapprox:
-        INFOS['NACapprox'] = "--hessian"
+        INFOS['NACapprox'] = "--hessian --nac_approx"
+        deltaH=question('Which NAC approximation do you want to use? Set 1 for an accurate ML model and 2 for a model that slightly overestimates energy gaps',float)[0]
+        threshold_dE_S=question('Which energy gap do you want to use for computation of singlet-singlet couplings? 0.02H (0.5eV) is the default.',float)[0]
+        threshold_dE_T=question('Which energy gap do you want to use for computation of triplet-triplet couplings? 0.02H (0.5eV) is the default.',float)[0]
       else:
         INFOS['NACapprox'] = ""
-      INFOS['QMNN']['NACapprox'] = INFOS['NACapprox']
-      deltaH=question('Which NAC approximation do you want to use? Set 1 for an accurate ML model and 2 for a model that slightly overestimates energy gaps',float)[0]
-      threshold_dE_S=question('Which energy gap do you want to use for computation of singlet-singlet couplings? 0.02H (0.5eV) is the default.',float)[0]
-      threshold_dE_T=question('Which energy gap do you want to use for computation of triplet-triplet couplings? 0.02H (0.5eV) is the default.',float)[0]
-      INFOS['deltaH']=deltaH
-      INFOS['QMNN']['deltaH']=deltaH
-      INFOS['threshold_dE_S']=threshold_dE_S
-      INFOS['threshold_dE_T']=threshold_dE_T
-      INFOS['QMNN']['threshold_dE_S']=threshold_dE_S
-      INFOS['QMNN']['threshold_dE_T']=threshold_dE_T
+      INFOS['deltaH']=""
+      INFOS['threshold_dE_S']=""
+      INFOS['threshold_dE_T']=""
       break
-      
- 
-    # Interface
-    string='\n  '+'='*80+'\n'
-    string+='||'+centerstring('Choose the quantum chemistry interface',80)+'||\n'
-    string+='  '+'='*80+'\n'
-    print string
-    print '\nPlease specify the quantum chemistry interface for generation of new trainings-data for NNs (right now only possible with MOLPRO and analytically):'
-    print '%i\t%s' % (1, Interfaces[1]['description'])
-    print '%i\t%s' %(2, Interfaces[2]['description'])
-    print '%i\t%s' % (3, Interfaces[3]['description'])
-    print '%i\t%s' % (6, Interfaces[6]['description'])
-    print '%i\t%s' %(7, Interfaces[7]['description'])
-    print ''
-    while True:
-      num=question('Interface number:',int)[0]
-      if num == 3:
-        INFOS['modusofNN_run']='run_analytical'
-        INFOS['modusofNN_train']='train_analytical'
-        break
-      elif num == 1 or num == 2 or num==6 or num==7:
-        INFOS['modusofNN_run']='run'
-        INFOS['modusofNN_train']='train'
-        break
-      else:
-        print 'Please input one of the following: 1,2,3,4!'
-    INFOS['QMNN']['interface']=num
 
-
-
-    # Phasecorrection
-    string='\n '+'='*80+'\n'
-    string+='||'+centerstring('Input for generation of training data',80)+'||\n'
-    string+='  '+'='*80+'\n\n'
-    print string
-    interpolationstep=question('Please enter the number of interpolations you want to calculate for the phasecorrection between the initial geometry used for training and the one, where the NNs stop dynamics:',int,[5])[0]
-    INFOS['QMNN']['interpolationstep']=int(interpolationstep)
-
-    # Simulation time
-    """print centerstring('Simulation time',60,'-')+'\n'
-    print 'Please enter the simulation time for dynamics with the QM interface each time the NNs stop.'
-    while True:
-      num=question('Simulation time (fs):',float,[1000.])[0]
-      if num<=0:
-        print 'Simulation time must be positive!'
-        continue
-      break"""
-    INFOS['QMNN']['tmax']=float(0.1)
     num=float(0.1)
-    
-    # Timestep
-    """print '\nPlease enter the simulation timestep (0.5 fs recommended).'
-    while True:
-      dt=question('Simulation timestep (fs):',float,[0.5])[0]
-      if dt<=0:
-        print 'Simulation timestep must be positive!'
-        continue
-      break"""
-    INFOS['QMNN']['dtstep']=float(0.5)
     dt=float(0.5)
     print '\nSimulation will have %i timesteps.' % (num/dt+1)
 
 
-    # number of substeps
-    """print '\nPlease enter the number of substeps for propagation (25 recommended).'
-    while True:
-      nsubstep=question('Nsubsteps:',int,[25])[0]
-      if nsubstep<=0:
-        print 'Enter a positive integer!'
-        continue
-      break"""
-    INFOS['QMNN']['nsubstep']=25
-      # Dynamics options
     string='\n  '+'='*80+'\n'
     string+='||'+centerstring('Surface Hopping dynamics settings',80)+'||\n'
     string+='  '+'='*80+'\n\n'
-    print string
     # Interface-specific section
-    INFOS['QMNN']=globals()[Interfaces[ INFOS['QMNN']['interface']]['get_routine'] ](INFOS['QMNN'])
-    INFOS['QMNN']['CPU']=int(1) 
     return INFOS
 
-# =================================================
-def prepare_SchNet(INFOS,iconddir):
-    return
-
-def prepare_NN(INFOS,iconddir):
-  # write SH2PRO.inp
-  try:
-    sh2nn=open('%s/QM/SH2NN.inp' % (iconddir), 'w')
-    sh2nn_init=open('NN/SH2NN.inp', 'w')
-  except IOError:
-    print 'IOError during prepareNN, iconddir=%s' % (iconddir)
-    quit(1)
-  string='''savedir %s/%srestart
-weightpath all_weights.pkl
-datafile %s
-QMout %s/%sQM/QM.out
-pathQMout ./
-stoppath %s/%s
-mode %s
-tmax %s
-dt %s
-options options_run.input
-numberofmolecules %s
-ZhuNakamura %s
-''' % (INFOS['copydir'],
-       iconddir,
-       INFOS['nameofoutputfile'],
-       INFOS['copydir'],
-       iconddir,
-       INFOS['copydir'],
-       iconddir,
-       INFOS['modusofNN_run'],
-       INFOS['tmax'],
-       INFOS['dtstep'],
-       INFOS['numberofmolecules'],
-       INFOS['NACapprox']
-       )
-  string2='''savedir ./restart
-weightpath all_weights.pkl
-datafile %s
-QMout ./QM.out
-pathQMout ./
-stoppath ./
-tmax %s
-dt %s
-mode %s
-options options_run.input
-numberofmolecules %s
-ZhuNakamura %s
-''' % (INFOS['nameofoutputfile'],
-       INFOS['tmax'],
-       INFOS['dtstep'],
-       INFOS['modusofNN_train'],
-       INFOS['numberofmolecules'],
-       INFOS['NACapprox'])
-  sh2nn.write(string)
-  sh2nn_init.write(string2)
-  sh2nn.close()
-  sh2nn_init.close()
-  
-  # copy QM.out files
-  """cpfrom='%s%sQM/QM.out' %(INFOS['SHARCQMout'], iconddir)
-  cpto='%s/QM/QM.out' % (iconddir)
-  shutil.copy(cpfrom,cpto)"""
-  # runQM.sh
-  if INFOS['write_qminqmout']==False:
-    INFOS['script']='/SHARC_NN_adaptive.py '
-    s='''NN=%s
-. ~/.bashrc
-cd QM
-OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/%s options_run.input 1 >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (INFOS['NN'],INFOS['script'])
-  else:
-    INFOS['script']='/schnarc_md.py '
-    s='''NN=%s
-cd QM
-. ~/.bashrc
-
-OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/%s input QM/SH2NN.inp 0 >> QM.log 2>> QM.err
-err=$?
-
-exit $err''' % (INFOS['NN'],INFOS['script'])
-  runname=iconddir+'/QM/runQM.sh'
-  runscript=open(runname,'w')
-  runscript.write(s)
-  runscript.close()
-  os.chmod(runname, os.stat(runname).st_mode | stat.S_IXUSR)
-
-  return
 
 def copyinputfile_NN(INFOS,iconddir):
   # copy optionsfile
@@ -3504,7 +1255,6 @@ Note that in any case this script will setup the input subdirectories in the cur
     INFOS['copydir']=question('Run directory?',str)
     if INFOS['interface']==8:
       INFOS['copyQMin']=INFOS['cwd']
-  INFOS['QMNN']['here']=INFOS['here']
   print ''
 
   print centerstring('Submission script',60,'-')+'\n'
@@ -3513,25 +1263,15 @@ Note that in any case this script will setup the input subdirectories in the cur
   qsub=question('Generate submission script?',bool,False)
   if not qsub:
     INFOS['qsub']=False
-    if INFOS['interface']==8:
-      INFOS['QMNN']['qsub']=False
   else:
     INFOS['qsub']=True
     if INFOS['interface']==8:
-      INFOS['QMNN']['qsub']=True
       print '\nPlease enter a queue submission command, including possibly options to the queueing system,\ne.g. for SGE: "qsub -q queue.q -S /bin/bash -cwd" (Currently only polonium and lead possible for NN)'
     else:
       print '\nPlease enter a queue submission command, including possibly options to the queueing system,\ne.g. for SGE: "qsub -q queue.q -S /bin/bash -cwd" (Do not type quotes!).'
     INFOS['qsubcommand']=question('Submission command?',str,None,False)
     INFOS['proj']=question('Project Name:',str,None,False)
-    INFOS['QMNN']['qsubcommand']=INFOS['qsubcommand']
-    INFOS['QMNN']['proj']='QM'+INFOS['proj']
 
-  if INFOS['interface']==8:
-    subhost='polonium1'
-    INFOS['QMNN']['submissionhost']=question('\nPlease enter the name of a submission host from which you can start calculations with the QM interface, when trajectories broke with NNs:',str,subhost,False)
-  else:
-    pass
 
   print ''
   return INFOS
@@ -3607,18 +1347,6 @@ def writeSHARCinput(INFOS,initobject,iconddir,istate):
     s+='scaling %f\n' % (INFOS['scaling'])
   if INFOS['damping']:
     s+='dampeddyn %f\n' % (INFOS['damping'])
-  if INFOS['phases_from_interface']:
-    s+='phases_from_interface\n'
-  if INFOS['nn_trainingsdata']:
-    s+='phases_at_zero\n'
-  ## in MOLPRO gradient/ddr calculations must not be done in same run as overlap/ddt, so make selection with infinite threshold
-  #if Interfaces[INFOS['interface']]['script']=='SHARC_MOLPRO.py' and not Couplings[INFOS['coupling']]['name']=='ddr' and not (INFOS['sel_g'] or INFOS['sel_t']):
-    #s+='grad_select\n'
-    #if INFOS['gradcorrect'] or EkinCorrect[INFOS['ekincorrect']]['name']=='parallel_nac':
-      #s+='nac_select\n'
-    #s+='eselect %f\n' % (999999.9)
-  # every other case
-  #else:
   if INFOS['sel_g']:
     s+='grad_select\n'
   else:
@@ -3630,15 +1358,6 @@ def writeSHARCinput(INFOS,initobject,iconddir,istate):
       s+='nac_all\n'
   if 'eselect' in INFOS:
     s+='eselect %f\n' % (INFOS['eselect'])
-  if Interfaces[INFOS['interface']]['script']=='SHARC_COLUMBUS.py':
-    s+='select_directly\n'
-  if Interfaces[INFOS['interface']]['script']=='SHARC_ADF.py':
-    s+='select_directly\n'
-  if Interfaces[INFOS['interface']]['script']=='SHARC_RICC2.py':
-    s+='select_directly\n'
-  if Interfaces[INFOS['interface']]['script']=='SHARC_MOLPRO.py':
-    s+='select_directly\n'
-  if Interfaces[INFOS['interface']]['script']=='SHARC_MOLCAS.py':
     s+='select_directly\n'
   if INFOS['soc']:
     s+='nospinorbit\n'
@@ -3658,12 +1377,6 @@ def writeSHARCinput(INFOS,initobject,iconddir,istate):
     s+='write_property2d\n'
     s+='n_property2d %i\n' % (1)
 
-  # laser
-  if INFOS['laser']:
-    s+='laser external\n'
-    s+='laserfile "laser"\n'
-    if INFOS['dipolegrad']:
-      s+='dipole_gradient'
 
   if 'ion' in INFOS and INFOS['ion']:
     s+='ionization\n'
@@ -3690,10 +1403,6 @@ def writeSHARCinput(INFOS,initobject,iconddir,istate):
     velocf.write(atom.velocstring()+'\n')
   velocf.close()
 
-  # laser file
-  if INFOS['laser']:
-    laserfname=iconddir+'/laser'
-    shutil.copy(INFOS['laserfile'],laserfname)
 
   return
 
@@ -3705,10 +1414,6 @@ def writeRunscript(INFOS,iconddir):
     # if NNs are used, the runscript will be written into the subdirectory QM
     if INFOS['interface']==8:
       runscript=open('%s/run.sh' % ('NN/'+iconddir), 'w')
-      phasecorrectionscript=open('%s/phasecorrection.sh' % ('QM/'+iconddir), 'w')
-      #this is only the case when the 1st interface are NNs - 2nd interface for generation of trainingsdata is prepared
-    elif INFOS['QM_NN']==True:
-      runscript=open('%s/run.sh' %('QM/'+iconddir), 'w' )
     #this is the option for every interface except for NNs
     else:
       runscript=open('%s/run.sh' % (iconddir), 'w' )
@@ -3726,15 +1431,10 @@ def writeRunscript(INFOS,iconddir):
     intstring='. %s' % (INFOS['adfrc'])
 
   # ================================ for here mode
-  if INFOS['here']:
-    if INFOS['interface']==8:
-	
-	
+  if INFOS['interface']==8:
         string='''#$-N %s
 PRIMARY_DIR=%s/%s
-PRIMARY_DIR_superior=%s/
-PRIMARY_DIR2=%s/%s
-SchNarc=%s
+SCHNARC=%s
 SHARC=%s
 . ~/.bashrc
 
@@ -3742,515 +1442,73 @@ SHARC=%s
 cd $PRIMARY_DIR/
 printf '' > 'RUN'
 rm -f STOP
-OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s pred %s %s %s --nac_approx %f %f %f 
+python -O  $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
 grep -q -F "restart" input || echo "restart" >> input
 rm -f STOP
 
-l=1
-j=0
-
-sed -i "s/j=${j}/j=${l}/" "$PRIMARY_DIR2/phasecorrection.sh" >> $PRIMARY_DIR2/phasecorrection.sh
-sed -i "s!j=${l}/j=${l}!j=${j}/j=${l}!" "$PRIMARY_DIR2/phasecorrection.sh" >> $PRIMARY_DIR2/phasecorrection.sh
-
-let l=$l+1
-let j=$j+1
-
-if [ -e "$PRIMARY_DIR/RUN" ]
-then
- sed -i "s/l=${j}/l=${l}/" "$PRIMARY_DIR2/phasecorrection.sh" >> $PRIMARY_DIR2/phasecorrection.sh
- sed -i "s!l=${l}/l=${l}!l=${j}/l=${l}!" "$PRIMARY_DIR2/phasecorrection.sh" >> $PRIMARY_DIR2/phasecorrection.sh
- #ssh %s "%s -pe smp %i -binding linear:%i $PRIMARY_DIR2/phasecorrection.sh"
-fi
-
-exit()
-
-''' % (projname,INFOS['cwdNN'],iconddir,INFOS['cwd_superior'],INFOS['cwdQM'],iconddir,INFOS['NN'],INFOS['SHARCpath'],Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['QMNN']['submissionhost'],INFOS['qsubcommand'],INFOS['QMNN']['CPU'],INFOS['QMNN']['CPU'])
-
-        string_phase='''#$-N %s
-PRIMARY_DIR=%s/%s
-PRIMARY_DIR_superior=%s/
-PRIMARY_DIR2=%s/%s
-NN=%s
-SHARC=%s
-. ~/.bashrc
-
-l=1
-j=0
-
-let l=$l-1
-let j=$j-1
-
-if [ -e "$PRIMARY_DIR/QM/RUN" ]
-then
- sed -i "s/j=${j}/j=${l}/" "$PRIMARY_DIR/QM/run.sh" >> $PRIMARY_DIR/QM/run.sh
- sed -i "s!/j=${l}/j=${l}!/j=${j}/j=${l}!" "$PRIMARY_DIR/QM/run.sh" >> $PRIMARY_DIR/QM/run.sh
- /user/julia/anaconda3/bin/python -O  $NN/NN_phasecorrection.py $PRIMARY_DIR_2/ $PRIMARY_DIR/ %s/ $PRIMARY_DIR_superior/ %i $l
- #/user/julia/anaconda3/bin/python -O  $NN/append_outputfile.py $PRIMARY_DIR_2/${j}_SCAN/QM/output.dat %s
- err=$?
- /sratch/dubnium/julia/anaconda3/bin/python -O  $NN/append_outputfile.py $PRIMARY_DIR_2/${l}_TRAJ/output.dat %s
- scp %s $PRIMARY_DIR/QM/
- let l=$l+1
- let j=$j+1
-fi
-
-if [ $err == 0 ];
-then
- sed -i "s/mode run/mode train/" "$PRIMARY_DIR/QM/SH2NN.inp" >> $PRIMARY_DIR/QM/SH2NN.inp
- sed -i "s/l=${j}/l=${l}/" "$PRIMARY_DIR/QM/run.sh" >> $PRIMARY_DIR/QM/run.sh
- sed -i "s!/l=${l}/l=${l}!/l=${j}/l=${l}!" "$PRIMARY_DIR/QM/run.sh" >> $PRIMARY_DIR/QM/run.sh
- sed -i "s/mkdir/#mkdir/" "$PRIMARY_DIR/QM/run.sh" >> $PRIMARY_DIR/QM/run.sh
-else
- sed -i "s/l=${j}/l=${l}/" "$PRIMARY_DIR/QM/run.sh" >> $PRIMARY_DIR/QM/run.sh
- sed -i "s!/l=${l}/l=${l}!/l=${j}/l=${l}!" "$PRIMARY_DIR/QM/run.sh" >> $PRIMARY_DIR/QM/run.sh
- exit()
-fi
-
-s#sh %s "%s $PRIMARY_DIR/QM/run.sh"
-cd $PRIMARY_DIR/
-rm STOP
-
-exit()
-
-''' % (projname,INFOS['cwdNN'],iconddir,INFOS['cwd_superior'],INFOS['cwdQM'],iconddir,INFOS['NN'],INFOS['SHARCpath'],INFOS['icondpath'],INFOS['QMNN']['interpolationstep'],INFOS['cwd_superior']+'/NN/'+INFOS['nameofoutputfile'],INFOS['cwd_superior']+'/NN/'+INFOS['nameofoutputfile'],INFOS['cwd_superior']+'/NN/'+INFOS['nameofoutputfile'],INFOS['QMNN']['submissionhost'],INFOS['qsubcommand'])
-
-    else:
-	
-      string='''#!/bin/bash
-
-#$-N %s
-
-%s
-
-PRIMARY_DIR=%s/%s
-
-cd $PRIMARY_DIR
-
-$SHARC/sharc.x input
-'''   % (projname,intstring,INFOS['cwd'],iconddir)
-
-  elif INFOS['qsub']:
+''' % (projname,INFOS['cwdNN'],iconddir,INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'],INFOS['cuda'])
+  if INFOS['qsub']:
     string='#$ -v USER_EPILOG=%s/epilog.sh' % (iconddir)
     if INFOS['interface']==8:
         # sed -i "/End of header array data/q" output.dat
         #copy and primary dir with index 2 refer to the QM calcualtions
         if INFOS['write_qminqmout']==False:
-          INFOS['script']='/SHARC_NN_adaptive.py'
           string='''#$-N %s
 
 PRIMARY_DIR=%s/%s
-PRIMARY_DIR_2=%s/%s
-PRIMARY_DIR_superior=%s
-COPY_DIR=%s/%s
-COPY_DIR_superior=%s/
-COPY_DIR_2=%s/%s
-SchNarc=%s
+COPY_DIR=%s
+SCHNARC=%s
 SHARC=%s
 . ~/.bashrc
 
-mkdir $COPY_DIR_superior
-mkdir $COPY_DIR_superior/NN/
-mkdir $COPY_DIR_superior/NN/Singlet_0
-mkdir $COPY_DIR_superior/NN/Singlet_1
-mkdir $COPY_DIR_superior/NN/Singlet_2
-mkdir $COPY_DIR_superior/NN/Singlet_3
-mkdir $COPY_DIR_superior/NN/Singlet_4
-mkdir $COPY_DIR_superior/QM
-mkdir $COPY_DIR_superior/QM/Singlet_0
-mkdir $COPY_DIR_superior/QM/Singlet_1
-mkdir $COPY_DIR_superior/QM/Singlet_2
-mkdir $COPY_DIR_superior/QM/Singlet_3
-mkdir $COPY_DIR_superior/QM/Singlet_4
-mkdir $COPY_DIR
-mkdir $COPY_DIR_2
 cp -r $PRIMARY_DIR/* $COPY_DIR/
-cp -r $PRIMARY_DIR_2/* $COPY_DIR_2/
-cp $PRIMARY_DIR_superior/%s $COPY_DIR/
 
 cd $COPY_DIR/
-cp output_all.dat QM/
-printf '' > 'QM/RUN'
 
 l=1
 j=0
 
-#for training
-#OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s train %s %s $j >> QM.time 2>> QM.err
+python  $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
 
-sed -i "s/mode train/mode run/" "$COPY_DIR/QM/SH2NN.inp" >> $COPY_DIR/QM/SH2NN.inp
-#grep -q -F "restart" input || echo "restart" >> input
-OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s pred %s %s %s --nac_approx %f %f %f  >> QM.time 2>> QM.err
-rm -f STOP
-
-sed -i "s/j=${j}/j=${l}/" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-sed -i "s!j=${l}/j=${l}/!j=${j}/j=${l}/!" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-
-let l=$l+1
-let j=$j+1
-
-cp -r $COPY_DIR/output.* $COPY_DIR/restart.* $COPY_DIR/restart/ $COPY_DIR/geom $COPY_DIR/input $COPY_DIR/QM.* $PRIMARY_DIR
-cp $COPY_DIR/QM/QM.* $COPY_DIR/QM/RUN $COPY_DIR/QM/runQM.sh $PRIMARY_DIR/QM/
-
-sed -i "s/l=${j}/l=${l}/" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-sed -i "s!l=${l}/l=${l}!l=${j}/l=${l}!" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-cp $COPY_DIR_2/phasecorrection.sh $PRIMARY_DIR_2/phasecorrection.sh
-
-if [ ${l} -eq 10 ]
-then
- rm -rf $COPY_DIR_superior
- exit
-else
- if [ -e "$COPY_DIR/RUN" ]
- then
-  #ssh %s "%s -pe smp %i -binding linear:%i $PRIMARY_DIR_2/phasecorrection.sh"
-  rm -rf $COPY_DIR_superior
-  exit
- fi
-fi
-
+mv -r $COPY_DIR/* $PRIMARY_DIR/
+mv $COPY_DIR/* $PRIMARY_DIR/
 exit
-'''       % (projname,INFOS['cwdNN'],iconddir,INFOS['cwdQM'],iconddir,INFOS['cwd_superior'],INFOS['copydirNN'],iconddir,INFOS['copydir_superior'],INFOS['copydirQM'],iconddir,INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'], INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['QMNN']['submissionhost'],INFOS['qsubcommand'], INFOS['QMNN']['CPU'],INFOS['QMNN']['CPU'])
 
-          string_phase='''#$-N %s
-
-PRIMARY_DIR=%s/%s
-PRIMARY_DIR_2=%s/%s
-PRIMARY_DIR_superior=%s
-COPY_DIR=%s/%s
-COPY_DIR_superior=%s/
-COPY_DIR_2=%s/%s
-NN=%s
-SHARC=%s
-. ~/.bashrc
-
-mkdir $COPY_DIR_superior
-mkdir $COPY_DIR_superior/NN/
-mkdir $COPY_DIR_superior/NN/Singlet_0
-mkdir $COPY_DIR_superior/NN/Singlet_1
-mkdir $COPY_DIR_superior/NN/Singlet_2
-mkdir $COPY_DIR_superior/NN/Singlet_3
-mkdir $COPY_DIR_superior/NN/Singlet_4
-mkdir $COPY_DIR_superior/QM
-mkdir $COPY_DIR_superior/QM/Singlet_0
-mkdir $COPY_DIR_superior/QM/Singlet_1
-mkdir $COPY_DIR_superior/QM/Singlet_2
-mkdir $COPY_DIR_superior/QM/Singlet_3
-mkdir $COPY_DIR_superior/QM/Singlet_4
-cp $PRIMARY_DIR_superior/output.header $COPY_DIR_superior/output.header
-cp -r $PRIMARY_DIR/ $COPY_DIR/
-cp -r $PRIMARY_DIR_2/ $COPY_DIR_2/
-cp $PRIMARY_DIR_superior/output_all.dat $COPY_DIR_superior/
-
-
-l=1
-j=0
-
-cd $COPY_DIR_2
-
-let l=$l-1
-let j=$j-1
-
-if [ -e "$COPY_DIR/QM/RUN" ]
-then
- sed -i "s/j=${j}/j=${l}/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
- sed -i "s!/j=${l}/j=${l}!/j=${j}/j=${l}!" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
- OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/NN_phasecorrection.py $COPY_DIR_2/ $COPY_DIR/ %s/ $COPY_DIR_superior/ %i $l
- /user/julia/anaconda3/bin/python -O  $NN/append_outputfile.py $COPY_DIR_2/${j}_SCAN/QM/output.dat %s
- err=$?
- scp %s $PRIMARY_DIR/QM/
- let l=$l+1
- let j=$j+1
- sed -i "s/#OMP/OMP/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
- sed -i "s/#grep/grep/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
-fi
-
-sed -i "s/mode run/mode train/" "$COPY_DIR/QM/SH2NN.inp" >> $COPY_DIR/QM/SH2NN.inp
-sed -i "s/l=${j}/l=${l}/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
-sed -i "s!/l=${l}/l=${l}!/l=${j}/l=${l}!" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
-
-cp $COPY_DIR/QM/SH2NN.inp $PRIMARY_DIR/QM/
-cp $COPY_DIR/QM/run.sh $PRIMARY_DIR/QM/
-cp $COPY_DIR_2/${j}_SCAN/QM/output.dat $PRIMARY_DIR_2/output_SCAN${j}.dat
-cp $COPY_DIR_2/${j}_TRAJ/output_phasecorrected.dat $PRIMARY_DIR_2/output_TRAJ${j}.dat
-
-if [ $err == 0 ];
-then
- #ssh %s "%s $PRIMARY_DIR/QM/run.sh"
- rm -rf $COPY_DIR_superior
- exit
-else
- cp -r $COPY_DIR_2/${j}_SCAN $PRIMARY_DIR_2/${j}_SCAN_failed
- cp -r $COPY_DIR_2/_${l}_SCAN $PRIMARY_DIR_2/${l}_SCAN_failed
- rm -rf $COPY_DIR_superior
- exit
-fi'''
+''' % (projname,INFOS['cwdNN'],iconddir,INFOS['copydir'],INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'],INFOS['cuda'])
         else:
           INFOS['script']='/schnarc_md.py'
           string='''#$-N %s
 
 PRIMARY_DIR=%s/%s
-PRIMARY_DIR_2=%s/%s
-PRIMARY_DIR_superior=%s
-COPY_DIR=%s/%s
-COPY_DIR_superior=%s/
-COPY_DIR_2=%s/%s
-SchNarc=%s
+COPY_DIR=%s
+SCHNARC=%s
 SHARC=%s
 . ~/.bashrc
 
-mkdir $COPY_DIR_superior
-mkdir $COPY_DIR_superior/NN/
-mkdir $COPY_DIR_superior/NN/Singlet_0
-mkdir $COPY_DIR_superior/NN/Singlet_1
-mkdir $COPY_DIR_superior/NN/Singlet_2
-mkdir $COPY_DIR_superior/NN/Singlet_3
-mkdir $COPY_DIR_superior/NN/Singlet_4
-mkdir $COPY_DIR_superior/QM
-mkdir $COPY_DIR_superior/QM/Singlet_0
-mkdir $COPY_DIR_superior/QM/Singlet_1
-mkdir $COPY_DIR_superior/QM/Singlet_2
-mkdir $COPY_DIR_superior/QM/Singlet_3
-mkdir $COPY_DIR_superior/QM/Singlet_4
 mkdir $COPY_DIR
-mkdir $COPY_DIR_2
 cp -r $PRIMARY_DIR/* $COPY_DIR/
-cp -r $PRIMARY_DIR_2/* $COPY_DIR_2/
 
 cd $COPY_DIR/
 printf '' > 'RUN'
 
-l=1
-j=0
-
-#for training
-#OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s train %s %s >> QM.time 2>> QM.err
-
-#grep -q -F "restart" input || echo "restart" >> input
-OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s pred %s %s %s --nac_approx %f %f %f >> QM.time 2>> QM.err
-rm -f STOP
-
-sed -i "s/j=${j}/j=${l}/" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-sed -i "s!j=${l}/j=${l}/!j=${j}/j=${l}/!" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-
-let l=$l+1
-let j=$j+1
-
-cp -r $COPY_DIR/output.* $COPY_DIR/restart.* $COPY_DIR/restart/ $COPY_DIR/geom $COPY_DIR/input $COPY_DIR/QM.* $PRIMARY_DIR
-cp $COPY_DIR/QM/QM.* $COPY_DIR/RUN $COPY_DIR/QM/runQM.sh $PRIMARY_DIR/QM/
-
-sed -i "s/l=${j}/l=${l}/" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-sed -i "s!l=${l}/l=${l}!l=${j}/l=${l}!" "$COPY_DIR_2/phasecorrection.sh" >> $COPY_DIR_2/phasecorrection.sh
-cp $COPY_DIR_2/phasecorrection.sh $PRIMARY_DIR_2/phasecorrection.sh
-
-if [ ${l} -eq 10 ]
-then
- rm -rf $COPY_DIR_superior
- exit
-else
- if [ -e "$COPY_DIR/RUN" ]
- then
-  #ssh %s "%s -pe smp %i -binding linear:%i $PRIMARY_DIR_2/phasecorrection.sh"
-  rm -rf $COPY_DIR_superior
-  exit
- fi
-fi
-
+python $SCHNARC/%s pred %s %s %s %s %s %s %s %s %s %s %s %s >> NN.log 2>> NN.err
+mv -r $COPY_DIR/* $PRIMARY_DIR/
+mv $COPY_DIR/* $PRIMARY_DIR/
 exit
-'''       % (projname,INFOS['cwdNN'],iconddir,INFOS['cwdQM'],iconddir,INFOS['cwd_superior'],INFOS['copydirNN'],iconddir,INFOS['copydir_superior'],INFOS['copydirQM'],iconddir,INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['QMNN']['submissionhost'],INFOS['qsubcommand'], INFOS['QMNN']['CPU'],INFOS['QMNN']['CPU'])
-
-          string_phase='''#$-N %s
-
-PRIMARY_DIR=%s/%s
-PRIMARY_DIR_2=%s/%s
-PRIMARY_DIR_superior=%s
-COPY_DIR=%s/%s
-COPY_DIR_superior=%s/
-COPY_DIR_2=%s/%s
-NN=%s
-SHARC=%s
-. ~/.bashrc
-
-mkdir $COPY_DIR_superior
-mkdir $COPY_DIR_superior/NN/
-mkdir $COPY_DIR_superior/NN/Singlet_0
-mkdir $COPY_DIR_superior/NN/Singlet_1
-mkdir $COPY_DIR_superior/NN/Singlet_2
-mkdir $COPY_DIR_superior/NN/Singlet_3
-mkdir $COPY_DIR_superior/NN/Singlet_4
-mkdir $COPY_DIR_superior/QM
-mkdir $COPY_DIR_superior/QM/Singlet_0
-mkdir $COPY_DIR_superior/QM/Singlet_1
-mkdir $COPY_DIR_superior/QM/Singlet_2
-mkdir $COPY_DIR_superior/QM/Singlet_3
-mkdir $COPY_DIR_superior/QM/Singlet_4
-cp $PRIMARY_DIR_superior/output.header $COPY_DIR_superior/output.header
-cp -r $PRIMARY_DIR/ $COPY_DIR/
-cp -r $PRIMARY_DIR_2/ $COPY_DIR_2/
-cp $PRIMARY_DIR_superior/output_all.dat $COPY_DIR_superior/output_all.dat
 
 
-l=1
-j=0
+''' % (projname,INFOS['cwdNN'],iconddir,INFOS['copydir'],INFOS['NN'],INFOS['SHARCpath'],INFOS['script'],INFOS['datapath'],INFOS['modelpath'],INFOS['NACapprox'],INFOS['deltaH'],INFOS['threshold_dE_S'],INFOS['threshold_dE_T'],INFOS['adaptive'],INFOS['adaptive_model'],INFOS['modelpath2'],INFOS['adaptive_thresholds'],INFOS['print_uncertainty'],INFOS['cuda'])
 
-cd $COPY_DIR_2
-
-let l=$l-1
-let j=$j-1
-
-if [ -e "$COPY_DIR/QM/RUN" ]
-then
- sed -i "s/j=${j}/j=${l}/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
- sed -i "s!/j=${l}/j=${l}!/j=${j}/j=${l}!" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
- OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/NN_phasecorrection.py $COPY_DIR_2/ $COPY_DIR/ %s/ $COPY_DIR_superior/ %i $l
- err=$?
- let l=$l+1
- let j=$j+1
- sed -i "s/#OMP/OMP/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
- sed -i "s/#grep/grep/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
-fi
-
-sed -i "s/mode run/mode train/" "$COPY_DIR/QM/SH2NN.inp" >> $COPY_DIR/QM/SH2NN.inp
-sed -i "s/l=${j}/l=${l}/" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
-sed -i "s!/l=${l}/l=${l}!/l=${j}/l=${l}!" "$COPY_DIR/QM/run.sh" >> $COPY_DIR/QM/run.sh
-
-cp $COPY_DIR/QM/SH2NN.inp $PRIMARY_DIR/QM/
-cp $COPY_DIR/QM/run.sh $PRIMARY_DIR/QM/
-cp $COPY_DIR_2/${j}_SCAN/QM/output.dat $PRIMARY_DIR_2/output_SCAN${j}.dat
-cp $COPY_DIR_2/${j}_TRAJ/output_phasecorrected.dat $PRIMARY_DIR_2/output_TRAJ${j}.dat
-
-if [ $err == 0 ];
-then
- #ssh %s "%s -binding linear:1 $PRIMARY_DIR/QM/run.sh"
- rm -rf $COPY_DIR_superior
- exit
-else
- cp -r $COPY_DIR_2/${j}_SCAN $PRIMARY_DIR_2/${j}_SCAN_failed
- cp -r $COPY_DIR_2/${l}_SCAN $PRIMARY_DIR_2/${l}_SCAN_failed
- rm -rf $COPY_DIR_superior
- exit
-fi
-
-
-''' % (projname,INFOS['cwdNN'],iconddir,INFOS['cwdQM'], iconddir, INFOS['cwd_superior'], INFOS['copydirNN'],iconddir,INFOS['copydir_superior'],INFOS['copydirQM'],iconddir,INFOS['NN'],INFOS['SHARCpath'],INFOS['icondpath'],INFOS['QMNN']['interpolationstep'],INFOS['QMNN']['submissionhost'],INFOS['qsubcommand'])
-
-#for QM calculations without NNs
-    else:
-      if INFOS['QM_NN']==True:
-        string+='''
-%s
-
-PRIMARY_DIR=%s/%s
-COPY_DIR=%s/%s
-
-mkdir -p $COPY_DIR
-cp -r $PRIMARY_DIR/* $COPY_DIR
-cd $COPY_DIR
-echo $HOSTNAME > $PRIMARY_DIR/host_info
-echo $(pwd) >> $PRIMARY_DIR/host_info
-echo $(date) >> $PRIMARY_DIR/host_info
-
-$SHARC/sharc.x input
-err=$?
-
-cp -r $COPY_DIR/output.* $COPY_DIR/restart.* $COPY_DIR/restart/ $PRIMARY_DIR
-
-exit()
-'''     % (intstring,INFOS['cwd'], iconddir, INFOS['copydir'], iconddir)
-      else:
-        string+='''
-%s
-
-PRIMARY_DIR=%s/%s
-COPY_DIR=%s/%s
-
-mkdir -p $COPY_DIR
-cp -r $PRIMARY_DIR/* $COPY_DIR
-cd $COPY_DIR
-echo $HOSTNAME > $PRIMARY_DIR/host_info
-echo $(pwd) >> $PRIMARY_DIR/host_info
-echo $(date) >> $PRIMARY_DIR/host_info
-
-$SHARC/sharc.x input
-err=$?
-
-cp -r $COPY_DIR/output.* $COPY_DIR/restart.* $COPY_DIR/restart/ $PRIMARY_DIR
-
-if [ $err == 0 ];
-then
-  rm -r $COPY_DIR
-else
-  echo "The calculation crashed at
-date = $(date)
-with error code $err. 
-Please inspect the trajectory on
-host = $HOSTNAME
-in
-dir  = $(pwd)
-" > $PRIMARY_DIR/README
-fi
-'''   % (intstring,INFOS['cwd'], iconddir, INFOS['copydir'], iconddir)
- 
-  # ================================ for remote mode
-  else:
-    string='''#!/bin/bash
-
-#$-N %s
-''' % (projname)
-  
   runscript.write(string)
   runscript.close()
 
   if INFOS['interface']==8:
       filename='NN/'+iconddir+'/run.sh'
       os.chmod(filename, os.stat(filename).st_mode | stat.S_IXUSR)
-      #phasecorrectionscript.write(string_phase)
-      #iphasecorrectionscript.close()
-      filename='QM/'+iconddir+'/phasecorrection.sh'
-      os.chmod(filename, os.stat(filename).st_mode | stat.S_IXUSR)
-  elif INFOS['QM_NN']==True:
-    filename='QM/'+iconddir+'/run.sh'
-    os.chmod(filename, os.stat(filename).st_mode | stat.S_IXUSR)
   else:
     filename=iconddir+'/run.sh'
     os.chmod(filename, os.stat(filename).st_mode | stat.S_IXUSR)
 
-  # also write an epilog script
-  if not INFOS['here'] and INFOS['qsub']:
-    try:
-      if INFOS['interface']==8:
-	if INFOS['QM_NN']==False:
-	  episcript=open('NN/'+iconddir+'/epilog.sh','w')
-          string='''PRIMARY_DIR=%s/%s
-COPY_DIR=%s/%s
-
-cp $COPY_DIR/output.* $COPY_DIR/restart.* $PRIMARY_DIR
-rm -r $COPY_DIR
-'''       % (INFOS['cwd'], iconddir, INFOS['copydir'], iconddir)
-          episcript.write(string)
-          episcript.close()
-      elif INFOS['QM_NN']==True:
-        episcript=open('QM/'+iconddir+'/epilog.sh','w')
-        string='''PRIMARY_DIR=%s/%s
-COPY_DIR=%s/%s
-
-cp $COPY_DIR/output.* $COPY_DIR/restart.* $PRIMARY_DIR
-rm -r $COPY_DIR
-'''     % (INFOS['cwd'], iconddir, INFOS['copydir'], iconddir)
-        episcript.write(string)
-        episcript.close()
-      else:
-        episcript=open(iconddir+'/epilog.sh','w')
-        string='''#/bin/bash
-
-PRIMARY_DIR=%s/%s
-COPY_DIR=%s/%s
-
-cp $COPY_DIR/output.* $COPY_DIR/restart.* $PRIMARY_DIR
-rm -r $COPY_DIR
-'''     % (INFOS['cwd'], iconddir, INFOS['copydir'], iconddir)
-        episcript.write(string)
-        episcript.close()
-    except IOError:
-      print 'Could not write epilog script for %s.' % (iconddir)
   return
 
 
@@ -4269,111 +1527,27 @@ def get_iconddir(istate,INFOS):
 # ====================================
 
 def setup_all(INFOS):
-  '''This routine sets up the directories for the initial calculations.'''
+    '''This routine sets up the directories for the initial calculations.'''
 
-  string='\n  '+'='*80+'\n'
-  string+='||'+centerstring('Setting up directories...',80)+'||\n'
-  string+='  '+'='*80+'\n\n'
-  print string
+    string='\n  '+'='*80+'\n'
+    string+='||'+centerstring('Setting up directories...',80)+'||\n'
+    string+='  '+'='*80+'\n\n'
+    print string
 
-  if INFOS['interface']==8:
-    INFOS['QMNN']['QM_NN']=True
-    INFOS['cwd_superior']=INFOS['cwd']
-    INFOS['copydir_superior']=INFOS['copydir']
-    INFOS['copydirNN']=INFOS['copydir']+'/NN'
-    INFOS['copydirQM']=INFOS['copydir']+'/QM'
+    INFOS['copydirNN']=INFOS['copydir']
     #make subdirectories NN (dynamics) and QM (training data generation) for NNs
     io=make_directory(INFOS['cwdNN'])
     if io!=0:
       print 'Could not make directory %s' % (INFOS['cwdNN'])
       quit(1)
-    io=make_directory(INFOS['cwdQM'])
-    if io!=0:
-      print 'Could not make directory %s' % (INFOS['cwdQM'])
-      quit(1)
-    #copy output_all.dat into NN folder
-    
-    # for calculating here: make file all_run.sh
-    all_runNN=open(INFOS['cwdNN']+'/all_run.sh','w')
-    all_runQM=open(INFOS['cwdQM']+'/all_run.sh','w')
-    string_nn='CWD=%s\n\n' % (INFOS['cwd_superior'])
-    string_qm='PRIMARY_DIR=%s\n\n' % (INFOS['cwd_superior'])
-    all_runNN.write(string_nn)
-    all_runQM.write(string_qm)
 
 
-    if INFOS['here']:
-      all_qsub=open('all_qsub_traj.sh','w')
-      string='CWD=%s\n\n' % (INFOS['cwdNN'])
-      #if run2: prepare train.sh file, since for this mode training needs to be included
-      #otherwise, only prepare the superior submission script
-      #train_sh=open('NN/train.sh','w')
-      #string_train='CWD=%s\nNN=%s\n\ncd $CWD/\n' %(INFOS['cwdNN'],INFOS['NN']) 
-      #string_train+='OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/%s %s >> train.log 2>> train.err\n\n' %(Interfaces[INFOS['interface']]['script'],INFOS['NN_inputfile'])
-      #string_train+='rm $CWD/train_finish'
-      #train_sh.write(string_train)
-      #train_sh.close()
-      all_nn=open('NN/all_nn.sh', 'w')
-      string='PRIMARY_DIR=%s\nCWD=%s\n\n' %(INFOS['cwd_superior'],INFOS['cwd_superior'])
-      all_nn.write(string)
-      #string+='mkdir $CWD\ncp -r $PRIMARY_DIR/* $CWD/\ncp $PRIMARY_DIR/* $CWD/\ncd $CWD/NN/\n\n'
-      string+='cd $CWD/NN/\n\n'
-      #
-      #  string+='%s train.sh\n' %(INFOS['qsubcommand'])
-      #  string+="printf '' > 'NN/train_finish'\n"
-      #  string+='err=$?\n\n'
-      #  string+='while [ -f "NN/train_finish" ]\n  do\n    sleep 10\n  done\n\n'
-        #string+='echo $HOSTNAME > $PRIMARY_DIR/host_info\necho $(pwd) >> $PRIMARY_DIR/host_info\necho $(date) >> $PRIMARY_DIR/host_info\n\n'
-      string+='bash all_nn.sh\n'
-      #if INFOS['inputmode']=='run1':
-      #  pass
-      #else:
-      #  string+='if [ $err == 0 ];\nthen\n  exit\n'
-      #  string+='else\n  echo "The calculation crashed at date=$(date) with error code $err. Please inspect the trajectory on host = $HOSTNAME in dir = $(pwd) " > $PRIMARY_DIR/README \n  exit\nfi\n\n'
-        #string+='err_init=$?\nelse\n  echo"The calculation crashed at date=$(date) with error code $err. Please inspect the trajectory on host = $HOSTNAME in dir = $(pwd) " > $PRIMARY_DIR/README\nfi\n\n'
-        #string+='if [ $err_init == 0 ];\nthen\n  cp -r $CWD/* $PRIMARY_DIR/\n  cp $CWD/* $PRIMARY_DIR/\nelse\n  echo "The calculation crashed at date = $(date) with error code $err_init . Please inspect the trajectory on host = $HOSTNAME in dir = $(pwd)" > $PRIMARY_DIR/README_runNN\nfi\n\n'
-      all_qsub.write(string)
-    if INFOS['qsub']:
-        all_qsub=open('all_qsub_traj.sh','w')
-        string='CWD=%s\n\n' % (INFOS['cwdNN'])
-        #if run2: prepare train.sh file, since for this mode training needs to be included
-        #otherwise, only prepare the superior submission script
-        train_sh=open('NN/train.sh','w')
-        string_train='CWD=%s\nNN=%s\n\ncd $TMPDIR/\n' %(INFOS['cwdNN'],INFOS['NN'])
-        string_train+='mkdir $TMPDIR\n'
-        string_train+='cp $CWD/* $TMPDIR/ \n'
-        string_train+='OMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s %s %s >> train.log 2>> train.err\n\n' %(Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'])
-        string_train+='cp $TMPDIR/train* $CWD/ \n' 
-        string_train+='$TMPDIR/all_weights.pkl %s\n' %(INFOS['cwd_superior'])
-        string_train+='rm $CWD/train_finish'
-        train_sh.write(string_train)
-        train_sh.close()
-        all_nn=open('NN/all_nn.sh', 'w')
-        string='PRIMARY_DIR=%s\nCWD=%s\n\n' %(INFOS['cwd_superior'],INFOS['copydir_superior'])
-        all_nn.write(string)
-
-        string+='%s train.sh\n' %(INFOS['qsubcommand'])
-        string+="printf '' > 'train_finish'\n"
-        string+='err=$?\n\n'
-        string+='while [ -f "train_finish" ]\n  do\n    sleep 10\n  done\n\n'
-        #string+='echo $HOSTNAME > $PRIMARY_DIR/host_info\necho $(pwd) >> $PRIMARY_DIR/host_info\necho $(date) >> $PRIMARY_DIR/host_info\n\n'
-        string+='bash all_nn.sh\n'
-        string+='if [ $err == 0 ];\nthen\n  exit\n'
-        string+='else\n  echo "The calculation crashed at date=$(date) with error code $err. Please inspect the trajectory on host = $HOSTNAME in dir = $(pwd) " > $PRIMARY_DIR/README \n  exit\n fi\n\n'
-        #string+='err_init=$?\nelse\n  echo"The calculation crashed at date=$(date) with error code $err. Please inspect the trajectory on host = $HOSTNAME in dir = $(pwd) " > $PRIMARY_DIR/README\nfi\n\n'
-        #string+='if [ $err_init == 0 ];\nthen\n  cp -r $CWD/* $PRIMARY_DIR/\n  cp $CWD/* $PRIMARY_DIR/\nelse\n  echo "The calculation crashed at date = $(date) with error code $err_init . Please inspect the trajectory on host = $HOSTNAME in dir = $(pwd)" > $PRIMARY_DIR/README_runNN\nfi\n\n'
-        all_qsub.write(string)
-     
-    #make directories for trajectories
     for istate in INFOS['setupstates']:
       dirname=get_iconddir(istate,INFOS)
-      #print dirnameNN, dirnameQM
-      
       io=make_directory('NN/'+dirname)
       if io!=0:
         print 'Could not make directory %s' % (dirname)
         quit(1)
-      io=make_directory('QM/'+dirname)
       if io!=0:
         print 'Could not make directory %s' % (dirname)
         quit(1)
@@ -4395,66 +1569,27 @@ def setup_all(INFOS):
         done=idone*width/ntraj
         sys.stdout.write('\rProgress: ['+'='*done+' '*(width-done)+'] %3i%%' % (done*100/width))
         dirname=get_iconddir(istate,INFOS)+'/TRAJ_%05i/' % (icond)
+        print(dirname)
         #print dirnameNN, dirnameQM
         io=make_directory('NN/'+dirname)
         if io!=0:
           print 'Skipping initial condition %i %i!' % (istate, icond)
           continue
-        io=make_directory('QM/'+dirname)
         if io!=0:
           print 'Skipping initial condition %i %i!' % (istate, icond)
           #writes input file ones for NN and ones for QM with different tmax, dt,...
         writeSHARCinput(INFOS,initlist[icond-1],'NN/'+dirname,istate)
-        writeSHARCinput(INFOS['QMNN'],initlist[icond-1],'QM/'+dirname,istate)
         #creates directories in both subdirectories QM and NN
         io=make_directory('NN/'+dirname+'/QM')
         io+=make_directory('NN/'+dirname+'/restart')
-        io=make_directory('QM/'+dirname+'/QM')
         if io!=0:
           print 'Could not make QM or restart directory!'
           continue
         #change copydir and cwd to prepare NN directory
         INFOS['cwd']=INFOS['cwdNN']
         INFOS['copydir']=INFOS['copydirNN']
-        globals()[Interfaces[ INFOS['interface']]['prepare_routine'] ](INFOS,'NN/'+dirname)
-	#print INFOS['copydir_superior'],INFOS['copydir'], INFOS['cwd_superior'],INFOS['cwd']
         writeRunscript(INFOS,dirname)
-        #generate QM.in files from the starting geometry using the initconds.excited file. Later copy those files into the QM folder of each trajectory.
-        #this is necessary, since the NN interface needs a starting geometry, which is read from the QM.in file, to start dynamics
         gen_QMin(INFOS,'NN/'+dirname,icond)
-        #copy the "options_run.input" file to every subdirectory 'QM' in the NN directory
-        copyinputfile_NN(INFOS,'NN/'+dirname)
-        copy_weightfile_NN(INFOS,'NN/'+dirname)
-        #change copydir and cwd to prepare QM directory
-        INFOS['QMNN']['copydir']=INFOS['copydirQM']
-        INFOS['QMNN']['cwd']=INFOS['cwdQM']
-        globals()[Interfaces[INFOS['QMNN']['interface']]['prepare_routine']](INFOS['QMNN'],'QM/'+dirname)
-        writeRunscript(INFOS['QMNN'],dirname)
-	
-	string_1='cd $CWD/%sQM\nOMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/%s pred %s %s\ncd $PRIMARY_DIR/%s\nbash run.sh\n' %('NN/'+dirname, Interfaces[INFOS['interface']]['script'], INFOS['datapath'],INFOS['modelpath'],'NN/'+dirname)
-        string_qm='\n\ncd $PRIMARY_DIR/%s/\n\n%s run.sh' %('QM/'+dirname,INFOS['qsubcommand'])
-        all_runNN.write(string_1)
-        all_runQM.write(string_qm)
-        string_allrun=''
-        if INFOS['qsub']:
-	  #string_allrun="cd $PRIMARY_DIR\n cp %s/all_weights.pkl $PRIMARY_DIR/%s/QM/all_weights.pkl\n" %(INFOS['cwd_superior'],'NN/'+dirname)
-          string_allrun+="cd $PRIMARY_DIR/%s\n%s run.sh\n" %('NN/'+dirname, INFOS['qsubcommand'])
-          #string_allrun+="cd $CWD\n cp $CWD/%s $CWD/%s/QM/all_weights.pkl\ncp $CWD/run.sh $CWD/%s/\n" %(icond, INFOS['weights'], icond)
-          string='cd $CWD/%s/\nOMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/%s %s %s \n' %('NN/'+dirname, Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'])
-          all_nn.write(string_allrun)
-        else:
-	  #string_allrun="cd $PRIMARY_DIR\n cp %s $PRIMARY_DIR/%s/QM/all_weights.pkl\n" %(INFOS['weights'],'NN/'+dirname)
-          string_allrun+="cd $PRIMARY_DIR/%s\n%s run.sh\n" %('NN/'+dirname, INFOS['qsubcommand'])
-          #string_allrun+="cd $CWD\n cp $CWD/%s $CWD/%s/QM/all_weights.pkl\ncp $CWD/run.sh $CWD/%s/\n" %(icond, INFOS['weights'], icond)
-          string='cd $CWD/%s/\nOMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $NN/%s %s %s\n' %('NN/'+dirname, Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'])
-          all_nn.write(string_allrun)
-	  string_1='cd $CWD/%s/\nbash run.sh\ncd $CWD\necho %s >> DONE\n' % ('NN/'+dirname,'NN/'+dirname)
-          string_1='while [ -f "STOP" ]\ndo\n sleep 10. \ndone'
-          #this will be expanded when submission works! NOT IMPLEMENTED YET - needs new generation of trainingsdata and  training when STOP is here
-          all_runNN.write(string_1)
-          #if INFOS['qsub']:
-          #string='cd $CWD/%s/\n%s run.sh\ncd $CWD\n' % (dirnameNN,INFOS['qsubcommand'])
-          #all_qsub.write(string)
         if idone==ntraj:
           finished=True
           break 
@@ -4467,7 +1602,7 @@ def setup_all(INFOS):
       Trajectories:         %i
       State of last traj.:  %i
 
-  '''   % (datetime.datetime.now(),
+    '''   % (datetime.datetime.now(),
            gethostname(),
            os.getcwd(),
            INFOS['firstindex'],
@@ -4477,141 +1612,8 @@ def setup_all(INFOS):
         setup_stat.write(string)
         setup_stat.close()
         break
-    all_runNN.close()
-    all_runQM.close()
-    if INFOS['qsub']:
-      all_nn.close()
-      all_qsub.close()
-      filename='all_qsub_traj.sh'
-      os.chmod(filename, os.stat(filename).st_mode | stat.S_IXUSR)
 
-  else:
-    #make sure that it is not the second interface of NNs
-    if INFOS['QM_NN']==True:
-      pass
-    else:
-      if INFOS['qsub']:
-        all_qsub=open('all_qsub_traj.sh','w')
-        string='#/bin/bash\n\nCWD=%s\n\n' % (INFOS['cwd'])
-        if INFOS['interface']==8:
-          all_nn=open('all_nn.sh', 'w')
-          all_run=open('all_run.sh','w')
-          #for trajectories, first start NN1.sh, later NN2.sh
-          string='PRIMARY_DIR=%s\nCWD=%s\n\n' %(INFOS['cwd'], INFOS['copydir'])
-          all_nn.write(string)
-          string+='cd $CWD/\n'
-          #string+='mkdir $CWD\ncp -r $PRIMARY_DIR/* $CWD/\ncp $PRIMARY_DIR/* $CWD/\ncd $CWD/\n\n'
-          #string+='echo $HOSTNAME > $PRIMARY_DIR/host_info\necho $(pwd) >> $PRIMARY_DIR/host_info\necho $(date) >> $PRIMARY_DIR/host_info\n\n'
-          string+='bash all_nn.sh\n'
-          string+='err=$?\n\n'
-          string+='if [ $err == 0 ];\nthen\n  cp -r $CWD/* $PRIMARY_DIR/\n  cp $CWD/* $PRIMARY_DIR/\nelse\n  echo "The calculation crashed at date = $(date) with error code $err_init . Please inspect the trajectory on host = $HOSTNAME in dir = $(pwd)" > $PRIMARY_DIR/README_runNN\nfi\n\n'
-        all_qsub.write(string)
- 
-      for istate in INFOS['setupstates']:
-        dirname=get_iconddir(istate,INFOS)
-        io=make_directory(dirname)
-        if io!=0:
-          print 'Could not make directory %s' % (dirname)
-          quit(1)
-
-      width=50
-      ntraj=INFOS['ntraj']
-      idone=0
-      finished=False
-
-      initlist=INFOS['initlist']
-
-      for icond in range(INFOS['firstindex'],INFOS['ninit']+1):
- 
-        for istate in INFOS['setupstates']:
-  
-          if len(initlist[icond-1].statelist)<istate:
-            continue
-          if not initlist[icond-1].statelist[istate-1].Excited:
-            continue
-
-          idone+=1
-
-          done=idone*width/ntraj
-          sys.stdout.write('\rProgress: ['+'='*done+' '*(width-done)+'] %3i%%' % (done*100/width))
-
-          dirname=get_iconddir(istate,INFOS)+'/TRAJ_%05i/' % (icond)
-          io=make_directory(dirname)
-          if io!=0:
-            print 'Skipping initial condition %i %i!' % (istate, icond)
-            continue
-
-          writeSHARCinput(INFOS,initlist[icond-1],dirname,istate)
-          io=make_directory(dirname+'/QM')
-          io+=make_directory(dirname+'/restart')
-          if INFOS['nn_trainingsdata']==True:
-            os.system('cp %s/* %s/' %(INFOS['icondpath'],dirname+'/restart/'))
-          if io!=0:
-            print 'Could not make QM or restart directory!'
-            continue
-          globals()[Interfaces[ INFOS['interface']]['prepare_routine'] ](INFOS,dirname)
-
-          writeRunscript(INFOS,dirname)
-          if INFOS['interface']==8:
-            gen_QMin(INFOS,dirname,icond)
-            #print dirname, "dirname"
-	    #cpfrom='%s/%sQM/QM.in' %(INFOS['QMinpath'],dirname)
-	    #cpto='%s/%sQM/QM.in' %(INFOS['copydir'],dirname)
-            #shutil.copy(cpfrom,cpto)
-            if INFOS['write_qminqmout']==False:
-                string_1='\ncd $PRIMARY_DIR/%s\nOMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s %s %s \ncd $PRIMARY_DIR/%s\nbash run.sh\n' %(dirname, Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'], dirname)
-            else:
-                string_1='\ncd $PRIMARY_DIR/%s\nOMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU /user/julia/anaconda3/bin/python -O  $SchNarc/%s %s %s \ncd $PRIMARY_DIR/%s\nbash run.sh\n' %(dirname, Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'], dirname)
-            all_run.write(string_1)
-            if INFOS['qsub']:
-              #string_allrun="cd $PRIMARY_DIR\n cp %s/all_weights.pkl $PRIMARY_DIR/%s/QM/all_weights.pkl\n" %(INFOS['cwd_superior'],dirname)
-              string_allrun+="cd $PRIMARY_DIR/%s/QM\n%s run.sh\n" %(dirname, INFOS['qsubcommand'])
-              #string_allrun+="cd $CWD\n cp $CWD/%s $CWD/%s/QM/all_weights.pkl\ncp $CWD/run.sh $CWD/%s/\n" %(icond, INFOS['weights'], icond)
-              if INFOS['write_qminqmout']==False:
-                  string='cd $PRIMARY_DIR/%s/\nOMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU/ /user/julia/anaconda3/bin/python -O  $SchNarc/%s %s %s \n' %(dirname, Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'])
-              else:
-	              string='cd $PRIMARY_DIR/%s/\nOMP_NUM_THREADS=1 MKL_THREADING_LAYER=GNU/ /user/julia/anaconda3/bin/python -O  $SchNarc/%s %s %s \n' %(dirname, Interfaces[INFOS['interface']]['script'],INFOS['datapath'],INFOS['modelpath'])
-              all_nn.write(string_allrun)
-            else:
-              string_1='cd $PRIMARY_DIR/%s/\nbash run.sh\ncd $CWD\necho %s >> DONE\n' % (dirname,dirname)
-              all_run.write(string_1)
-          else:
-            if INFOS['qsub']:
-              string='cd $CWD/%s/\n%s run.sh\ncd $CWD\n' % (dirname,INFOS['qsubcommand'])
-              all_qsub.write(string)
-
-          if idone==ntraj:
-            finished=True
-            break
-        if finished:
-          print '\n\n%i trajectories setup, last initial condition was %i in state %i.\n' % (ntraj,icond,istate)
-          setup_stat=open('setup_traj.status','a+')
-          string='''*** %s %s %s
-  First index:          %i
-  Last index:           %i
-  Trajectories:         %i
-  State of last traj.:  %i
-
-'''     % (datetime.datetime.now(),
-           gethostname(),
-           os.getcwd(),
-           INFOS['firstindex'],
-           icond,
-           ntraj,
-           istate)
-          setup_stat.write(string)
-          setup_stat.close()
-          break
-      if INFOS['interface']==8 and INFOS['qsub']:
-	all_nn.close()
-	filename='all_qsub_traj.sh'
-        os.chmod(filename, os.stat(filename).st_mode | stat.S_IXUSR)
-      if INFOS['qsub']:
-        all_qsub.close()
-        filename='all_qsub_traj.sh'
-        os.chmod(filename, os.stat(filename).st_mode | stat.S_IXUSR)
-
-  print '\n'
+    print '\n'
 
 
 # ======================================================================================================================
