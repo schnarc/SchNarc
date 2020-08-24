@@ -88,6 +88,8 @@ def get_parser():
     pred_parser.add_argument('--adaptive',type=float, nargs=1,help='Adaptive Sampling initializer + float for reducing the step size')
     pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     # model-specific parsers
+    CIopt_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
+    CIopt_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     model_parser = argparse.ArgumentParser(add_help=False)
 
     #######  SchNet  #######
@@ -141,7 +143,7 @@ def get_parser():
     cmd_subparsers.required = True
     subparser_train = cmd_subparsers.add_parser('train', help='Training help')
     subparser_eval = cmd_subparsers.add_parser('eval', help='Eval help')
-
+    subparser_CIopt = cmd_subparsers.add_parser('CIopt', help='Eval help',parents=[CIopt_parser])
     subparser_pred = cmd_subparsers.add_parser('pred', help='Eval help', parents=[pred_parser])
 
     train_subparsers = subparser_train.add_subparsers(dest='model', help='Model-specific arguments')
@@ -156,6 +158,9 @@ def get_parser():
     eval_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser, schnet_parser])
     eval_subparsers.add_parser('wacsf', help='wACSF help', parents=[eval_parser, wacsf_parser])
 
+    CIopt_subparsers = subparser_CIopt.add_subparsers(dest="mdel",help="Model-specific arguments")
+    CIopt_subparsers.required = True
+    CIopt_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser,schnet_parser])
     return main_parser
 
 
@@ -525,6 +530,117 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
     return complex_diagonal_phase_matrix_1, complex_diagonal_phase_matrix_2, phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 1], phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 1]
 
 
+def orca_opt(args, model, device):
+    # reads QM.in and writes QM.out for optimizations with ORCA
+
+    #read QMin
+    QMin=read_QMin("QM.in")
+    # get input for schnet
+    schnet_inputs = QMin2schnet(QMin,device)
+    #perform prediction
+    schnet_outputs = model(schnet_inputs)
+    for key,value in schnet_outputs.items():
+        schnet_outputs[key] = value.cpu().detach().numpy()
+    #transform to QM.out
+    get_QMout(schnet_outputs, QMin,args)
+    return
+
+def get_QMout(schnet_outputs,QMin,args):
+    from transform_prediction_QMout import QMout
+    QMout(schnet_outputs,args.modelpath,args.nac_approx,QMin)
+    return
+
+def QMin2schnet(QMin,args):
+    from schnetpack import Properties
+    from ase import Atoms
+    from schnetpack.environment import SimpleEnvironmentProvider, collect_atom_triples
+
+    environment_provider = SimpleEnvironmentProvider()
+    schnet_inputs = dict()
+    molecule = Atoms(QMin['atypes'],QMin['geom'])
+    schnet_inputs[Properties.Z] = torch.LongTensor(molecule.numbers.astype(np.int))
+    schnet_inputs[Properties.atom_mask] = torch.ones_like(schnet_inputs[Properties.Z]).float()
+    #set positions
+    positions = molecule.positions.astype(np.float32)
+    schnet_inputs[Properties.R] = torch.FloatTensor(positions)
+    #get atom environment
+    nbh_idx, offsets = environment_provider.get_environment(molecule)
+    #neighbours and neighour mask
+    mask = torch.FloatTensor(nbh_idx) >= 0
+    schnet_inputs[Properties.neighbor_mask] = mask.float()
+    schnet_inputs[Properties.neighbors] = torch.LongTensor(nbh_idx.astype(np.int)) * mask.long()
+    #get cells
+    schnet_inputs[Properties.cell] = torch.FloatTensor(molecule.cell.astype(np.float32))
+    schnet_inputs[Properties.cell_offset]= torch.FloatTensor(offsets.astype(np.float))
+    collect_triples = False
+    if collect_triples is not None:
+        nbh_idx_j, nbh_idx_k, offset_idx_j, offset_idx_k = collect_atom_triples(nbh_idx)
+        schnet_inputs[Properties.neighbor_pairs_j] = torch.LongTensor(nbh_idx_j.astype(np.int))
+        schnet_inputs[Properties.neighbor_pairs_k] = torch.LongTensor(nbh_idx_k.astype(np.int))
+        schnet_inputs[Properties.neighbor_pairs_mask] = torch.ones_like(schnet_inputs[Properties.neighbor_pairs_j]).float()                                                                 # Add batch dimension and move to CPU/GPU
+    for key, value in schnet_inputs.items():
+        schnet_inputs[key] = value.unsqueeze(0).to(device)
+
+    return schnet_inputs
+
+
+def read_QMin(filename):
+    A2Bohr = 1/0.529177211
+    data = open(filename, 'r').readlines()
+    QMin = {}
+    natoms = int(data[0].split()[0])
+    QMin['NAtoms'] = natoms
+    #unit
+    for line in data:
+        if "angstrom" in line or "Angstrom" in line:
+            angstrom = True
+            break
+        else:
+            angstrom = False
+    #states
+    for line in data:
+        if "states" in line:
+            s=line.split()[1:]
+            break
+    states = [ int(i) for i in s]
+    n_doublets = 0
+    n_triplets = 0
+    n_quartets = 0
+    for index,istate in enumerate(states):
+        if index == int(0):
+            n_singlets = istate
+        elif index == int(1):
+            n_doublets = istate
+        elif index == int(2):
+            n_triplets = istate
+        elif index == int(3):
+            n_quartets = istate
+    nmstates = n_singlets + 2*n_doublets + 3*n_triplets + 4*n_quartets
+    QMin['n_singlets'] = n_singlets
+    QMin['n_doublets'] = n_doublets
+    QMin['n_triplets'] = n_triplets
+    QMin['n_quartets'] = n_quartets
+    QMin['n_states'] = nmstates
+
+    #geometries
+    atypes = []
+    geom = []
+    for curr_atom in range(natoms):
+        atom_data = data[curr_atom+2].strip().split()
+        curr_atype = atom_data[0]
+        if angstrom == True:
+            curr_geom = [float(coordinate) for coordinate in atom_data[1:4]]
+            for xyz in range(3):
+                curr_geom[xyz] = curr_geom[xyz] * A2Bohr
+        else:
+            curr_geom = [float(coordinate) for coordinate in atom_data[1:4]]
+        atypes.append(curr_atype)
+        geom.append(curr_geom)
+    QMin['geom'] = np.array(geom)
+    QMin['atypes'] = np.array(atypes)
+
+    return QMin
+
 if __name__ == '__main__':
     # Parse command line arguments
     parser = get_parser()
@@ -542,7 +658,11 @@ if __name__ == '__main__':
             else:
                 model.module.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
 
- 
+    if args.mode == 'CIopt':
+        orca_opt(args, model, device)
+        sys.exit()
+
+
     if args.mode == 'pred':
         pred_data = spk.data.AtomsData(args.datapath)
         pred_loader = spk.data.AtomsLoader(pred_data, batch_size=args.batch_size, num_workers=2, pin_memory=True)
@@ -563,6 +683,7 @@ if __name__ == '__main__':
             os.makedirs(args.modelpath)
 
         spk.utils.to_json(jsonpath, argparse_dict)
+
         spk.utils.set_random_seed(args.seed)
         train_args = args
 

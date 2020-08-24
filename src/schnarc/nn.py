@@ -85,8 +85,10 @@ def diagonal_phaseloss(target, predicted, n_states,device,single):
         diff_a = ( socs_target - predicted['socs'] ) ** 2
         diff_b = ( socs_target + predicted['socs'] ) ** 2
         diff_soc = torch.min(diff_a,diff_b)
-        loss = 0.5 * torch.mean(diff_soc.view(-1)) + 0.5 * torch.mean(diff_diag.view(-1)).to(device)
-
+        mean_a=torch.mean(diff_soc.view(-1)).to(device)
+        mean_b=torch.mean(diff_diag.view(-1)).to(device)
+        factor=mean_a/mean_b
+        loss = 0.5 * mean_a + 0.5 * factor*mean_b
     return loss
 
 def min_loss_single_old(target, predicted, smooth=True, smooth_nonvec=False, loss_length=True):
