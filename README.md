@@ -32,7 +32,7 @@ i.e., delete ``/lib/intel64`` after ``-L$(MKLROOT)``. The 4th change is a line t
 
 Got to the pysharc/sharc folder:
 ``cd ../pysharc/sharc`` 
-Edit __init__.py  there and make the following changes:  
+Edit \_\_init\_\_.py  there and make the following changes:  
 ``    #import sharc as sharc``
 
 Go to the pysharc/netcdf folder:  
