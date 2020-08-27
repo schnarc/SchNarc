@@ -11,7 +11,7 @@ We recommend installing Anaconda with python 3 (see https://www.anaconda.com/dis
 If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:  
 ``conda config --append channels conda-forge``  
 It is recommended to create an environment (in this example the environment is called ml) with:  
-``conda create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils gfortran_linux-64 liblapack libblas``  
+``conda create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils gfortran_linux-64``  
 Then activate the environment:  
 ``conda activate ml``   
 
@@ -22,14 +22,21 @@ Install SHARC with pysharc (see https://sharc-md.org/?page_id=50#tth_sEc2.3 or f
 ``cd sharc/source``  
 Edit Makefile and make the following changes:  
 ``    USE_PYSHARC := true``  
-``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
+``    USE_LIBS := mkl``  
+``    ANACONDA := <path/to/anaconda>/anaconda3/envs/ml``  
+``    MKLROOT := ${ANACONDA}/lib``  
 ``  #CC :=gcc``  
 ``  #F90 :=gfortran``  
-``	LASER_calc_nofftw.o \``  
-instead of ``LASER_calc_fftw.o``. The 3rd and 4th change mean that you have to comment out the definition of CC and F90 and rather use the CC and F90 variables provided by the environment, which is set by anaconda to something like ``<your-anaconda-path>/x86_64-conda_cos6-linux-gnu-cc`` instead of gcc.  
-  
+``  LD= -L$(MKLROOT) -lmkl_rt -lpthread -lm -lgfortran $(NETCDF_LIB)``  
+i.e., delete ``/lib/intel64`` after ``-L$(MKLROOT)``. The 4th change is a line that needs to be added (about MKLROOT). The 5rd and 6th change mean that you have to comment out the definition of CC and F90 and rather use the CC and F90 variables provided by the environment, which is set by anaconda to something like ``<your-anaconda-path>/x86_64-conda_cos6-linux-gnu-cc`` instead of gcc.  
+
+Got to the pysharc/sharc folder:
+``cd ../pysharc/sharc`` 
+Edit \_\_init\_\_.py  there and make the following changes:  
+``    #import sharc as sharc``
+
 Go to the pysharc/netcdf folder:  
-``cd ../pysharc/netcdf``  
+``cd ../netcdf``  
 Edit Makefile  there and make the following changes:  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
 ``    #CC=$(ANACONDA)/bin/gcc``  
