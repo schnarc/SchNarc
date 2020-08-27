@@ -365,7 +365,7 @@ class EnsembleSchNarculator(SchNarculator):
         if not isinstance(modelpaths, Iterable):
             raise SchNarculatorError('List of modelpaths required for ensemble calculator.')
 
-        super(EnsembleSchNarculator, self).__init__(positions, atom_types, modelpath=modelpaths,adaptive=adaptive,thresholds=thresholds,print_uncertainty=print_uncertainty)
+        super(EnsembleSchNarculator, self).__init__(positions, atom_types, modelpath=modelpaths,hessian=hessian,nac_approx=nac_approx,adaptive=adaptive,thresholds=thresholds,print_uncertainty=print_uncertainty)
                                                     #device=device,
                                                     #environment_provider=environment_provider,
                                                     #collect_triples=collect_triples, hessian=hessian, nac_approx=nac_approx)
@@ -398,13 +398,16 @@ class EnsembleSchNarculator(SchNarculator):
 
         results = {}
         for prop in ensemble_results:
-            ensemble_results[prop] = np.array(ensemble_results[prop])
-            results[prop] =np.mean(ensemble_results[prop],axis=0)
-            self.uncertainty[prop] = np.std(ensemble_results[prop])
-            if self.print_uncertainty==True:
-                print(self.uncertainty[prop], "property:", prop)
-            if self.uncertainty[prop] >= np.multiply(self.thresholds[prop],self.adaptive):
-                exit()
+            if prop == "hessian":
+                pass
+            else:
+                ensemble_results[prop] = np.array(ensemble_results[prop])
+                results[prop] =np.mean(ensemble_results[prop],axis=0)
+                self.uncertainty[prop] = np.std(ensemble_results[prop])
+                if self.print_uncertainty==True:
+                    print(self.uncertainty[prop], "property:", prop)
+                if self.uncertainty[prop] >= np.multiply(self.thresholds[prop],self.adaptive):
+                    exit()
         return results
 
 
