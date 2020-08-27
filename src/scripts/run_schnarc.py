@@ -66,6 +66,7 @@ def get_parser():
     train_parser.add_argument('--phase_loss', action='store_true', help='Use special loss, which ignores phase.')
     train_parser.add_argument('--inverse_nacs', action='store_true', help='Weight NACs with inverse energies.')
     train_parser.add_argument('--min_loss', action='store_true', help='Use phase independent min loss.')
+    train_parser.add_argument('--diagonal', action='store_true', help='Train SOCs via diagonal elements. Must be included in the training data base', default=None)
     train_parser.add_argument('--L1', action='store_true', help='Use L1 norm')
     train_parser.add_argument('--Huber', action='store_true', help='Use L1 norm')
 
@@ -79,10 +80,16 @@ def get_parser():
 
     pred_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     pred_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
+    pred_parser.add_argument('--print_uncertainty',action='store_true', help='Print uncertainty of each property',default=False)
+    pred_parser.add_argument('--thresholds',type=float,nargs=5, help='Percentage of mean predicted by NNs taken as thresholds for adaptive sampling - first value for energy, second for forces, third for dipoles, fourth for nacs, fifth for socs', default=None)
+    pred_parser.add_argument('--modelpaths',type=str, help='Path of stored models')
     pred_parser.add_argument('modelpath', help='Path of stored model')
     pred_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
+    pred_parser.add_argument('--adaptive',type=float, nargs=1,help='Adaptive Sampling initializer + float for reducing the step size')
     pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     # model-specific parsers
+    CIopt_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
+    CIopt_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     model_parser = argparse.ArgumentParser(add_help=False)
 
     #######  SchNet  #######
@@ -98,7 +105,15 @@ def get_parser():
     schnet_parser.add_argument('--n_layers', type=int, default=3,
                                help='Number of layers in output networks (default: %(default)s)')
 
-    #######  wACSF  ########
+    #######  invD  ########
+    invD_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
+    invD_parser.add_argument('--n_atoms', type=int, help='Number of atoms in the molecule',
+                             default="ADD NUMBER OF ATOMS WITH ARGUENT --n_atoms")
+    invD_parser.add_argument('--n_layers', type=int, default=3,
+                               help='Number of layers in output networks (default: %(default)s)')
+    invD_parser.add_argument('--n_neurons', type=int, default=100,
+                              help='Number of nodes in atomic networks (default: %(default)s)')
+     #######  wACSF  ########
     wacsf_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
     # wACSF parameters
     wacsf_parser.add_argument('--radial', type=int, default=22,
@@ -128,19 +143,24 @@ def get_parser():
     cmd_subparsers.required = True
     subparser_train = cmd_subparsers.add_parser('train', help='Training help')
     subparser_eval = cmd_subparsers.add_parser('eval', help='Eval help')
-
+    subparser_CIopt = cmd_subparsers.add_parser('CIopt', help='Eval help',parents=[CIopt_parser])
     subparser_pred = cmd_subparsers.add_parser('pred', help='Eval help', parents=[pred_parser])
 
     train_subparsers = subparser_train.add_subparsers(dest='model', help='Model-specific arguments')
     train_subparsers.required = True
+    train_subparsers.add_parser('invD', help='invD help', parents=[train_parser, invD_parser])
     train_subparsers.add_parser('schnet', help='SchNet help', parents=[train_parser, schnet_parser])
     train_subparsers.add_parser('wacsf', help='wACSF help', parents=[train_parser, wacsf_parser])
 
     eval_subparsers = subparser_eval.add_subparsers(dest='model', help='Model-specific arguments')
     eval_subparsers.required = True
+    eval_subparsers.add_parser('invD', help='invD help', parents=[eval_parser, invD_parser])
     eval_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser, schnet_parser])
     eval_subparsers.add_parser('wacsf', help='wACSF help', parents=[eval_parser, wacsf_parser])
 
+    CIopt_subparsers = subparser_CIopt.add_subparsers(dest="mdel",help="Model-specific arguments")
+    CIopt_subparsers.required = True
+    CIopt_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser,schnet_parser])
     return main_parser
 
 
@@ -213,7 +233,13 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs )
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
-                elif prop == "socs" and combined_phaseless_loss == False:
+                #diagonal energies included for training of socs
+                elif prop == "socs" and args.diagonal == True:
+                    #indicate true to only include the error in the diagonal for training of socs
+                    #indicate false to include also the error on socs (minimum function)
+                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result, n_states,props_phase[2],False)
+                    prop_err = prop_diff #torch.mean(prop_diff.view(-1))
+                elif prop == "socs" and combined_phaseless_loss == False and args.diagonal==False:
                     prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
                     #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
@@ -396,6 +422,17 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
 
         model = spk.atomistic.AtomisticModel(representation, property_output)
 
+
+    elif args.model == 'invD':
+        representation = spk.representation.schnet.invD()
+        n_in = (args.n_atoms*args.n_atoms-args.n_atoms)
+        #neurons = number of neurons in each layer of the network; if None, it is divided by two in each layer
+        property_output = schnarc.model.MultiStatePropertyModel(n_in, n_states,n_neurons=args.n_neurons, properties=properties,
+                                                                mean=mean, stddev=stddev, atomref=atomref,
+                                                                n_layers=args.n_layers, real=args.real_socs,
+                                                                inverse_energy=args.inverse_nacs)
+
+        model = spk.atomistic.AtomisticModel(representation, property_output)
     elif args.model == 'wacsf':
         raise NotImplementedError
         # from ase.data import atomic_numbers
@@ -493,6 +530,117 @@ def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
     return complex_diagonal_phase_matrix_1, complex_diagonal_phase_matrix_2, phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 1], phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 1]
 
 
+def orca_opt(args, model, device):
+    # reads QM.in and writes QM.out for optimizations with ORCA
+
+    #read QMin
+    QMin=read_QMin("QM.in")
+    # get input for schnet
+    schnet_inputs = QMin2schnet(QMin,device)
+    #perform prediction
+    schnet_outputs = model(schnet_inputs)
+    for key,value in schnet_outputs.items():
+        schnet_outputs[key] = value.cpu().detach().numpy()
+    #transform to QM.out
+    get_QMout(schnet_outputs, QMin,args)
+    return
+
+def get_QMout(schnet_outputs,QMin,args):
+    from transform_prediction_QMout import QMout
+    QMout(schnet_outputs,args.modelpath,args.nac_approx,QMin)
+    return
+
+def QMin2schnet(QMin,args):
+    from schnetpack import Properties
+    from ase import Atoms
+    from schnetpack.environment import SimpleEnvironmentProvider, collect_atom_triples
+
+    environment_provider = SimpleEnvironmentProvider()
+    schnet_inputs = dict()
+    molecule = Atoms(QMin['atypes'],QMin['geom'])
+    schnet_inputs[Properties.Z] = torch.LongTensor(molecule.numbers.astype(np.int))
+    schnet_inputs[Properties.atom_mask] = torch.ones_like(schnet_inputs[Properties.Z]).float()
+    #set positions
+    positions = molecule.positions.astype(np.float32)
+    schnet_inputs[Properties.R] = torch.FloatTensor(positions)
+    #get atom environment
+    nbh_idx, offsets = environment_provider.get_environment(molecule)
+    #neighbours and neighour mask
+    mask = torch.FloatTensor(nbh_idx) >= 0
+    schnet_inputs[Properties.neighbor_mask] = mask.float()
+    schnet_inputs[Properties.neighbors] = torch.LongTensor(nbh_idx.astype(np.int)) * mask.long()
+    #get cells
+    schnet_inputs[Properties.cell] = torch.FloatTensor(molecule.cell.astype(np.float32))
+    schnet_inputs[Properties.cell_offset]= torch.FloatTensor(offsets.astype(np.float))
+    collect_triples = False
+    if collect_triples is not None:
+        nbh_idx_j, nbh_idx_k, offset_idx_j, offset_idx_k = collect_atom_triples(nbh_idx)
+        schnet_inputs[Properties.neighbor_pairs_j] = torch.LongTensor(nbh_idx_j.astype(np.int))
+        schnet_inputs[Properties.neighbor_pairs_k] = torch.LongTensor(nbh_idx_k.astype(np.int))
+        schnet_inputs[Properties.neighbor_pairs_mask] = torch.ones_like(schnet_inputs[Properties.neighbor_pairs_j]).float()                                                                 # Add batch dimension and move to CPU/GPU
+    for key, value in schnet_inputs.items():
+        schnet_inputs[key] = value.unsqueeze(0).to(device)
+
+    return schnet_inputs
+
+
+def read_QMin(filename):
+    A2Bohr = 1/0.529177211
+    data = open(filename, 'r').readlines()
+    QMin = {}
+    natoms = int(data[0].split()[0])
+    QMin['NAtoms'] = natoms
+    #unit
+    for line in data:
+        if "angstrom" in line or "Angstrom" in line:
+            angstrom = True
+            break
+        else:
+            angstrom = False
+    #states
+    for line in data:
+        if "states" in line:
+            s=line.split()[1:]
+            break
+    states = [ int(i) for i in s]
+    n_doublets = 0
+    n_triplets = 0
+    n_quartets = 0
+    for index,istate in enumerate(states):
+        if index == int(0):
+            n_singlets = istate
+        elif index == int(1):
+            n_doublets = istate
+        elif index == int(2):
+            n_triplets = istate
+        elif index == int(3):
+            n_quartets = istate
+    nmstates = n_singlets + 2*n_doublets + 3*n_triplets + 4*n_quartets
+    QMin['n_singlets'] = n_singlets
+    QMin['n_doublets'] = n_doublets
+    QMin['n_triplets'] = n_triplets
+    QMin['n_quartets'] = n_quartets
+    QMin['n_states'] = nmstates
+
+    #geometries
+    atypes = []
+    geom = []
+    for curr_atom in range(natoms):
+        atom_data = data[curr_atom+2].strip().split()
+        curr_atype = atom_data[0]
+        if angstrom == True:
+            curr_geom = [float(coordinate) for coordinate in atom_data[1:4]]
+            for xyz in range(3):
+                curr_geom[xyz] = curr_geom[xyz] * A2Bohr
+        else:
+            curr_geom = [float(coordinate) for coordinate in atom_data[1:4]]
+        atypes.append(curr_atype)
+        geom.append(curr_geom)
+    QMin['geom'] = np.array(geom)
+    QMin['atypes'] = np.array(atypes)
+
+    return QMin
+
 if __name__ == '__main__':
     # Parse command line arguments
     parser = get_parser()
@@ -510,7 +658,11 @@ if __name__ == '__main__':
             else:
                 model.module.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
 
- 
+    if args.mode == 'CIopt':
+        orca_opt(args, model, device)
+        sys.exit()
+
+
     if args.mode == 'pred':
         pred_data = spk.data.AtomsData(args.datapath)
         pred_loader = spk.data.AtomsLoader(pred_data, batch_size=args.batch_size, num_workers=2, pin_memory=True)
@@ -531,6 +683,7 @@ if __name__ == '__main__':
             os.makedirs(args.modelpath)
 
         spk.utils.to_json(jsonpath, argparse_dict)
+
         spk.utils.set_random_seed(args.seed)
         train_args = args
 
@@ -667,6 +820,6 @@ if __name__ == '__main__':
         socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2 = generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device)
 
         props_phase=[n_phases,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
-        train(args, model, tradeoffs, train_loader, val_loader, device, n_states,props_phase)
+        train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase)
         logging.info("...training done!")
 

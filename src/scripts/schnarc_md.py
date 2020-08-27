@@ -102,15 +102,36 @@ class SHARC_NN(SHARC_INTERFACE):
 
     def readParameter(self, param,  *args, **kwargs):
 
-        self.NNnumber = int(1) #self.options["NNnumber"]
         # Get device
         self.device = torch.device("cuda" if param.cuda else "cpu")
         self.NAtoms = vars(self)['NAtoms']
         self.AtNames = vars(self)['AtNames']
         self.dummy_crd = np.zeros((self.NAtoms,3))
         self.hessian = True if param.hessian else False
-        self.nac_approx=param.nac_approx
-        self.schnarc_init = SchNarculator(self.dummy_crd,self.AtNames,param.modelpath,self.device,hessian=self.hessian,nac_approx=self.nac_approx)
+        self.adaptive = param.adaptive
+        #self.nac_approx=param.nac_approx
+        if param.thresholds is not None:
+            self.thresholds = {}
+            self.thresholds['energy'] = param.thresholds[0]
+            self.thresholds['forces'] = param.thresholds[1]
+            self.thresholds['dipoles'] = param.thresholds[2]
+            self.thresholds['nacs'] = param.thresholds[3]
+            self.thresholds['socs'] = param.thresholds[4]
+            self.thresholds['diab'] = np.inf
+            self.thresholds['diab2'] = np.inf
+        if param.nac_approx is not None:
+            self.nac_approx=param.nac_approx
+        else:
+            self.nac_approx = None
+        if self.adaptive is not None:
+            self.NNnumber = int(2)
+            self.modelpaths=[]
+            self.modelpaths.append(param.modelpath)
+            self.modelpaths.append(param.modelpaths)
+            self.schnarc_init = EnsembleSchNarculator(self.dummy_crd,self.AtNames,self.modelpaths,self.device,hessian=self.hessian,nac_approx=self.nac_approx,adaptive=self.adaptive,thresholds=self.thresholds,print_uncertainty=param.print_uncertainty)
+        else:
+            self.NNnumber = int(1) #self.options["NNnumber"]
+            self.schnarc_init = SchNarculator(self.dummy_crd,self.AtNames,param.modelpath,self.device,hessian=self.hessian,nac_approx=self.nac_approx)
         return
 
 
@@ -120,8 +141,11 @@ def main():
     """
     parser = rs.get_parser()
     args = parser.parse_args()
-    print( "Initialize: CPU time: % .3f s, wall time: %.3f s"%(time.process_time() - tc, time.time() - tt))
-    adaptive = float(1.0)
+    print( "Initialize: CPU time:% .3f s, wall time: %.3f s"%(time.process_time() - tc, time.time() - tt))
+    if args.adaptive is not None:
+        adaptive = args.adaptive
+    else:
+        adaptive = float(1)
     param = "schnarc_options"
     # init SHARC_NN class 
     nn = SHARC_NN()

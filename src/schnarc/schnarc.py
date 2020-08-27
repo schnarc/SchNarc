@@ -77,6 +77,7 @@ def get_socs(socs,n_states,energy):
         hamiltonian[i][i] = energy[indext[i-n_singlets]+n_singlets]
         hamiltonian[i+n_triplets][i+n_triplets]=energy[indext[i-n_singlets]+n_singlets]
         hamiltonian[i+2*n_triplets][i+2*n_triplets]=energy[indext[i-n_singlets]+n_singlets]
+
     for istate in hamiltonian:
         for jstate in istate:
             h_string += "%20.12E %20.12E "%(np.real(jstate), np.imag(jstate))
