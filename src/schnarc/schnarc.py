@@ -71,7 +71,6 @@ def get_socs(socs,n_states,energy):
         hamiltonian[i][j] = (socs[2*iterator]+socs[2*iterator+1]*1j)
         iterator+=1
     hamiltonian = hamiltonian+hamiltonian.conj().T
-    print(n_states)
     for i in range(n_singlets):
         hamiltonian[i][i] = (energy[index[i]])
     for i in range(n_singlets,n_singlets+n_triplets):
