@@ -262,6 +262,11 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                     #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
 
+            elif prop == "socs" and args.diagonal == True and args.min_loss == False:
+                    #indicate true to only include the error in the diagonal for training of socs
+                    #indicate false to include also the error on socs (minimum function)
+                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result, n_states,props_phase[2],False)
+                    prop_err = prop_diff #torch.mean(prop_diff.view(-1))
             elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
                 prop_diff = torch.abs(batch[prop] - result[prop])
                 prop_err = torch.mean(prop_diff.view(-1) )

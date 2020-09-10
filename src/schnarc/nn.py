@@ -138,7 +138,7 @@ def min_loss_single(target, predicted, combined_phaseless_loss, n_states, props_
     #number of couplings
     #number of possibilities of phase switches (n_states are the number of S + T states)
     n_phases = props_phase[0]
-    batch_size = props_phase[1]
+    batch_size = target.shape[0]
     device = props_phase[2]
     # valid if either nacs or socs are treated
     #one degree of freedom: set sign of first state to +1
@@ -200,7 +200,7 @@ def min_loss(target, predicted, combined_phaseless_loss, n_states, props_phase, 
     #number of couplings
     #number of possibilities of phase switches (n_states are the number of S + T states)
     n_phases = props_phase[0]
-    batch_size = props_phase[1]
+    batch_size = target.shape[0]
     device = props_phase[2]
     pred_phase_vec = torch.Tensor(predicted.size()).to(device)
 
