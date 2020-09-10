@@ -72,7 +72,7 @@ def readfile(filename):
     out=f.readlines()
     f.close()
   except IOError:
-    print 'File %s does not exist!' % (filename)
+    print(( 'File %s does not exist!' % (filename)))
     sys.exit(12)
   return out
 
@@ -87,10 +87,10 @@ def writefile(filename,content):
     elif isinstance(content,str):
       f.write(content)
     else:
-      print 'Content %s cannot be written to file!' % (content)
+      print('Content %s cannot be written to file!' % (content))
     f.close()
   except IOError:
-    print 'Could not write to file %s!' % (filename)
+    print('Could not write to file %s!' % (filename))
     sys.exit(13)
 
 # ======================================================================= #
@@ -130,7 +130,7 @@ def read_QMout(path,nstates,natom,request):
       while True:
         iline+=1
         if iline>=len(lines):
-          print 'Could not find target %s with flag %i in file %s!' % (t,targets[t]['flag'],path)
+          print('Could not find target %s with flag %i in file %s!' % (t,targets[t]['flag'],path))
           sys.exit(11)
         line=lines[iline]
         if '! %i' % (targets[t]['flag']) in line:
@@ -194,7 +194,7 @@ def read_infos( ext_in ):
   INFOS['natom']=int(natoms)
   INFOS['calc_type']=int(calc_type)
   if calc_type==2:
-    print 'No Hessian possible!'
+    print('No Hessian possible!')
     sys.exit(1)
   # mult and charge are ignored and the it is asumed that the interface files take care
 
@@ -233,7 +233,7 @@ def read_infos( ext_in ):
         INFOS['interface']=i
         break
     if not filesthere:
-      print 'Could not figure out which interface to employ.'
+      print('Could not figure out which interface to employ.')
       sys.exit(1)
   if not 'states' in INFOS:
     INFOS['states']=[1]
@@ -253,7 +253,7 @@ def read_infos( ext_in ):
   if INFOS['opt'][0]=='min':
     a=INFOS['opt'][1]
     if not a in statemap:
-      print 'State %i not in state specs (%s)!' % (a,INFOS['states'])
+      print('State %i not in state specs (%s)!' % (a,INFOS['states']))
       sys.exit(1)
     INFOS['opt_mode']=0                 # min opt with grad
   elif INFOS['opt'][0]=='cross':
@@ -261,7 +261,7 @@ def read_infos( ext_in ):
     b=INFOS['opt'][2]
     INFOS['opt'][1],INFOS['opt'][2]=min(a,b),max(a,b)
     if not a in statemap or not b in statemap:
-      print 'States %i or %i not in state specs (%s)!' % (a,b,INFOS['states'])
+      print('States %i or %i not in state specs (%s)!' % (a,b,INFOS['states']))
       sys.exit(1)
     mult1=statemap[a][0]
     mult2=statemap[b][0]
@@ -293,7 +293,7 @@ def read_infos( ext_in ):
     string+='    - %s\n' % (i)
   string+='    - %s\n' % ('QM.log')
 
-  print string
+  print(string)
   return INFOS
 
 # ======================================================================= #
@@ -339,13 +339,13 @@ def write_QMin(INFOS):
 # ======================================================================= #
 def run_interface(INFOS):
   string='source ~/.bashrc \n python $SCHNARC/run_schnarc.py CIopt schnet DataBase.db .' # % (INTERFACE[INFOS['interface']]['script'])
-  print '############## Run section: ##############\nInterface call:'
-  print string
+  print('############## Run section: ##############\nInterface call:')
+  print(string)
   error=sp.call(string,shell=True)
   if error==0:
-    print 'Finished!'
+    print('Finished!')
   else:
-    print '*** Something went wrong! ***'
+    print('*** Something went wrong! ***')
     sys.exit(1)
   return
 
@@ -366,14 +366,14 @@ def printgrad(a):
   string=''
   for i,atom in enumerate(a):
     string+='%3i    %16.12f    %16.12f    %16.12f\n' % (i,atom[0],atom[1],atom[2])
-  print string
+  print(string)
 #============================================
 def scalarprod(a,b):
   # vectors are lists(n) of lists(3)
   # vector elements are real
   # vectors must be the same length
   if len(a)!=len(b):
-    print 'Cannot calculate scalar product!'
+    print('Cannot calculate scalar product!')
     sys.exit(1)
   s=0.
   for iatom in range(len(a)):
@@ -395,15 +395,15 @@ def normalize(a):
 def GramSchmidt(a,b):
   a=normalize(a)
   b=normalize(b)
-  print 'Overlap between normalized GD and DC:',scalarprod(a,b)
+  print('Overlap between normalized GD and DC:',scalarprod(a,b))
   ab=scalarprod(a,b)
   c=[ [ 0. for x in y] for y in a]
   for iatom in range(len(a)):
     for idir in range(3):
       c[iatom][idir]=b[iatom][idir]-ab*a[iatom][idir]
   c=normalize(c)
-  print 'Overlap between orthonormalized GD and DC:',scalarprod(a,c)
-  print
+  print('Overlap between orthonormalized GD and DC:',scalarprod(a,c))
+  print()
   return a,c
 #============================================
 def GradForCI_withNAC(Gl,Gu,Nac,dE):
@@ -415,13 +415,13 @@ def GradForCI_withNAC(Gl,Gu,Nac,dE):
       diff[iatom][idir]=Gu[iatom][idir]-Gl[iatom][idir]
       deri[iatom][idir]=-dE*Nac[iatom][idir]
 
-  print 'Gradient for lower state'
+  print('Gradient for lower state')
   printgrad(Gl)
-  print 'Gradient for upper state'
+  print('Gradient for upper state')
   printgrad(Gu)
-  print 'Gradient difference'
+  print('Gradient difference')
   printgrad(diff)
-  print 'Derivative coupling after scaling'
+  print('Derivative coupling after scaling')
   printgrad(deri)
 
   diff,deri=GramSchmidt(diff,deri)
@@ -431,7 +431,7 @@ def GradForCI_withNAC(Gl,Gu,Nac,dE):
     for idir in range(3):
       f[iatom][idir]=2.*dE*diff[iatom][idir]
 
-  print 'Gradient inside branching plane'
+  print('Gradient inside branching plane')
   printgrad(f)
 
   # g=P(Gu)
@@ -442,7 +442,7 @@ def GradForCI_withNAC(Gl,Gu,Nac,dE):
     for idir in range(3):
       g[iatom][idir]=Gu[iatom][idir] - Gu_diff*diff[iatom][idir] - Gu_deri*deri[iatom][idir]
 
-  print 'Gradient inside intersection space'
+  print('Gradient inside intersection space')
   printgrad(g)
 
   # get final gradient
@@ -461,11 +461,11 @@ def GradForMXP_noNAC(Gl,Gu,dE):
     for idir in range(3):
       diff[iatom][idir]=Gu[iatom][idir]-Gl[iatom][idir]
 
-  print 'Gradient for lower state'
+  print('Gradient for lower state')
   printgrad(Gl)
-  print 'Gradient for upper state'
+  print('Gradient for upper state')
   printgrad(Gu)
-  print 'Gradient difference'
+  print('Gradient difference')
   printgrad(diff)
 
   diff=normalize(diff)
@@ -475,7 +475,7 @@ def GradForMXP_noNAC(Gl,Gu,dE):
     for idir in range(3):
       f[iatom][idir]=2.*dE*diff[iatom][idir]
 
-  print 'Gradient inside branching plane'
+  print('Gradient inside branching plane')
   printgrad(f)
 
   # g=P(Gu)
@@ -485,7 +485,7 @@ def GradForMXP_noNAC(Gl,Gu,dE):
     for idir in range(3):
       g[iatom][idir]=Gu[iatom][idir] - Gu_diff*diff[iatom][idir]
 
-  print 'Gradient inside intersection space'
+  print('Gradient inside intersection space')
   printgrad(g)
 
   # get final gradient
@@ -505,9 +505,9 @@ def EForCI_noNAC(El,Eu):
 #============================================
 def GradForCI_noNAC(Gl,Gu,El,Eu):
 
-  print 'Gradient for lower state'
+  print('Gradient for lower state')
   printgrad(Gl)
-  print 'Gradient for upper state'
+  print('Gradient for upper state')
   printgrad(Gu)
 
   diff=[ [ 0. for x in y] for y in Gl]
@@ -517,9 +517,9 @@ def GradForCI_noNAC(Gl,Gu,El,Eu):
       diff[iatom][idir]=Gu[iatom][idir]-Gl[iatom][idir]
       summ[iatom][idir]=(Gu[iatom][idir]+Gl[iatom][idir])/2.
 
-  print 'Gradient difference'
+  print('Gradient difference')
   printgrad(diff)
-  print 'Gradient average'
+  print('Gradient average')
   printgrad(summ)
 
   g=[ [ 0. for x in y] for y in Gl]
@@ -537,10 +537,10 @@ def GradForCI_noNAC(Gl,Gu,El,Eu):
 
 # ======================================================================= #
 def write_to_orca(INFOS,QMout,path):
-  print '############ Gradient section: ###########\nEnergies:'
+  print('############ Gradient section: ###########\nEnergies:')
   for i,line in enumerate(QMout['h']):
-    print '    %16.12f %s' % (line[i].real,['','*'][i+1 in INFOS['opt']])
-  print
+    print('    %16.12f %s' % (line[i].real,['','*'][i+1 in INFOS['opt']]))
+  print()
   # get E and g
   if INFOS['opt_mode']==0:
     state=INFOS['opt'][1]-1
@@ -556,7 +556,7 @@ def write_to_orca(INFOS,QMout,path):
     Nac=QMout['nacdr'][state1][state2]
     E=Eu
     g=GradForCI_withNAC(Gl,Gu,Nac,Eu-El)
-    print 'Energy gap: %16.12f' % (Eu-El)
+    print('Energy gap: %16.12f' % (Eu-El))
   elif INFOS['opt_mode']==2:
     state1=INFOS['opt'][1]-1
     state2=INFOS['opt'][2]-1
@@ -566,7 +566,7 @@ def write_to_orca(INFOS,QMout,path):
     Gu=QMout['grad'][state2]
     E=Eu
     g=GradForCI_noNAC(Gl,Gu,El,Eu)
-    print 'Energy gap: %16.12f' % (Eu-El)
+    print('Energy gap: %16.12f' % (Eu-El))
   elif INFOS['opt_mode']==3:
     state1=INFOS['opt'][1]-1
     state2=INFOS['opt'][2]-1
@@ -576,16 +576,16 @@ def write_to_orca(INFOS,QMout,path):
     Gu=QMout['grad'][state2]
     E=Eu
     g=GradForMXP_noNAC(Gl,Gu,Eu-El)
-    print 'Energy gap: %16.12f' % (Eu-El)
+    print('Energy gap: %16.12f' % (Eu-El))
 
-  print 'Energy to optimize: %16.12f' % (E)
-  print 'Gradient to follow:'
+  print('Energy to optimize: %16.12f' % (E))
+  print('Gradient to follow:')
   printgrad(g)
 
   string='%20.12e\n' % (E)
   for atom in g:
     string+='%20.12e%20.12e%20.12e\n' % tuple(atom)
-  print 'Writing to %s' % (path)
+  print('Writing to %s' % (path))
   writefile(path,string)
 
 #============================================
@@ -594,21 +594,21 @@ if __name__ == "__main__":
     jobname = ext_in.split( '.' )[0]
     if os.path.isfile(ext_out):
       os.remove(ext_out)  # remove so if anything goes wrong, ORCA will not continue
-    print ""
-    print "         *************************************************************"
-    print "         *                    EXTERNAL SHARC JOB                     *"
-    print "         *************************************************************"
-    print ""
+    print("")
+    print("         *************************************************************")
+    print("         *                    EXTERNAL SHARC JOB                     *")
+    print("         *************************************************************")
+    print("")
     INFOS = read_infos( ext_in )
     INFOS = prepare_savedir(INFOS)
     write_QMin(INFOS)
     run_interface(INFOS)
     QMout=get_output(INFOS)
     write_to_orca(INFOS,QMout,ext_out)
-    print ""
-    print "         *************************************************************"
-    print "         *                  EXTERNAL SHARC JOB DONE                   *"
-    print "         *************************************************************"
-    print ""
+    print("")
+    print("         *************************************************************")
+    print("         *                  EXTERNAL SHARC JOB DONE                   *")
+    print("         *************************************************************")
+    print("")
 
     #remove = os.system( 'rm gradient' )

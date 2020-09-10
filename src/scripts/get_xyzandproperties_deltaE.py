@@ -202,11 +202,14 @@ def read_output_dat(args):
         pass
     #transform list into matrix, for all_energy: add zero point energy 
     #f.close()
-    soc_formean=np.array(soc_formean)
-    mean=np.mean(soc_formean)
-    std=np.std(soc_formean)
-    mini=np.min(soc_formean)
-    maxi=np.max(soc_formean)
+    if args.socs==False:
+        pass
+    else:
+        soc_formean=np.array(soc_formean)
+        mean=np.mean(soc_formean)
+        std=np.std(soc_formean)
+        mini=np.min(soc_formean)
+        maxi=np.max(soc_formean)
     print(is_,"Singlets egap < ",threshold_S)
     print(it,"Triplets egap < ",threshold_T)
     all_dipole_x=np.array(all_dipole_x)
