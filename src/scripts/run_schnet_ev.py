@@ -10,12 +10,12 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data.sampler import RandomSampler
-
+from schnetpack.utils.script_utils.settings import get_environment_provider
+from schnetpack.utils import get_dataset
 import schnetpack as spk
-import schnarc
-
+import schnet_ev
+from schnet_ev.data import Eigenvalue_properties, Delta_EV_properties, Charges
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
-
 
 def get_parser():
     """ Setup parser for command line arguments """
@@ -30,7 +30,10 @@ def get_parser():
     cmd_parser.add_argument('--batch_size', type=int,
                             help='Mini-batch size for training and prediction (default: %(default)s)',
                             default=100)
-
+    cmd_parser.add_argument("--aggregation_mode",type=str,default="build",choices=["avg","build"])
+    cmd_parser.add_argument('--environment_provider',type=str, default="simple", choices=["simple","ase","torch"],help="Environment provider for dataset. (default: %(default)s)",)
+    cmd_parser.add_argument('--force_mask_index',help='Atom number of excluded atom for force training', type=int)
+    cmd_parser.add_argument('--force_mask', help= 'Only train on forces for specific atoms', action="store_true")
     # training
     train_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     train_parser.add_argument('datapath', help='Path / destination of MD17 dataset')
@@ -49,7 +52,7 @@ def get_parser():
                               default=1e-4)
     train_parser.add_argument('--lr_patience', type=int,
                               help='Epochs without improvement before reducing the learning rate (default: %(default)s)',
-                              default=15)
+                              default=25)
     train_parser.add_argument('--lr_decay', type=float, help='Learning rate decay (default: %(default)s)',
                               default=0.8)
     train_parser.add_argument('--lr_min', type=float, help='Minimal learning rate (default: %(default)s)',
@@ -63,9 +66,14 @@ def get_parser():
     train_parser.add_argument('--verbose', action='store_true', help='Print property error magnitudes')
     train_parser.add_argument('--real_socs', action='store_true',
                               help='If spin-orbit couplings are predicted, information should be given whether they are real or not.')
+    train_parser.add_argument('--hamiltonian', action='store_true',
+                              help='If True, approximate diabatic Hamiltonian using partial charges without diagonalization to train on eigenvalues.')
+    train_parser.add_argument('--diabatic', action='store_true',
+                              help='If True, approximate diabatic Hamiltonian and diagonalize to train on eigenvalues.',default=True)
     train_parser.add_argument('--phase_loss', action='store_true', help='Use special loss, which ignores phase.')
     train_parser.add_argument('--inverse_nacs', action='store_true', help='Weight NACs with inverse energies.')
-    train_parser.add_argument('--min_loss', action='store_true', help='Use phase independent min loss.')
+    train_parser.add_argument('--smooth_loss', action='store_true', help='Use phase independent min loss.')
+    train_parser.add_argument('--mixed_loss', action='store_true', help='Use phase independent min loss.')
     train_parser.add_argument('--diagonal', action='store_true', help='Train SOCs via diagonal elements. Must be included in the training data base', default=None)
     train_parser.add_argument('--L1', action='store_true', help='Use L1 norm')
     train_parser.add_argument('--Huber', action='store_true', help='Use L1 norm')
@@ -77,10 +85,16 @@ def get_parser():
     eval_parser.add_argument('--split', help='Evaluate on trained model on given split',
                              choices=['train', 'validation', 'test', 'all'], default=['all'], nargs='+')
     eval_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
+    eval_parser.add_argument('--hamiltonian', action='store_true',
+                              help='If True, approximate diabatic Hamiltonian using partial charges without diagonalization to train on eigenvalues.')
+    eval_parser.add_argument('--diabatic', action='store_true',
+                              help='If True, approximate diabatic Hamiltonian and diagonalize to train on eigenvalues.',default=True)
 
     pred_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     pred_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
     pred_parser.add_argument('--print_uncertainty',action='store_true', help='Print uncertainty of each property',default=False)
+    pred_parser.add_argument('--diabatic', action='store_true',
+                              help='If True, approximate diabatic Hamiltonian and diagonalize to train on eigenvalues.',default=True)
     pred_parser.add_argument('--thresholds',type=float,nargs=5, help='Percentage of mean predicted by NNs taken as thresholds for adaptive sampling - first value for energy, second for forces, third for dipoles, fourth for nacs, fifth for socs', default=None)
     pred_parser.add_argument('--modelpaths',type=str, help='Path of stored models')
     pred_parser.add_argument('modelpath', help='Path of stored model')
@@ -88,14 +102,15 @@ def get_parser():
     pred_parser.add_argument('--adaptive',type=float, nargs=1,help='Adaptive Sampling initializer + float for reducing the step size')
     pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     # model-specific parsers
-    CIopt_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
-    CIopt_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
+    opt_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
+    opt_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     model_parser = argparse.ArgumentParser(add_help=False)
-
+ 
     #######  SchNet  #######
     schnet_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
     schnet_parser.add_argument('--features', type=int, help='Size of atom-wise representation (default: %(default)s)',
                                default=256)
+    schnet_parser.add_argument("--cutoff_function",help="Functional form of the cutoff", choices=["hard","cosine","mollifier"],default="cosine")
     schnet_parser.add_argument('--interactions', type=int, help='Number of interaction blocks (default: %(default)s)',
                                default=6)
     schnet_parser.add_argument('--cutoff', type=float, default=10.,
@@ -104,6 +119,8 @@ def get_parser():
                                help='Number of Gaussians to expand distances (default: %(default)s)')
     schnet_parser.add_argument('--n_layers', type=int, default=3,
                                help='Number of layers in output networks (default: %(default)s)')
+    schnet_parser.add_argument('--n_neurons', type=int, default=100,
+                              help='Number of nodes in atomic networks (default: %(default)s)')
 
     #######  invD  ########
     invD_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
@@ -143,7 +160,7 @@ def get_parser():
     cmd_subparsers.required = True
     subparser_train = cmd_subparsers.add_parser('train', help='Training help')
     subparser_eval = cmd_subparsers.add_parser('eval', help='Eval help')
-    subparser_CIopt = cmd_subparsers.add_parser('CIopt', help='Eval help',parents=[CIopt_parser])
+    subparser_opt = cmd_subparsers.add_parser('opt', help='Eval help',parents=[opt_parser])
     subparser_pred = cmd_subparsers.add_parser('pred', help='Eval help', parents=[pred_parser])
 
     train_subparsers = subparser_train.add_subparsers(dest='model', help='Model-specific arguments')
@@ -158,13 +175,13 @@ def get_parser():
     eval_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser, schnet_parser])
     eval_subparsers.add_parser('wacsf', help='wACSF help', parents=[eval_parser, wacsf_parser])
 
-    CIopt_subparsers = subparser_CIopt.add_subparsers(dest="mdel",help="Model-specific arguments")
-    CIopt_subparsers.required = True
-    CIopt_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser,schnet_parser])
+    opt_subparsers = subparser_opt.add_subparsers(dest="mdel",help="Model-specific arguments")
+    opt_subparsers.required = True
+    opt_subparsers.add_parser('schnet', help='SchNet help', parents=[eval_parser,schnet_parser])
     return main_parser
 
 
-def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase):
+def train(args, model, tradeoffs, train_loader, val_loader, device, n_orb,mean,stddev,offset):
     # setup hook and logging
     hooks = [
         spk.train.MaxEpochHook(args.max_epochs)
@@ -182,32 +199,12 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
     # Build metrics based on the properties in the model
     metrics = []
     for prop in tradeoffs:
-       if prop=="socs":
-           socs_given=True
-       else:
-           socs_given=False
-    for prop in tradeoffs:
-       if args.phase_loss or args.min_loss:
-            if prop in schnarc.data.Properties.phase_properties:
-                if prop == 'nacs' and socs_given == True:
-                    metrics += [
-                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-                    ]
-                else:
-                    metrics += [
-                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-                    ]
-            else:
-                metrics += [
-                    spk.metrics.MeanAbsoluteError(prop, prop),
-                    spk.metrics.RootMeanSquaredError(prop, prop)
-                ]
-       else:
+      if prop == "eigenvalues_active_forces" or prop == "eigenvalues_forces":
+          pass
+      else:
           metrics += [
-              spk.metrics.MeanAbsoluteError(prop, prop),
-              spk.metrics.RootMeanSquaredError(prop, prop)
+              schnet_ev.metrics.MeanAbsoluteError(prop, prop),
+              schnet_ev.metrics.RootMeanSquaredError(prop, prop)
           ]
     if args.logger == 'csv':
         logger = spk.train.CSVHook(os.path.join(args.modelpath, 'log'),
@@ -217,74 +214,116 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
         logger = spk.train.TensorboardHook(os.path.join(args.modelpath, 'log'),
                                            metrics, every_n_epochs=args.log_every_n_epochs)
         hooks.append(logger)
-
+    n_act = n_orb['n_act']
     # Automatically construct loss function based on tradoffs
     def loss(batch, result):
         err_sq = 0.0
         if args.verbose:
             print('===================')
-        if "socs" in tradeoffs and "nacs" in tradeoffs:
-            combined_phaseless_loss = True
-        else:
-            combined_phaseless_loss = False
         for prop in tradeoffs:
-            if args.min_loss and prop in schnarc.data.Properties.phase_properties:
-                if prop == "socs" and combined_phaseless_loss == True:
-                    prop_diff = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs )
-                    #already spared and mean of all values
-                    prop_err = torch.mean(prop_diff.view(-1))
-                #diagonal energies included for training of socs
-                elif prop == "socs" and args.diagonal == True:
-                    #indicate true to only include the error in the diagonal for training of socs
-                    #indicate false to include also the error on socs (minimum function)
-                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result, n_states,props_phase[2],False)
-                    prop_err = prop_diff #torch.mean(prop_diff.view(-1))
-                elif prop == "socs" and combined_phaseless_loss == False and args.diagonal==False:
-                    prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
-                    #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                elif prop == "dipoles" and combined_phaseless_loss == True:
-                    prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
-                    #already spared and mean of all values
-                    prop_err = torch.mean(prop_diff.view(-1))
-                elif prop == "dipoles" and combined_phaseless_loss == False:
-                    #ATTENTION: The permanent dipole moments contain an arbitrary sign when training with the following function
-                    prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop],loss_length=False)
-                    #use the following if the signs of the permanent dipole moments should be assigned:
-                    #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, dipole = True )
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                elif prop == "nacs" and combined_phaseless_loss == True:
-                    #for nacs regardless of any other available phase-property
-                    prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
-                    prop_err = torch.mean(prop_diff.view(-1)) / (2*n_states['n_states']**2)
-                else:
-                    prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                    #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
-
-            elif prop == "socs" and args.diagonal == True and args.min_loss == False:
-                    #indicate true to only include the error in the diagonal for training of socs
-                    #indicate false to include also the error on socs (minimum function)
-                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result, n_states,props_phase[2],False)
-                    prop_err = prop_diff #torch.mean(prop_diff.view(-1))
-            elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
-                prop_diff = torch.abs(batch[prop] - result[prop])
-                prop_err = torch.mean(prop_diff.view(-1) )
-            elif args.Huber and prop == schnarc.data.Properties.energy or args.Huber and prop == schnarc.data.Properties.forces:
-                prop_diff = torch.abs(batch[prop]-result[prop])
-                if torch.mean(prop_diff.view(-1)) <= 0.005 and prop == schnarc.data.Properties.forces:
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                elif torch.mean(prop_diff.view(-1)) <= 0.05 and prop == schnarc.data.Properties.energy:
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
-                else:
-                    prop_err = torch.mean(prop_diff.view(-1))
-            else:
-                if prop=='energy' and result['forces'].shape[1]==int(1) or prop=='forces' and result['forces'].shape[1]==int(1) or prop=='dipoles' and result['forces'].shape[1]==int(1):
-                    prop_diff = batch[prop][:,0] - result[prop][:,0]
-                else:
-                    prop_diff = batch[prop] - result[prop]
+            if prop == 'energy' or prop == 'forces' or prop == 'homo_lumo':
+                prop_diff = batch[prop] - result[prop]
                 prop_err = torch.mean(prop_diff.view(-1) ** 2)
-            err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
+                err_sq = err_sq + float(tradeoffs[prop]) * prop_err
+            if prop in Eigenvalue_properties.properties or prop in Delta_EV_properties.properties :
+                if "eigenvalues_active_forces" in tradeoffs or "eigenvalues_forces" in tradeoffs:
+                    result['ev_all']= result[prop]
+                    result[prop] = result[prop][prop]
+                #results are ordered in descending order
+                if args.smooth_loss == True:
+                     prop_diff =torch.normal(batch[prop],0.01)-torch.normal(result[prop],0.01)
+                     prop_err = torch.mean(prop_diff.view(-1)**2)
+                     err_sq = err_sq+float(tradeoffs[prop])*prop_err
+                elif args.hamiltonian == True and prop == "eigenvalues":
+                     #every vector has a different size - masked for every batch different the mask however is max. length and diff. for every molecule
+                     prop_diff = (batch[prop][:,:result[prop].shape[1]]- result[prop]) * batch["eigenvalues_all_mask"][:,:result[prop].shape[1]]
+                     prop_err = torch.mean(prop_diff.view(-1)**2)
+                     err_sq = err_sq+float(tradeoffs[prop])*prop_err     
+                elif args.hamiltonian == True and prop != "eigenvalues":
+                     prop_diff_ev = (batch[prop][:,:result[prop].shape[1]] - result[prop])*batch["eigenvalues_active_mask"][:,:result[prop].shape[1]]
+                     prop_err_ev = torch.mean(prop_diff_ev.view(-1)**2)
+                     prop_err_charges=0
+                     #get charges
+                     if "hirshfeld_pbe" in tradeoffs:
+                         q_r=torch.sum((result['coeff']**2)[:,:batch['n_elec_atoms'].shape[1],:]*batch["occupation"][:,None,:result[prop].shape[1]],dim=2)
+                         result["hirshfeld_pbe"] = q_r -batch['n_elec_atoms']
+                         prop_diff_charges = batch["hirshfeld_pbe"] - result["hirshfeld_pbe"]
+                         prop_err_charges += torch.mean(prop_diff_charges.view(-1)**2)*tradeoffs["hirshfeld_pbe"]
+                     if "hirshfeld_pbe0" in tradeoffs:
+                         q_r=torch.sum((result['coeff']**2)[:,:batch['n_elec_atoms'].shape[1],:]*batch["occupation"][:,None,:result[prop].shape[1]],dim=2)
+                         result["hirshfeld_pbe0"]= q_r -batch['n_elec_atoms']
+                         prop_diff_charges = batch["hirshfeld_pbe0"] - result["hirshfeld_pbe0"]
+                         prop_err_charges += torch.mean(prop_diff_charges.view(-1)**2)*tradeoffs["hirshfeld_pbe0"]
+                     err_sq = err_sq+float(tradeoffs[prop])*(prop_err_ev)+prop_err_charges
+                elif prop in Delta_EV_properties.properties:
+                    prop_diff = torch.abs(batch[prop] - result[prop])*batch["eigenvalues_active_mask"]
+                    prop_err = torch.mean(prop_diff.view(-1)**2)
+                    err_sq = err_sq  + float(tradeoffs[prop])*prop_err
+                else:
+                    prop_diff = torch.abs(batch[prop] - result[prop])#*batch["eigenvalues_active_mask"]
+                    prop_err = torch.mean(prop_diff.view(-1)**2)
+                    err_sq = err_sq  + float(tradeoffs[prop])*prop_err
+                if args.mixed_loss == True:
+                    #outer subtraction
+                    deltaE = torch.abs(batch[prop][...,None] - batch[prop][...,None,:])
+                    #make diabatic couplings prop to 1/delta E Delta function 
+                    mask= batch["%s_mask"%prop][...,None]*  batch["%s_mask"%prop][...,None,:]
+                    prop_diff=(torch.abs(torch.triu(torch.normal((1/deltaE),0.1),1))*0.01-torch.abs(torch.triu((result['ev_all']['ev_diabatic']),1)))*mask
+                    #print(mask,torch.triu(torch.normal((1/deltaE),0.1),1)*0.01,torch.triu((result['ev_all']['ev_diabatic'])))
+                    prop_err2 = torch.mean(prop_diff.view(-1) **2 )
+                    #diag forces
+                    #print(result['ev_all']['ev_diab_forces'][0].shape)
+                    #import numpy as np
+                    #a=result['ev_all']['ev_diab_forces'][0].to('cpu').detach().numpy()
+                    #a=a.reshape((3,3,7,7))
+                    #u,e=np.linalg.eigh(a)
+                    #print(e.shape,u.shape)
+                    #multiply with properr the tradeoff so that the error gets smaller when the iegenvalues get more accurate - was not good
+                    err_sq = err_sq + float(tradeoffs['eigenvalues_active_forces'])  *prop_err2
+            if prop == "occupation":
+                prop_diff = batch[prop] - result[prop]
+                prop_err = torch.mean(prop_diff.view(-1)**2)
+                err_sq = err_sq + float(tradeoffs[prop])*prop_err 
+            if prop == "eigenvalues_active_forces" or prop == "eigenvalues_forces" or prop in Charges.properties:
+                #batch[prop]=result['ev_all'][prop]
+                pass #continue
+            if prop == 'occ_orb':
+                #if args.mixed_loss==True:
+                #    #error on occupied orbitals
+                #    prop_diff_occ_orb = batch[prop] - result[prop]
+                #    prop_err_occ_orb = torch.mean(prop_diff_occ_orb.view(-1)**2)
+                #    err_sq = err_sq + float(tradeoffs[prop])*prop_err_occ_orb/2 
+                #    #additionally include the sum of the errors
+                #    sum_occ_orb_NN = torch.sum(result[prop],1)*2
+                #    prop_diff_sum_orbE = batch['sum_occ_orb'] - sum_occ_orb_NN
+                #    prop_err_sum_orbE = torch.mean(prop_diff_sum_orbE.view(-1)**2)
+                #    err_sq = err_sq + float(tradeoffs[prop])*prop_err_sum_orbE/2
+                #    #additionally try to fit the total energy and force by taking the sum of occ.orb.energies and delta E
+                #    total_E_NN = sum_occ_orb_NN + result['delta_E']
+                #    total_F_NN = result['delta_E_forces']
+                #    for batch_value in range(result['energy'].shape[0]):
+                #        total_F_NN[batch_value][0] += torch.sum(result['occ_orb_forces'][batch_value],0)
+                #    prop_diff_totE = batch['energy'] - total_E_NN
+                #    prop_diff_totF = batch['forces'] - total_F_NN
+                #    prop_err_totE = torch.mean(prop_diff_totE.view(-1)**2)
+                #    prop_err_totF = torch.mean(prop_diff_totF.view(-1)**2)
+                #    err_sq = err_sq + float(tradeoffs['energy']) * prop_err_totE + float(tradeoffs['forces']) * prop_err_totF
+                if args.mixed_loss == True:
+                    #error of eigenvalues based on distribution function
+                    prop_diff_occ_orb =torch.normal(batch[prop],stddev[prop])-torch.normal(result[prop],stddev[prop])
+                    prop_err_occ_orb = torch.mean(prop_diff_occ_orb.view(-1)**2)
+                    err_sq = err_sq+float(tradeoffs[prop])*prop_err_occ_orb
+                else:
+                    prop_diff_occ_orb = batch[prop] - result[prop]
+                    prop_err_occ_orb = torch.mean(prop_diff_occ_orb.view(-1)**2)
+                    err_sq = err_sq + float(tradeoffs[prop])*prop_err_occ_orb
+                    #print("err occ", prop_err_occ_orb)
+            if prop == "unocc_orb":
+                n_unocc=n_orb['n_unocc']
+                prop_diff = batch[prop][:2] - result[prop][:2]
+                prop_err = torch.mean(prop_diff.view(-1)**2)
+                err_sq = err_sq + float(tradeoffs[prop])*prop_err
+                #print(prop_err)
             if args.verbose:
                 print(prop, prop_err)
 
@@ -305,17 +344,13 @@ def evaluate(args, model, train_loader, val_loader, test_loader, device):
     header = ['Subset']
     metrics = []
     for prop in properties:
+      if prop == "eigenvalues_active_forces" or prop== "eigenvalues_forces":
+        pass
+      else:
         header += [f'{prop}_MAE', f'{prop}_RMSE']
-        if prop in schnarc.data.Properties.phase_properties:
-            header += [f'{prop}_pMAE', f'{prop}_pRMSE']
-            metrics += [
-                schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-            ]
-        else:
-            metrics += [
-                schnarc.metrics.MeanAbsoluteError(prop, prop),
-                schnarc.metrics.RootMeanSquaredError(prop, prop)
+        metrics += [
+                spk.metrics.MeanAbsoluteError(prop, prop),
+                spk.metrics.RootMeanSquaredError(prop, prop)
             ]
 
     results = []
@@ -341,35 +376,118 @@ def evaluate_dataset(metrics, model, loader, device,properties):
 
     qm_values={}
     predicted={}
+    batchs={}       
     header=[]
-    for batch in loader:
+    results2={}
+    """for batch in loader:
         batch = {
             k: v.to(device)
             for k, v in batch.items()
         }
         result = model(batch)
-
         for prop in result:
+            if prop =="eigenvalues_active": 
+              if prop in result:
+                result['ev_all'] += result[prop]    
+                result[prop] += result[prop][prop]
+              else:
+                result['ev_all'] = result[prop]
+                result[prop]=result[prop][prop]"""
+    #do only 1000 batches for testing
+    #index_=-1
+    for batch in loader:
+    #    index_ +=1
+    #    if index_==int(1000):
+    #       break
+        batch = {
+            k: v.to(device)
+            for k, v in batch.items()
+        }
+        result = model(batch)
+        for prop in result:
+          if prop == "eigenvalues_active": 
+              if "eigenvalues_active_forces" in properties:
+                if prop in predicted:
+                    predicted[prop] += [(result[prop][prop]*batch["%s_mask"%prop]).cpu().detach().numpy()]
+                else:
+                    predicted[prop] = [(result[prop][prop]*batch["%s_mask"%prop]).cpu().detach().numpy()]
+              else:
+                if prop in predicted:
+                    predicted[prop] += [(result[prop]*batch["%s_mask"%prop]).cpu().detach().numpy()] 
+                else:                                                                               
+                    predicted[prop] = [(result[prop]*batch["%s_mask"%prop]).cpu().detach().numpy()] 
+          if prop =="eigenvalues" or prop in Eigenvalue_properties.properties:
+                if prop in predicted:
+                    predicted[prop] += [(result[prop]*batch["%s_mask"%prop]).cpu().detach().numpy()]
+                else:
+                    predicted[prop] = [(result[prop]*batch["%s_mask"%prop]).cpu().detach().numpy()]
+          if prop == "delta_eigenvalues_pbe0_gbw" or prop=="delta_eigenvalues_pbe0_h2o":
             if prop in predicted:
-                predicted[prop] += [result[prop].cpu().detach().numpy()]
+                predicted[prop] += [(result[prop]*batch["eigenvalues_gbw_mask"]).cpu().detach().numpy()]
             else:
-                predicted[prop] = [result[prop].cpu().detach().numpy()]
-        for prop in batch:
+                predicted[prop] = [(result[prop]*batch["eigenvalues_gbw_mask"]).cpu().detach().numpy()]
+          if prop == "energy":
+            if prop in predicted:
+                predicted[prop] += [(result[prop]).cpu().detach().numpy()]
+            else:
+                predicted[prop] = [(result[prop]).cpu().detach().numpy()]
+ 
+        for prop in result:
+          if prop =="eigenvalues_active":
+                if prop in qm_values:
+                    qm_values[prop] += [(batch[prop]*batch["%s_mask"%prop]).cpu().detach().numpy()]
+                    qm_values["%s_mask"%prop] +=[batch["%s_mask"%prop].cpu().detach().numpy()]
+                else:
+                    qm_values[prop] = [(batch[prop]*batch["%s_mask"%prop]).cpu().detach().numpy()]
+                    qm_values["%s_mask"%prop] = [batch["%s_mask"%prop].cpu().detach().numpy()]
+          if prop == "delta_eigenvalues_pbe0_gbw" or prop =="delta_eigenvalues_pbe0_h2o":
+                if prop in qm_values:
+                    qm_values[prop] += [(batch[prop]*batch["eigenvalues_gbw_mask"]).cpu().detach().numpy()]
+                    qm_values["eigenvalues_gbw_mask"] +=[batch["eigenvalues_gbw_mask"].cpu().detach().numpy()]
+                else:
+                    qm_values[prop] = [(batch[prop]*batch["eigenvalues_gbw_mask"]).cpu().detach().numpy()]
+                    qm_values["eigenvalues_gbw_mask"] = [batch["eigenvalues_gbw_mask"].cpu().detach().numpy()]
+ 
+          if prop =="eigenvalues" or prop in Eigenvalue_properties.properties:
+                if prop in qm_values:
+                    qm_values[prop] += [(batch[prop]).cpu().detach().numpy()]
+                else:
+                    qm_values[prop] = [(batch[prop]).cpu().detach().numpy()]
+          if prop == "energy":
             if prop in qm_values:
-                qm_values[prop] += [batch[prop].cpu().detach().numpy()]
+                qm_values[prop] += [(batch[prop]).cpu().detach().numpy()]
             else:
-                qm_values[prop] = [batch[prop].cpu().detach().numpy()]
-
+                qm_values[prop] = [(batch[prop]).cpu().detach().numpy()]
         for metric in metrics:
-            metric.add_batch(batch, result)
+          if "eigenvalues_active" in result:
+              prop="eigenvalues_active"
+              batch[prop]=batch[prop]*batch["%s_mask"%prop]
+              if "eigenvalues_active_forces" in properties:
+                  result[prop][prop] = result[prop][prop]*batch["%s_mask"%prop]
+                  metric.add_batch(batch,result[prop])
+              else:
+                  result[prop]=  result[prop]#*batch["%s_mask"%prop][:len(result[prop][0])]
+                  metric.add_batch(batch,result)
+          else:
+              metric.add_batch(batch,result)
     results = [
     metric.aggregate() for metric in metrics
     ]
-
+    for prop in result:
+        if prop == "eigenvalues_active" or prop=="eigenvalues":
+            if "eigenvalues_active_forces" in properties:
+                predicted['diabatic_H'] = [result[prop]['ev_diabatic'].cpu().detach().numpy()]
+                #predicted['eigenvalues_active_forces'] = [result[prop]['eigenvalues_active_forces'].cpu().detach().numpy()]
     for p in predicted.keys():
         predicted[p]=np.vstack(predicted[p])
-    for p in qm_values.keys():
-        qm_values[p]=np.vstack(qm_values[p])
+        if p in qm_values.keys():
+            qm_values[p]=np.vstack(qm_values[p])
+    if "eigenvalues_active_mask" in qm_values.keys():
+        qm_values['eigenvalues_active_mask'] = np.array(qm_values["eigenvalues_active_mask"])
+    if "eigenvalues_gbw_mask" in qm_values.keys():
+        qm_values["eigenvalues_gbw_mask"] = np.array(qm_values["eigenvalues_gbw_mask"])
+    if "eigenvalues_mask" in qm_values.keys():
+        qm_values["eigenvalues_mask"] = np.array(qm_values["eigenvalues_mask"])
     prediction_path = os.path.join(args.modelpath,"evaluation_values.npz")
     prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
     np.savez(prediction_path,**predicted)
@@ -390,7 +508,10 @@ def run_prediction(model, loader, device, args):
             k: v.to(device)
             for k, v in batch.items()
         }
-        result = model(batch)
+        if device != "cuda" and args.parallel==True:
+	        result = model.module(batch)
+        else:
+                result = model(batch)
         for prop in result:
             if prop in predicted:
                 predicted[prop] += [result[prop].cpu().detach().numpy()]
@@ -405,25 +526,25 @@ def run_prediction(model, loader, device, args):
 
     for p in predicted.keys():
         predicted[p] = np.vstack(predicted[p])
-    for p in qm_values.keys():
-        qm_values[p]=np.vstack(qm_values[p])
-    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
-    np.savez(prediction_path_qm,**qm_values)
+    #for p in qm_values.keys():
+    #    qm_values[p]=np.vstack(qm_values[p])
+    #prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
+    #np.savez(prediction_path_qm,**qm_values)
     prediction_path = os.path.join(args.modelpath, 'predictions.npz')
     np.savez(prediction_path, **predicted)
     logging.info('Stored model predictions in {:s}...'.format(prediction_path))
 
 
-def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, train_loader=None, parallelize=False,
+def get_model(args, n_orb, properties, atomref=None, mean=None, stddev=None, train_loader=None, parallelize=False,
               mode='train'):
     if args.model == 'schnet':
         representation = spk.representation.SchNet(args.features, args.features, args.interactions,
                                                    args.cutoff / units.Bohr, args.num_gaussians)
 
-        property_output = schnarc.model.MultiStatePropertyModel(args.features, n_states, properties=properties,
+        property_output = schnet_ev.model.MultiStatePropertyModel(args.features, n_orb,n_neurons=args.n_neurons, properties=properties,
                                                                 mean=mean, stddev=stddev, atomref=atomref,
-                                                                n_layers=args.n_layers, real=args.real_socs,
-                                                                inverse_energy=args.inverse_nacs)
+                                                                n_layers=args.n_layers, diabatic=args.diabatic,hamiltonian = args.hamiltonian,
+                                                                inverse_energy=args.inverse_nacs, force_mask = args.force_mask, force_mask_index = args.force_mask_index)
 
         model = spk.atomistic.AtomisticModel(representation, property_output)
 
@@ -432,43 +553,12 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
         representation = spk.representation.schnet.invD()
         n_in = (args.n_atoms*args.n_atoms-args.n_atoms)
         #neurons = number of neurons in each layer of the network; if None, it is divided by two in each layer
-        property_output = schnarc.model.MultiStatePropertyModel(n_in, n_states,n_neurons=args.n_neurons, properties=properties,
+        property_output = schnet_ev.model.MultiStatePropertyModel(n_in, n_orb,n_neurons=args.n_neurons, properties=properties,
                                                                 mean=mean, stddev=stddev, atomref=atomref,
-                                                                n_layers=args.n_layers, real=args.real_socs,
-                                                                inverse_energy=args.inverse_nacs)
+                                                                n_layers=args.n_layers, diabatic=args.diabatic,hamiltonian = args.hamiltonian,
+                                                                inverse_energy=args.inverse_nacs, force_mask=args.force_mask, force_mask_index = args.force_mask_index)
 
         model = spk.atomistic.AtomisticModel(representation, property_output)
-    elif args.model == 'wacsf':
-        raise NotImplementedError
-        # from ase.data import atomic_numbers
-        # sfmode = ('weighted', 'Behler')[args.behler]
-        # # Convert element strings to atomic charges
-        # elements = frozenset((atomic_numbers[i] for i in sorted(args.elements)))
-        # representation = spk.representation.BehlerSFBlock(args.radial, args.angular, zetas=set(args.zetas),
-        #                                                   cutoff_radius=args.cutoff,
-        #                                                   centered=args.centered, crossterms=args.crossterms,
-        #                                                   elements=elements,
-        #                                                   mode=sfmode)
-        # logging.info("Using {:d} {:s}-type SF".format(representation.n_symfuncs, sfmode))
-        # # Standardize representation if requested
-        # if args.standardize and mode == 'train':
-        #     if train_loader is None:
-        #         raise ValueError("Specification of a trainig_loader is required to standardize wACSF")
-        #     else:
-        #         logging.info("Computing and standardizing symmetry function statistics")
-        # else:
-        #     train_loader = None
-        #
-        # representation = spk.representation.StandardizeSF(representation, train_loader, cuda=args.cuda)
-        #
-        # Build HDNN model
-
-    # TODO: rework, can not use Behler SFs?, tedious for elemental networks...
-    #     atomwise_output = spk.atomistic.ElementalEnergy(representation.n_symfuncs, n_hidden=args.n_nodes,
-    #                                                     n_layers=args.n_layers, mean=mean, stddev=stddev,
-    #                                                     atomref=atomref, return_force=True, create_graph=True,
-    #                                                     elements=elements)
-    #     model = spk.atomistic.AtomisticModel(representation, atomwise_output)
 
     else:
         raise ValueError('Unknown model class:', args.model)
@@ -479,61 +569,6 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
     logging.info("The model you built has: %d parameters" % spk.utils.count_params(model))
 
     return model
-
-def printTheArray(arr, n, phasevector):
-     phasevector=phasevector+arr
-     return phasevector
-
-def  generateAllBinaryStrings(n, arr, i, phasevector):
-
-     if i == n:
-        phasevector=printTheArray(arr, n, phasevector)
-        return phasevector
-
-     # First assign "0" at ith position
-     # and try for all other permutations
-     # for remaining positions
-     arr[i] = 0
-     phasevector=generateAllBinaryStrings(n, arr, i + 1, phasevector)
-
-     # And then assign "1" at ith position
-     # and try for all other permutations
-     # for remaining positions
-     arr[i] = 1
-     phasevector=generateAllBinaryStrings(n, arr, i + 1, phasevector)
-     return phasevector
-
-def generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device):
-    #generate a matrix that is the outer product of all possible phase combinations. hence this matrix can be directly multiplied with the hamiltonian matrix or dipole matrix
-    #size is singlets+3*triplets
-    phase_vector_nacs_1 = torch.Tensor(all_states,phase_pytorch.shape[1]).to(device)
-    phase_vector_nacs_2 = torch.Tensor(all_states,phase_pytorch.shape[1]).to(device)
-    phase_vector_nacs_1[:n_states['n_singlets']+n_states['n_triplets'],:] = phase_pytorch
-    #append the triplet part
-    phase_vector_nacs_1[n_states['n_singlets']+n_states['n_triplets']:n_states['n_singlets']+n_states['n_triplets']*2,:] = phase_pytorch[n_states['n_singlets']:,:]
-    phase_vector_nacs_1[n_states['n_singlets']+n_states['n_triplets']*2:n_states['n_singlets']+n_states['n_triplets']*3,:] = phase_pytorch[n_states['n_singlets']:,:]
-
-    phase_vector_nacs_2[:n_states['n_singlets'],:] = phase_vector_nacs_1[:n_states['n_singlets'],:]
-    phase_vector_nacs_2[n_states['n_singlets']:,:] = phase_vector_nacs_1[n_states['n_singlets']:,:] * -1
-    #two possibilities - the min function should be give the correct error
-    #therefore, build a matrix that contains all the two possibilities of phases by building the outer product of each phase vector for     a given sample of a mini batch
-    complex_diagonal_phase_matrix_1 = torch.Tensor(phase_pytorch.shape[1],n_socs).to(device)
-    phase_matrix_1 = torch.Tensor(phase_pytorch.shape[1],all_states,all_states).to(device)
-    complex_diagonal_phase_matrix_2 = torch.Tensor(phase_pytorch.shape[1],n_socs).to(device)
-    phase_matrix_2 = torch.Tensor(phase_pytorch.shape[1],all_states,all_states).to(device)
-    #build the phase matrix
-    for possible_permutation in range(0,phase_pytorch.shape[1]):
-        phase_matrix_1[possible_permutation,:,:] = torch.ger(phase_vector_nacs_1[:,possible_permutation],phase_vector_nacs_1[:,possible_permutation])
-        phase_matrix_2[possible_permutation,:,:] = torch.ger(phase_vector_nacs_2[:,possible_permutation],phase_vector_nacs_2[:,possible_permutation])
-    diagonal_phase_matrix_1=phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 0]
-    diagonal_phase_matrix_2=phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 0]
-    for i in range(int(n_socs/2)):
-        complex_diagonal_phase_matrix_1[:,2*i] = diagonal_phase_matrix_1[:,i]
-        complex_diagonal_phase_matrix_1[:,2*i+1] = diagonal_phase_matrix_1[:,i]
-        complex_diagonal_phase_matrix_2[:,2*i] = diagonal_phase_matrix_2[:,i]
-        complex_diagonal_phase_matrix_2[:,2*i+1] = diagonal_phase_matrix_2[:,i]
-    return complex_diagonal_phase_matrix_1, complex_diagonal_phase_matrix_2, phase_matrix_1[:,torch.triu(torch.ones(all_states,all_states)) == 1], phase_matrix_2[:,torch.triu(torch.ones(all_states,all_states)) == 1]
-
 
 def orca_opt(args, model, device):
     # reads QM.in and writes QM.out for optimizations with ORCA
@@ -560,7 +595,8 @@ def QMin2schnet(QMin,args):
     from ase import Atoms
     from schnetpack.environment import SimpleEnvironmentProvider, collect_atom_triples
 
-    environment_provider = SimpleEnvironmentProvider()
+    #environment_provider = SimpleEnvironmentProvider()
+    environment_provider = get_environment_provider(args,device=device)
     schnet_inputs = dict()
     molecule = Atoms(QMin['atypes'],QMin['geom'])
     schnet_inputs[Properties.Z] = torch.LongTensor(molecule.numbers.astype(np.int))
@@ -609,23 +645,23 @@ def read_QMin(filename):
             break
     states = [ int(i) for i in s]
     n_doublets = 0
-    n_triplets = 0
+    n_unocc = 0
     n_quartets = 0
     for index,istate in enumerate(states):
         if index == int(0):
-            n_singlets = istate
+            n_occ = istate
         elif index == int(1):
             n_doublets = istate
         elif index == int(2):
-            n_triplets = istate
+            n_unocc = istate
         elif index == int(3):
             n_quartets = istate
-    nmstates = n_singlets + 2*n_doublets + 3*n_triplets + 4*n_quartets
-    QMin['n_singlets'] = n_singlets
+    nmstates = n_occ + 2*n_doublets + 3*n_unocc + 4*n_quartets
+    QMin['n_occ'] = n_occ
     QMin['n_doublets'] = n_doublets
-    QMin['n_triplets'] = n_triplets
+    QMin['n_unocc'] = n_unocc
     QMin['n_quartets'] = n_quartets
-    QMin['n_states'] = nmstates
+    QMin['n_orb'] = nmstates
 
     #geometries
     atypes = []
@@ -646,6 +682,10 @@ def read_QMin(filename):
 
     return QMin
 
+
+def get_deltaE(model):
+    return
+
 if __name__ == '__main__':
     # Parse command line arguments
     parser = get_parser()
@@ -659,11 +699,13 @@ if __name__ == '__main__':
             model.output_modules[0].output_dict['energy'].return_hessian = [True,1,1,1,1]
         else:
             if args.parallel==False:
-                model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
+                for p in  model.output_modules[0].output_dict.keys():
+                    model.output_modules[0].output_dict[p].return_hessian = [False,1,1]
             else:
-                model.module.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
+                for p in model.module.output_modules[0].output_dict.keys():
+                    model.module.output_modules[0].output_dict[p].return_hessian = [False,1,1]
 
-    if args.mode == 'CIopt':
+    if args.mode == 'opt':
         orca_opt(args, model, device)
         sys.exit()
 
@@ -696,44 +738,52 @@ if __name__ == '__main__':
         tradeoff_file = os.path.join(args.modelpath, 'tradeoffs.yaml')
 
         if train_args.tradeoffs is None:
-            schnarc.utils.generate_default_tradeoffs(tradeoff_file)
-            tradeoffs = schnarc.utils.read_tradeoffs(tradeoff_file)
+            schnet_ev.utils.generate_default_tradeoffs(tradeoff_file)
+            tradeoffs = schnet_ev.utils.read_tradeoffs(tradeoff_file)
         else:
-            tradeoffs = schnarc.utils.read_tradeoffs(args.tradeoffs)
-            schnarc.utils.save_tradeoffs(tradeoffs, tradeoff_file)
+            tradeoffs = schnet_ev.utils.read_tradeoffs(args.tradeoffs)
+            schnet_ev.utils.save_tradeoffs(tradeoffs, tradeoff_file)
     else:
         train_args = spk.utils.read_from_json(jsonpath)
         tradeoff_file = os.path.join(args.modelpath, 'tradeoffs.yaml')
-        tradeoffs = schnarc.utils.read_tradeoffs(tradeoff_file)
+        tradeoffs = schnet_ev.utils.read_tradeoffs(tradeoff_file)
 
     # Determine the properties to load based on the tradeoffs
     properties = [p for p in tradeoffs]
-
+    if "eigenvalues_forces" in properties:
+        tradeoffs['eigenvalues_active_forces']=tradeoffs['eigenvalues_forces']
     # Read and process the data using the properties found in the tradeoffs.
     logging.info('Loading {:s}...'.format(args.datapath))
-    dataset = spk.data.AtomsData(args.datapath, collect_triples=args.model == 'wacsf')
+    environment_provider = get_environment_provider(train_args,device=torch.device("cuda" if args.cuda else "cpu"))
+    #previous function:
+    dataset = spk.data.AtomsData(args.datapath, environment_provider=environment_provider, collect_triples=args.model == 'wacsf')
     # Determine the number of states based on the metadata
-    n_states = {}
-    n_states['n_singlets'] = dataset.get_metadata("n_singlets")
-    if dataset.get_metadata("n_triplets") == None:
-        n_states['n_triplets']=int(0)
+    n_orb = {}
+    if "mean_energy" in dataset.get_metadata():
+        mean_energy = dataset.get_metadata('mean_energy')
     else:
-        n_states['n_triplets'] = dataset.get_metadata("n_triplets")
-    n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
+        mean_energy = int(0)
+    n_orb['mean_energy']=mean_energy
+    n_orb['n_act'] = int(1)
+    offset=0
+    for prop in properties:
+        if prop in Eigenvalue_properties.properties or prop in Delta_EV_properties.properties:
 
+        # if "eigenvalues" in properties or "eigenvalues_active" in properties or "eigenvalues_pbe0" in properties or "eigenvalues_pbe" in properties or "delta_eigenvalues_gbw" in properties or "eigenvalues_gbw" in properties:
+            n_orb['n_act'] = dataset.get_metadata('active')
+            if dataset.get_metadata("active_all"):
+                n_orb["active_all"]= dataset.get_metadata("active_all")
+            if dataset.get_metadata('offset'):
+                offset = dataset.get_metadata('offset')
+            else:
+                offset = float(0.0)
     ##activate if only one state is learned or not all
-    s=tradeoffs['energy'].split()
-    if int(s[1]) > int(0):
-        n_singlets = int(s[1])
-        n_triplets = int(s[2])
-        n_states['n_singlets'] = n_singlets
-        n_states['n_triplets'] = n_triplets
-        n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
-    n_states['states'] = dataset.get_metadata("states")
-    logging.info('Found {:d} states... {:d} singlet states and {:d} triplet states'.format(n_states['n_states'],
-                                                                                           n_states['n_singlets'],
-                                                                                           n_states['n_triplets']))
-
+    # only needed if unocc and occ orbitals are trained separately 
+    n_orb['n_occ']=int(1)
+    n_orb['n_unocc']=int(0)
+    n_orb['n_orb']=n_orb['n_occ']+n_orb['n_unocc']
+    n_orb['offset']=offset
+    n_orb["aggregation_mode"]=args.aggregation_mode
     if args.mode == 'eval':
         split_path = os.path.join(args.modelpath, 'split.npz')
         data_train, data_val, data_test = dataset.create_splits(*args.split, split_file=split_path)
@@ -773,7 +823,7 @@ if __name__ == '__main__':
         stddev = {}
         # Compute mean and stddev for relevant properties
         for p in properties:
-            if p in schnarc.data.Properties.normalize:
+            if p in schnet_ev.data.Properties.normalize:
                 mean_p, stddev_p = train_loader.get_statistics(p, True)
                 mean_p = mean_p[p]
                 stddev_p = stddev_p[p]
@@ -781,12 +831,12 @@ if __name__ == '__main__':
                 stddev[p] = stddev_p
                 logging.info('{:s} MEAN: {:20.11f} STDDEV: {:20.11f}'.format(p, mean_p.detach().cpu().numpy()[0],
                                                                              stddev_p.detach().cpu().numpy()[0]))
-    else:
-        mean, stddev = None, None
+            else:
+                mean[p], stddev[p] = None, None
 
     # Construct the model.
     model = get_model(train_args,
-                      n_states,
+                      n_orb,
                       properties,
                       mean=mean,
                       stddev=stddev,
@@ -796,35 +846,8 @@ if __name__ == '__main__':
                       ).to(device)
 
     if args.mode == 'train':
-        #model=torch.load(os.path.join(args.modelpath,'best_model'),map_location='cpu').to(device)
         logging.info("training...")
-        #properties for phase vector
-        #n_nacs = int(n_states['n_singlets']*(n_states['n_singlets']-1)/2 + n_states['n_triplets']*(n_states['n_triplets']-1)/2 )
         batch_size = args.batch_size
-        all_states = n_states['n_singlets'] + 3 * n_states['n_triplets']
-        n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
-        #min loss for a given batch size
-        #vector with correct phases for a mini batch
-        #number of possible phase vectors
-        n_phases = int(2**(n_states['n_states']-1))
-        #number of singlet-singlet and triplet-triplet deriative couplings
-        #gives the number of phases 
-        #generate all possible 2**(nstates-1) vectors that give rise to possible combinations of phases
-
-        phasevector = generateAllBinaryStrings(n_states['n_states'],[None]*n_states['n_states'],0,[])
-        phase_pytorch = torch.Tensor( n_states['n_states'],n_phases ).to(device)
-        iterator = -1
-        for i in range(n_phases):
-            for j in range(n_states['n_states']):
-                iterator+=1
-                if phasevector[iterator]==0:
-                    phase_pytorch[j,i] = 1
-                else:
-                    phase_pytorch[j,i] = -1
-
-        socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2 = generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device)
-
-        props_phase=[n_phases,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
-        train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase)
+        train(args, model, tradeoffs, train_loader, val_loader, device, n_orb,mean,stddev,offset)
         logging.info("...training done!")
 

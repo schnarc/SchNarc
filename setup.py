@@ -9,12 +9,11 @@ def read(fname):
         return f.read()
 
 setup(
-    name='schnarc',
+    name='schnet_ev',
     version='0.0.0',
-    author='Michael Gastegger, Julia Westermayr, Philipp Marquetand',
-    email='michael.gastegger@tu-berlin.de',
+    author='Julia Westermayr, Michael Gastegger, Kristof Schütt, Reinhard J. Maurer',
+    email='julia.westermayr@warwick.ac.uk',
     packages=find_packages('src'),
-    scripts=['src/schnarc/calculators.py', 'src/schnarc/model.py','src/schnarc/nn.py','src/scripts/orca_External','src/schnarc/metrics.py','src/scripts/schnarc_md.py', 'src/scripts/run_schnarc.py', 'src/scripts/setup_schnarc.py', 'src/scripts/transform_prediction_QMout.py', 'src/scripts/countstep.py', 'src/scripts/get_xyzandproperties_deltaE.py', 'src/scripts/QM2output.py', 'src/scripts/write_geoms.py','src/scripts/transform_dataset.py'],
     package_dir={'': 'src'},
     python_requires='>=3.6',
     install_requires=[

@@ -1,0 +1,15 @@
+# SchNet_EV
+SchNet to model eigenvalues and related stuff
+
+the data base requires several entries:
+the metadata requires an entry "active" and "active_all" which gives the number of eigenvalues to be modelled
+the properties in the data base to be modeled can be named:
+    eigenvalues_active
+    eigenvalues_pbe
+    eigenvalues_pbe0 
+    eigenvalues_pbe0_h2o 
+    eigenvalues_gbw 
+    eigenvalues 
+
+a mask that is called "eigenvalues_active_mask" or should contain the name of the property with the appendix "_mask". If all values should be modelled this entry should contain the value one and should have the size of the property to be modelled. One entry per data point is needed.
+the property is saved in a file called tradeoffs.yaml as it is done in SchNet for excited states with a value accounting for its weight in the loss function. This should be one if no additional properties are trained. 
