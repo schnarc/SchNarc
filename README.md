@@ -63,3 +63,16 @@ and carry out:
 ``pip install .``  
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack
+
+# Troubleshooting
+
+If your python version cannot find sharc, you can try the following:
+
+Got to the pysharc/sharc folder
+Edit \_\_init\_\_.py there and make the following changes:  
+``  from . import sharc ``
+and try to reinstall.
+
+Make sure you have a  "sharc.cpython-...-gnu.so" file in the same folder after installation. 
+
+Before you run the dynamics with sharc, source the sharcvars.sh file in the folder "sharc/bin/".
