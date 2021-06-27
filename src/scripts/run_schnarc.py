@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data.sampler import RandomSampler
-
+from schnetpack.utils import get_loaders
 import schnetpack as spk
 import schnarc
 
@@ -736,32 +736,22 @@ if __name__ == '__main__':
 
     if args.mode == 'eval':
         split_path = os.path.join(args.modelpath, 'split.npz')
-        data_train, data_val, data_test = dataset.create_splits(*args.split, split_file=split_path)
-
-        train_loader = spk.data.AtomsLoader(data_train, batch_size=args.batch_size, sampler=RandomSampler(data_train),
-                                        num_workers=4, pin_memory=True)
-        val_loader = spk.data.AtomsLoader(data_val, batch_size=args.batch_size, num_workers=2, pin_memory=True)
+        train_loader, val_loader, test_loader = get_loaders(args,dataset=dataset,split_path=split_path, logging=logging)
 
         logging.info("evaluating...")
-        test_loader = spk.data.AtomsLoader(data_test, batch_size=args.batch_size,
-                                           num_workers=2, pin_memory=True)
         evaluate(args, model, train_loader, val_loader, test_loader, device)
         logging.info("... done!")
         exit()
-     # Splits the dataset in test, val, train sets
+    # Splits the dataset in test, val, train sets
     split_path = os.path.join(args.modelpath, 'split.npz')
- 
+
     if args.mode == 'train':
         if args.split_path is not None:
             copyfile(args.split_path, split_path)
 
     logging.info('Creating splits...')
-    data_train, data_val, data_test = dataset.create_splits(*train_args.split, split_file=split_path)
-
     # Generate loaders for training
-    train_loader = spk.data.AtomsLoader(data_train, batch_size=args.batch_size, sampler=RandomSampler(data_train),
-                                        num_workers=4, pin_memory=True)
-    val_loader = spk.data.AtomsLoader(data_val, batch_size=args.batch_size, num_workers=2, pin_memory=True)
+    train_loader, val_loader, test_loader = get_loaders(args,dataset=dataset,split_path=split_path, logging=logging)
 
     # Determine statistics for scaling
     if args.mode == 'train':
