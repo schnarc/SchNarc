@@ -7,11 +7,13 @@ A SchNetPack/SHARC interface for machine-learning accelerated excited state simu
 Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc.
 
 You need a python installation with version 3.5 or later.  
-We recommend installing Anaconda with python 3 (see https://www.anaconda.com/distribution/).  
+We recommend installing Miniconda with python 3 (see https://docs.conda.io/en/latest/miniconda.html) and mamba (see https://github.com/mamba-org/mamba).
+Once you have miniconda installed, mamba is installed via
+``conda install mamba -n base -c conda-forge``
 If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:  
 ``conda config --append channels conda-forge``  
-It is recommended to create an environment (in this example the environment is called ml) with:  
-``conda create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils gfortran_linux-64``  
+It is recommended to create an environment (in this example the environment is called ml) with <span style="color:red">(the red parts are not needed if you have reasonably up-to-date gfortran compiler installed)</span>:  
+``mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter <span style="color:red">gfortran_linux-64</span>``  
 Then activate the environment:  
 ``conda activate ml``   
 
@@ -25,8 +27,8 @@ Edit Makefile and make the following changes:
 ``    USE_LIBS := mkl``  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/ml``  
 ``    MKLROOT := ${ANACONDA}/lib``  
-``  #CC :=gcc``  
-``  #F90 :=gfortran``  
+``  <span style="color:red">#CC :=gcc</span>``  
+``  <span style="color:red">#F90 :=gfortran</span>``  
 ``  LD= -L$(MKLROOT) -lmkl_rt -lpthread -lm -lgfortran $(NETCDF_LIB)``  
 i.e., delete ``/lib/intel64`` after ``-L$(MKLROOT)``. The 4th change is a line that needs to be added (about MKLROOT). The 5rd and 6th change mean that you have to comment out the definition of CC and F90 and rather use the CC and F90 variables provided by the environment, which is set by anaconda to something like ``<your-anaconda-path>/x86_64-conda_cos6-linux-gnu-cc`` instead of gcc.  
 
@@ -39,7 +41,7 @@ Go to the pysharc/netcdf folder:
 ``cd ../netcdf``  
 Edit Makefile  there and make the following changes:  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
-``    #CC=$(ANACONDA)/bin/gcc``  
+``    <span style="color:red">#CC=gcc</span>``  
 Then go to the pysharc folder and run the installation procedure:  
 ``cd ..``  
 ``make install``  
