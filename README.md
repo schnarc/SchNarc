@@ -12,8 +12,8 @@ Once you have miniconda installed, mamba is installed via
 ``conda install mamba -n base -c conda-forge``
 If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:  
 ``conda config --append channels conda-forge``  
-It is recommended to create an environment (in this example the environment is called ml) with <span style="color:red">(the red parts are not needed if you have reasonably up-to-date gfortran compiler installed)</span>:  
-``mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter <span style="color:red">gfortran_linux-64</span>``  
+It is recommended to create an environment (in this example the environment is called ml) with (leave out the ``gfortran_linux-64`` and the commenting of gcc and gfortran below if you have reasonably up-to-date gfortran compiler installed)</span>:  
+``mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter gfortran_linux-64``  
 Then activate the environment:  
 ``conda activate ml``   
 
@@ -27,8 +27,8 @@ Edit Makefile and make the following changes:
 ``    USE_LIBS := mkl``  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/ml``  
 ``    MKLROOT := ${ANACONDA}/lib``  
-``  <span style="color:red">#CC :=gcc</span>``  
-``  <span style="color:red">#F90 :=gfortran</span>``  
+``    #CC :=gcc``  
+``    #F90 :=gfortran``  
 ``  LD= -L$(MKLROOT) -lmkl_rt -lpthread -lm -lgfortran $(NETCDF_LIB)``  
 i.e., delete ``/lib/intel64`` after ``-L$(MKLROOT)``. The 4th change is a line that needs to be added (about MKLROOT). The 5rd and 6th change mean that you have to comment out the definition of CC and F90 and rather use the CC and F90 variables provided by the environment, which is set by anaconda to something like ``<your-anaconda-path>/x86_64-conda_cos6-linux-gnu-cc`` instead of gcc.  
 
@@ -41,7 +41,7 @@ Go to the pysharc/netcdf folder:
 ``cd ../netcdf``  
 Edit Makefile  there and make the following changes:  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
-``    <span style="color:red">#CC=gcc</span>``  
+``    #CC=gcc``  
 Then go to the pysharc folder and run the installation procedure:  
 ``cd ..``  
 ``make install``  
