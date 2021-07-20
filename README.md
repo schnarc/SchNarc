@@ -6,16 +6,23 @@ A SchNetPack/SHARC interface for machine-learning accelerated excited state simu
 
 Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc.
 
+### Python and libraries
+
 You need a python installation with version 3.5 or later.  
 We recommend installing Miniconda with python 3 (see https://docs.conda.io/en/latest/miniconda.html) and mamba (see https://github.com/mamba-org/mamba).
 Once you have miniconda installed, mamba is installed via
 ``conda install mamba -n base -c conda-forge``
 If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:  
 ``conda config --append channels conda-forge``  
-It is recommended to create an environment (in this example the environment is called ml) with (leave out the ``gfortran_linux-64`` and the commenting of gcc and gfortran below if you have reasonably up-to-date gfortran compiler installed)</span>:  
+It is recommended to create an environment (in this example the environment is called ml) with:  
+*Note: Leave out the ``gfortran_linux-64`` and the commenting of gcc and gfortran below if you have a reasonably up-to-date gfortran compiler installed*  
 ``mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter gfortran_linux-64``  
+For some tasks, it is useful to install openbabel:  
+``mamba install -n ml -c openbabel openbabel``  
 Then activate the environment:  
 ``conda activate ml``   
+
+### SHARC and pySHARC
 
 Install SHARC with pysharc (see https://sharc-md.org/?page_id=50#tth_sEc2.3 or follow the instructions below) in a suitable folder
 (``<some-path>``; inside this folder, git will create automatically a folder called sharc):  
@@ -27,8 +34,8 @@ Edit Makefile and make the following changes:
 ``    USE_LIBS := mkl``  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/ml``  
 ``    MKLROOT := ${ANACONDA}/lib``  
-``    #CC :=gcc``  
-``    #F90 :=gfortran``  
+``    #CC :=gcc``   (<- not of you have gcc and gfortran)  
+``    #F90 :=gfortran``   (<- not of you have gcc and gfortran)  
 ``  LD= -L$(MKLROOT) -lmkl_rt -lpthread -lm -lgfortran $(NETCDF_LIB)``  
 i.e., delete ``/lib/intel64`` after ``-L$(MKLROOT)``. The 4th change is a line that needs to be added (about MKLROOT). The 5rd and 6th change mean that you have to comment out the definition of CC and F90 and rather use the CC and F90 variables provided by the environment, which is set by anaconda to something like ``<your-anaconda-path>/x86_64-conda_cos6-linux-gnu-cc`` instead of gcc.  
 
@@ -41,13 +48,15 @@ Go to the pysharc/netcdf folder:
 ``cd ../netcdf``  
 Edit Makefile  there and make the following changes:  
 ``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
-``    #CC=gcc``  
+``    #CC=gcc``  (<- not of you have gcc and gfortran)  
 Then go to the pysharc folder and run the installation procedure:  
 ``cd ..``  
 ``make install``  
 Afterwards, go to the source folder and run the installation procedure:  
 ``cd ../source``  
 ``make install``  
+
+### SchNet
 
 Install SchNet in a suitable folder:  
 ``cd <some-path>``  
@@ -56,6 +65,8 @@ Then go to the directory schnetpack
 ``cd schnetpack``  
 and carry out:  
 ``pip install .`` 
+
+### SchNarc
 
 If you haven't done so, get the SchNarc sources:  
 ``git clone https://github.com/schnarc/schnarc.git``  
@@ -66,7 +77,7 @@ and carry out:
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack
 
-# Troubleshooting
+## Troubleshooting
 
 If your python version cannot find sharc, you can try the following:
 
