@@ -124,9 +124,8 @@ class MultiStatePropertyModel(nn.Module):
         # Dipole moments and transition dipole moments
         if self.need_dipole:
             n_dipoles = int((self.n_singlets+self.n_triplets) * (self.n_singlets+self.n_triplets + 1) / 2)  # Between ALL states
-            dipole_module = MultiDipole(n_in, n_states, n_layers=n_layers, n_neurons=n_neurons)
+            dipole_module  = MultiDipole(n_in, n_states, n_layers=n_layers, n_neurons=n_neurons)
             outputs[Properties.dipole_moment] = dipole_module
-
         # Nonadiabatic couplings
         if self.need_nacs:
             #n_couplings = int(self.n_singlets * (self.n_singlets - 1) / 2 + self.n_triplets * (self.n_triplets - 1) / 2)  # Between all different states
@@ -170,6 +169,9 @@ class MultiStatePropertyModel(nn.Module):
             if prop == Properties.energy and 'd2ydx2' in result:
                 outputs[Properties.hessian] = result['d2ydx2']
 
+            if prop == Properties.dipole_moment:
+                outputs[Properties.dipole_moment] = result["y"]
+                outputs["charges"] = result["yi"]
             if prop == Properties.nacs:
                 outputs[prop] = result['dydx']
                 outputs['diab'] = result['y']
