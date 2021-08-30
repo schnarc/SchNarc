@@ -5,10 +5,11 @@ class Properties:
     energy = 'energy'
     forces = 'forces'
     socs = 'socs'
+    old_socs = "old_socs"
     nacs = 'nacs'
     dipole_moment = 'dipoles'
     charges = 'charges'
-
+    phases = 'phases'
     # Only for prediction and calculator
     hessian = 'hessian'
 
@@ -17,21 +18,25 @@ class Properties:
         energy,
         forces,
         socs,
+        old_socs,
         nacs,
-        dipole_moment
+        dipole_moment,
+        phases
     ]
 
     # Properties for which normalization is meaningful
     normalize = [
-        energy,
-        socs
-    ]
+        energy] #,
+        #socs
+    #]
 
     # Properties with potential phase issues
     phase_properties = [
         dipole_moment,
         socs,
-        nacs
+        old_socs,
+        nacs,
+        phases
     ]
 
     # Hessians available
@@ -44,9 +49,11 @@ class Properties:
         energy: (energy, 'y'),
         forces: (energy, 'dydx'),
         socs: (socs, 'y'),
+        old_socs: (old_socs, "y"),
         dipole_moment: (dipole_moment, 'y'),
         charges: (dipole_moment, 'yi'),
-        nacs: (nacs, 'dydx')
+        nacs: (nacs, 'dydx'),
+        phases: (phases, 'y')
     }
 
     n_triplets = 'n_triplets'

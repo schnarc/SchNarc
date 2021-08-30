@@ -13,6 +13,7 @@ import time
 import schnetpack as spk
 import torch
 import torch.nn as nn
+from ase.units import Hartree, Bohr, Debye, invcm
 from torch.optim import Adam
 from torch.utils.data.sampler import RandomSampler
 from sharc.pysharc.interface import SHARC_INTERFACE
@@ -20,6 +21,23 @@ import run_schnarc as rs
 #import sharc and schnarc
 from functools import partial
 from schnarc.calculators import SchNarculator, EnsembleSchNarculator
+
+def _load_model(modelpath,device):
+    if os.path.isdir(modelpath):
+        modelpath = os.path.join(modelpath, 'best_model')
+
+    if not torch.cuda.is_available():
+        model = torch.load(modelpath, map_location='cpu')
+    else:
+        model = torch.load(modelpath)
+    # Check if parallel
+    model = model.to(device)
+    return model
+
+def save_model(modelpath,model):
+    if os.path.isdir(modelpath):
+        modelpath = os.path.join(modelpath,"best_model")
+    model = torch.save(model,modelpath)
 
 class SHARC_NN(SHARC_INTERFACE):
     """
@@ -109,29 +127,32 @@ class SHARC_NN(SHARC_INTERFACE):
         self.dummy_crd = np.zeros((self.NAtoms,3))
         self.hessian = True if param.hessian else False
         self.adaptive = param.adaptive
+        self.socs_mask = param.socs_mask
+        self.finish = param.finish
         #self.nac_approx=param.nac_approx
-        if param.thresholds is not None:
-            self.thresholds = {}
-            self.thresholds['energy'] = param.thresholds[0]
-            self.thresholds['forces'] = param.thresholds[1]
-            self.thresholds['dipoles'] = param.thresholds[2]
-            self.thresholds['nacs'] = param.thresholds[3]
-            self.thresholds['socs'] = param.thresholds[4]
-            self.thresholds['diab'] = np.inf
-            self.thresholds['diab2'] = np.inf
+        #self.thresholds = param.thresholds
+        # get thresholds for adaptive sampling for the different properties
+        self.thresholds = {}
+        self.thresholds['energy'] = param.thresholds[0]/Hartree
+        self.thresholds['forces'] = param.thresholds[1]/Hartree/Bohr
+        self.thresholds['dipoles'] = param.thresholds[2]/Debye
+        self.thresholds['nacs'] = param.thresholds[3]
+        self.thresholds['socs'] = param.thresholds[4]/invcm
+        self.thresholds['diab'] = np.inf
+        self.thresholds['diab2'] = np.inf
         if param.nac_approx is not None:
             self.nac_approx=param.nac_approx
         else:
             self.nac_approx = None
         if self.adaptive is not None:
             self.NNnumber = int(2)
-            self.modelpaths=[]
+            self.modelpaths=param.modelpaths
             self.modelpaths.append(param.modelpath)
-            self.modelpaths.append(param.modelpaths)
-            self.schnarc_init = EnsembleSchNarculator(self.dummy_crd,self.AtNames,self.modelpaths,self.device,hessian=self.hessian,nac_approx=self.nac_approx,adaptive=self.adaptive,thresholds=self.thresholds,print_uncertainty=param.print_uncertainty)
+            #self.modelpaths.append(param.modelpaths[:])
+            self.schnarc_init = EnsembleSchNarculator(self.dummy_crd,self.AtNames,self.modelpaths,param,hessian=self.hessian,nac_approx=self.nac_approx,adaptive=self.adaptive,thresholds=self.thresholds,print_uncertainty=param.print_uncertainty)
         else:
             self.NNnumber = int(1) #self.options["NNnumber"]
-            self.schnarc_init = SchNarculator(self.dummy_crd,self.AtNames,param.modelpath,self.device,hessian=self.hessian,nac_approx=self.nac_approx)
+            self.schnarc_init = SchNarculator(self.dummy_crd,self.AtNames,param.modelpath,param,hessian=self.hessian,nac_approx=self.nac_approx,adaptive=self.adaptive,thresholds=self.thresholds,print_uncertainty=param.print_uncertainty)
         return
 
 
@@ -145,7 +166,35 @@ def main():
     if args.adaptive is not None:
         adaptive = args.adaptive
     else:
-        adaptive = float(1)
+        adaptive = None
+    dataset = spk.data.AtomsData(args.datapath, environment_provider=args.environment_provider,collect_triples="schnet"=='wacsf')
+    metadata = dataset.get_metadata()
+    n_singlets = metadata["n_singlets"]
+    n_triplets = metadata["n_triplets"]
+    all_states = n_singlets + 3 * n_triplets
+    n_socs =  int(all_states * (all_states - 1))
+    socs=False
+    parallel = args.parallel
+    for k in metadata.keys():
+        if k=="socsindex":
+            socindex=metadata[k]
+            mask_socs = np.zeros((n_socs))
+            for socindex_mask,maskvalue in enumerate(socindex):
+                mask_socs[maskvalue]=1.0
+            args.socs_mask=mask_socs
+            socs=True
+    if socs == False:
+        args.socs_mask = np.ones((n_socs))
+    if args.cuda == True:
+        device = "cuda"
+    else:
+        device = "cpu"
+    """model = _load_model(args.modelpath,device)
+    if not parallel:
+        model.output_modules[0].n_states["finish"] = args.finish
+    else:
+        model.module.output_modules[0].n_states["finish"] = args.finish
+    save_model(args.modelpath,model)"""
     param = "schnarc_options"
     # init SHARC_NN class 
     nn = SHARC_NN()
