@@ -66,7 +66,7 @@ def get_parser():
     train_parser.add_argument('--real_socs', action='store_true',
                               help='If spin-orbit couplings are predicted, information should be given whether they are real or not.')
     train_parser.add_argument('--phase_loss', action='store_true', help='Use special loss, which ignores phase.')
-    train_parser.add_argument('--inverse_nacs', action='store_true', help='Weight NACs with inverse energies.')
+    train_parser.add_argument('--inverse_nacs', type=int, help='Weight NACs with inverse energies. 0 = False, 1 = first run (use QC energies), 2 = second run (use ML energies).', default = 0)
     train_parser.add_argument('--log', action='store_true', help='Use phase independent min loss.',default=False)
     train_parser.add_argument('--min_loss', action='store_true', help='Use phase independent min loss.')
     train_parser.add_argument('--diagonal', action='store_true', help='Train SOCs via diagonal elements. Must be included in the training data base', default=None)
@@ -446,10 +446,7 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
                                                                 mean=mean, stddev=stddev, atomref=atomref,
                                                                 n_layers=args.n_layers, real=args.real_socs,
                                                                 inverse_energy=args.inverse_nacs)
-
         model = spk.atomistic.AtomisticModel(representation, property_output)
-
-
     elif args.model == 'invD':
         representation = spk.representation.schnet.invD()
         n_in = (args.n_atoms*args.n_atoms-args.n_atoms)

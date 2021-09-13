@@ -117,7 +117,7 @@ class SchNarculator:
                     if self.socmodel is not None:
                        self.socmodel.output_modules[0].output_dict[schnarc.data.Properties.socs].return_hessian=self.hessian2 #[False,self.n_singlets,0,self.n_triplets,0]
                     if self.nacmodel is not None:
-                       self.nacmodel.output_modules[0].output_dict[schnarc.data.Properties.socs].return_hessian=self.hessian2 #[False,self.n_singlets,0,self.n_triplets,0]
+                       self.nacmodel.output_modules[0].output_dict[schnarc.data.Properties.nacs].return_hessian=self.hessian2 #[False,self.n_singlets,0,self.n_triplets,0]
 
         self.molecule = Atoms(atom_types, positions)
 
@@ -126,6 +126,8 @@ class SchNarculator:
         schnet_inputs = self._sharc2schnet(sharc_outputs)
         # Perform prediction
         schnet_outputs = self._calculate(schnet_inputs)
+        #schnet_inputs["energy"] = schnet_outputs["energy"]
+        #schnet_inputs["nac_energy"] = schnet_outputs["energy"]
         if self.socmodel is not None:
             schnet_outputs["_socs"]=True
         else:
@@ -238,7 +240,7 @@ class SchNarculator:
         if self.parallel:
             if _socs==True:
                 schnet_socoutputs = self.socmodel.module(schnet_inputs)
-            if _nacs == True: 
+            if _nacs == True:
                 schnet_nacoutputs = self.nacmodel.module(schnet_inputs)
         else:
             if _socs==True:
@@ -344,7 +346,16 @@ class SchNarculator:
 
             elif prop == "nacs" or ( prop == "_nacs" and schnet_nacoutputs is not None ):# and prop == "_nacs":
                 if schnet_nacoutputs is not None:
-                    schnet_outputs["nacs"] = schnet_nacoutputs["nacs"]
+                    schnet_outputs["nacs"] = schnet_nacoutputs["nacs"] 
+                    it=-1
+                    for istate in range(self.n_singlets):
+                        for jstate in range(istate+1,self.n_singlets):
+                            it+=1
+                            schnet_outputs["nacs"][it] = schnet_outputs["nacs"][0,it] / abs(schnet_outputs["energy"][0,istate] - schnet_outputs["energy"][0,jstate])
+                    for istate in range(self.n_triplets):
+                        for jstate in range(self.n_triplets):
+                            it+=1
+                            schnet_outputs["nacs"][it] = schnet_outputs["nacs"][it] / abs(schnet_outputs["energy"][istate] - schnet_outputs["energy"][jstate])
                 nonadiabatic_couplings = np.zeros((self.n_singlets+3*self.n_triplets,self.n_singlets+3*self.n_triplets,self.n_atoms,3))
                 iterator = -1
                 for istate in range(self.n_singlets):

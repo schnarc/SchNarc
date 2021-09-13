@@ -133,11 +133,11 @@ class SHARC_NN(SHARC_INTERFACE):
         #self.thresholds = param.thresholds
         # get thresholds for adaptive sampling for the different properties
         self.thresholds = {}
-        self.thresholds['energy'] = param.thresholds[0]/Hartree
-        self.thresholds['forces'] = param.thresholds[1]/Hartree/Bohr
-        self.thresholds['dipoles'] = param.thresholds[2]/Debye
+        self.thresholds['energy'] = param.thresholds[0]#/Hartree
+        self.thresholds['forces'] = param.thresholds[1]#/Hartree/Bohr
+        self.thresholds['dipoles'] = param.thresholds[2]#/Debye
         self.thresholds['nacs'] = param.thresholds[3]
-        self.thresholds['socs'] = param.thresholds[4]/invcm
+        self.thresholds['socs'] = param.thresholds[4]#/invcm
         self.thresholds['diab'] = np.inf
         self.thresholds['diab2'] = np.inf
         if param.nac_approx is not None:

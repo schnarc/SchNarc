@@ -78,7 +78,7 @@ class MultiStatePropertyModel(nn.Module):
     mean, stddev and atomrefs only for energies
     """
     def __init__(self, n_in, n_states, properties,n_neurons=None, mean=None, stddev=None, atomref=None, need_atomic=False, n_layers=2,
-                 inverse_energy=False, real=False ):
+                 inverse_energy=0, real=False ):
 
         super(MultiStatePropertyModel, self).__init__()
 
@@ -95,7 +95,6 @@ class MultiStatePropertyModel(nn.Module):
         # Flag for computation of nacs
         self.inverse_energy = inverse_energy
         self.finish = n_states["finish"]
-        #self.derivative = self.need_forces
         if self.need_forces == True:
             create_graph=True
             self.derivative = True
@@ -171,15 +170,23 @@ class MultiStatePropertyModel(nn.Module):
         for prop, model in self.output_dict.items():
             result = model(inputs)
             outputs[prop] = result['y']
-            if prop == 'energy' and self.inverse_energy:
+            if "energy" in inputs and self.inverse_energy == 1:
                 #for FULVENE 
                 #inputs['nac_energy'] = result['y'].detach()
                 # Use reference energy during training
-                if 'energy' in inputs:
-                   inputs['nac_energy'] = inputs['energy']
+                inputs['nac_energy'] = inputs['energy']
                 # And predicted during production
-                else:
-                    inputs['nac_energy'] = result['y'].detach()
+            elif prop == "energy" and self.inverse_energy == 2: # or self.inverse_energy == True:
+                inputs['nac_energy'] = result['y'].detach()
+            elif self.inverse_energy == 0:
+                pass
+            elif self.inverse_energy == 1 and ("energy" not in inputs and prop != "energy"):
+                pass
+            elif self.inverse_energy==1 and "energy" not in inputs and prop == "energy":
+                inputs['nac_energy']= result['y'].detach()
+                #print("You cannot use this method without reference energies in the Training mode.")
+            else:
+                inputs['nac_energy'] = result['y'].detach()
 
             if prop == Properties.energy and self.need_forces:
                 outputs[Properties.forces] = result['dydx']
@@ -499,7 +506,8 @@ class MultiNac(MultiState):
         """
     def __init__(self, n_in, n_states, aggregation_mode='sum', n_layers=2, n_neurons=None,
                  activation=spk.nn.activations.shifted_softplus, return_contributions=False, create_graph=True,
-                 outnet=None, use_inverse=False):
+                 outnet=None, use_inverse=0):
+
 
         n_singlets = n_states[Properties.n_singlets]
         n_triplets = n_states[Properties.n_triplets]
@@ -515,11 +523,12 @@ class MultiNac(MultiState):
                                        return_force=True,
                                        atomref=None,
                                        max_z=100,
-                                       outnet=outnet)
+                                       outnet=outnet,)
+                                       #use_inverse = use_inverse)
 
         self.use_inverse = use_inverse
 
-        if self.use_inverse:
+        if self.use_inverse != 0:
             reconsts = n_singlets + n_triplets
             self.approximate_inverse = schnarc.nn.ApproximateInverse(reconsts,n_triplets=n_triplets)
 
@@ -527,7 +536,9 @@ class MultiNac(MultiState):
         self.return_hessian=[False,1,0,1,0,False]
         result = super(MultiNac, self).forward(inputs)
         result['y2']=result['y']
-        if self.use_inverse:
+        if ("energy" in inputs or "nac_energy" in inputs ) and  self.use_inverse != 0:
+            if "energy" in inputs and "nac_energy" not in inputs:
+                inputs["nac_energy"] = inputs["energy"]
             inv_ener = self.approximate_inverse(inputs['nac_energy'])
             #result['dydx_old'] = result['dydx']
             result['dydx'] = inv_ener[:, :, None, None] * result['dydx']
