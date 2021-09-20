@@ -2,7 +2,7 @@
 
 A SchNetPack/SHARC interface for machine-learning accelerated excited state simulations.
 
-# Installation and installation requirements
+# Installation and installation requirements on Linux operating systems
 
 Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc.
 
@@ -15,7 +15,7 @@ It is recommended to create an environment (in this example the environment is c
 Then activate the environment:  
 ``conda activate ml``   
 
-Install SHARC with pysharc (see https://sharc-md.org/?page_id=50#tth_sEc2.3 or follow the instructions below) in a suitable folder
+Install SHARC with pysharc (see https://sharc-md.org/?page_id=50#tth_sEc2.3 or follow the instructions below; version 2.1) in a suitable folder
 (``<some-path>``; inside this folder, git will create automatically a folder called sharc):  
 ``cd <some-path>``  
 ``git clone https://github.com/sharc-md/sharc.git``  
@@ -47,10 +47,10 @@ Afterwards, go to the source folder and run the installation procedure:
 ``cd ../source``  
 ``make install``  
 
-Install SchNet in a suitable folder:  
+Install SchNet (v0.3) in a suitable folder:  
 ``cd <some-path>``  
 ``git clone https://github.com/atomistic-machine-learning/schnetpack.git``  
-Then go to the directory schnetpack  
+Then go to the directory schnetpack 
 ``cd schnetpack``  
 and carry out:  
 ``pip install .`` 
@@ -64,4 +64,4 @@ and carry out:
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack
 
-A tutorial is provided. For this purpose, please download the pdf "SchNarc_Tutorial.pdf" and the corresponding "Tutorial.zip" file, which is automatically downloaded with the code. 
+A tutorial is provided. For this purpose, please download the pdf "SchNarc_Tutorial.pdf" and the corresponding "Tutorial.zip" file, which is automatically downloaded with the code. Follow the instructions provided in the pdf file.
