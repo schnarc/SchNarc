@@ -63,3 +63,5 @@ and carry out:
 ``pip install .``  
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack
+
+A tutorial is provided. For this purpose, please download the pdf "SchNarc_Tutorial.pdf" and the corresponding "Tutorial.zip" file, which is automatically downloaded with the code. 
