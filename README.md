@@ -4,7 +4,7 @@ A SchNetPack/SHARC interface for machine-learning accelerated excited state simu
 
 # Installation and installation requirements on Linux operating systems
 
-Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc.
+Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc. Installation time is expected to take about 30-60 min on a "normal" desktop computer.
 
 You need a python installation with version 3.5 or later.  
 We recommend installing Anaconda with python 3 (see https://www.anaconda.com/distribution/).  
@@ -64,4 +64,4 @@ and carry out:
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack
 
-A tutorial is provided. For this purpose, please download the pdf "SchNarc_Tutorial.pdf" and the corresponding "Tutorial.zip" file, which is automatically downloaded with the code. Follow the instructions provided in the pdf file.
+A tutorial is provided. For this purpose, please download the pdf "SchNarc_Tutorial.pdf" and the corresponding "Tutorial.zip" file, which is automatically downloaded with the code. Follow the instructions provided in the pdf file. A tutorial including exemplary files to train SchNarc on permanent and transition dipole moments to predict UV/vis absorption spectra and latent ML charges can be found at 10.6084/m9.figshare.14832396.v1 (https://figshare.com/articles/dataset/BookChapter_ExcitedStatePropertyLearning_CaseStudy2/14832396). We recommend to switch to the "DipoleMoments_Spectra" branch to follow the tutorial.
