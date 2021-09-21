@@ -2,6 +2,10 @@
 
 A SchNetPack/SHARC interface for machine-learning accelerated excited state simulations.
 
+# System requirements
+
+A personal computer (suggested RAM: 4GB or larger; suggested CPU: 1 core or more, 2.7 GHz or faster), ideally with a dedicated graphics card (GPU), is needed for installation running Linux. We have tested the software on different Linux flavors, e.g., Ubuntu 20.04 and RedHat 8.4.
+
 # Installation and installation requirements
 
 Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc.
@@ -75,7 +79,10 @@ Then go to the directory schnarc
 and carry out:  
 ``pip install .``  
 
-Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack
+
+This procedure could take around 20 min.
+
+Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack or check-out the devel branch with a tutorial. The tutorial might take you approximately 2 or 3 hours.
 
 ## Troubleshooting
 
