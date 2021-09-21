@@ -8,7 +8,7 @@ A personal computer (suggested RAM: 4GB or larger; suggested CPU: 1 core or more
 
 # Installation and installation requirements
 
-Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc.
+Many roads lead to Rome and there are many ways to install programs under linux, especially when using different variants of compiler optimizations. The following is a simplistic route to installing SchNarc. The installation when following the procedure outlined below is expected to take about 20-60 min on a "normal" desktop computer.
 
 ### Python and libraries
 
@@ -28,7 +28,7 @@ Then activate the environment:
 
 ### SHARC and pySHARC
 
-Install SHARC with pysharc (see https://sharc-md.org/?page_id=50#tth_sEc2.3 or follow the instructions below) in a suitable folder
+Install SHARC with pysharc (see https://sharc-md.org/?page_id=50#tth_sEc2.3 or follow the instructions below; version 2.1.1) in a suitable folder
 (``<some-path>``; inside this folder, git will create automatically a folder called sharc):  
 ``cd <some-path>``  
 ``git clone https://github.com/sharc-md/sharc.git``  
@@ -78,9 +78,6 @@ Then go to the directory schnarc
 ``cd schnarc``  
 and carry out:  
 ``pip install .``  
-
-
-This procedure could take around 20 min.
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack or check-out the devel branch with a tutorial. The tutorial might take you approximately 2 or 3 hours.
 
