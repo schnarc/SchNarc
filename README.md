@@ -12,8 +12,8 @@ Many roads lead to Rome and there are many ways to install programs under linux,
 
 ## Python and libraries
 You need a python installation with version 3.5 or later.
-We recommend installing Miniconda with python 3 (see https://docs.conda.io/en/latest/miniconda.html) and mamba (see https://github.com/mamba-org/mamba). Once you have miniconda installed, mamba is installed via conda install 
-``mamba -n base -c conda-forge`` 
+We recommend installing Miniconda with python 3 (see https://docs.conda.io/en/latest/miniconda.html) and mamba (see https://github.com/mamba-org/mamba). Once you have miniconda installed, mamba is installed via 
+``conda install mamba -n base -c conda-forge`` 
 
 If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:
 ``conda config --append channels conda-forge`` 
@@ -37,7 +37,7 @@ Install SchNet in a suitable folder:
 Then go to the directory schnetpack
 ``cd schnetpack`` 
 and carry out:
-``pip install .`` 
+``python setup.py install`` 
 
 ## SchNarc
 If you haven't done so, get the SchNarc sources:
@@ -45,7 +45,7 @@ If you haven't done so, get the SchNarc sources:
 Then go to the directory schnarc
 ``cd schnarc`` 
 and carry out:
-``pip install .`` 
+``python setup.py install`` 
 Aftwards, please change to the "DipoleMoments_Spectra" branch via:
 ``git checkout DipoleMoments_Spectra`` 
 
