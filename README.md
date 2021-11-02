@@ -12,37 +12,48 @@ Many roads lead to Rome and there are many ways to install programs under linux,
 
 ## Python and libraries
 You need a python installation with version 3.5 or later.
-We recommend installing Miniconda with python 3 (see https://docs.conda.io/en/latest/miniconda.html) and mamba (see https://github.com/mamba-org/mamba). Once you have miniconda installed, mamba is installed via conda install mamba -n base -c conda-forge If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:
-conda config --append channels conda-forge
+We recommend installing Miniconda with python 3 (see https://docs.conda.io/en/latest/miniconda.html) and mamba (see https://github.com/mamba-org/mamba). Once you have miniconda installed, mamba is installed via conda install 
+``mamba -n base -c conda-forge`` 
+
+If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:
+``conda config --append channels conda-forge`` 
+
 It is recommended to create an environment (in this example the environment is called ml) with:
+``mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter gfortran_linux-64`` 
+
 Note: Leave out the gfortran_linux-64 and the commenting of gcc and gfortran below if you have a reasonably up-to-date gfortran compiler installed
-mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter gfortran_linux-64
+
 For some tasks, it is useful to install openbabel:
-mamba install -n ml -c openbabel openbabel
+
+``mamba install -n ml -c openbabel openbabel`` 
+
 Then activate the environment:
-conda activate ml
+``conda activate ml``   
 
 ## SchNet
 Install SchNet in a suitable folder:
-cd <some-path>
-git clone https://github.com/atomistic-machine-learning/schnetpack.git
+``cd <some-path>``
+``git clone https://github.com/atomistic-machine-learning/schnetpack.git`` 
 Then go to the directory schnetpack
-cd schnetpack
+``cd schnetpack`` 
 and carry out:
-pip install .
+``pip install .`` 
 
 ## SchNarc
 If you haven't done so, get the SchNarc sources:
-git clone https://github.com/schnarc/schnarc.git
+``git clone https://github.com/schnarc/schnarc.git`` 
 Then go to the directory schnarc
-cd schnarc
+``cd schnarc`` 
 and carry out:
-pip install .
+``pip install .`` 
+Aftwards, please change to the "DipoleMoments_Spectra" branch via:
+``git checkout DipoleMoments_Spectra`` 
 
-Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack or check-out the devel branch for training models for excited-state dynamics or this branch and the file "Tutorial.md" to learn about training dipole moment vectors for UV/visible absorption spectra and electrostatic potentials. The tutorial might take you approximately 2 or 3 hours. Below is a very 
 
 
 # Getting started
+
+Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack or check-out the devel branch for training models for excited-state dynamics or this branch and the file "Tutorial.md" to learn about training dipole moment vectors for UV/visible absorption spectra and electrostatic potentials. The tutorial might take you approximately 2 or 3 hours. Below is a very brief example on how to get started.
 
 The data sets used for this short tutorial can be found at figshare: https://doi.org/10.6084/m9.figshare.14832396.v1
 The trained model is provided in the folder "ML Models". Datasets to train the models are in the folder "Datasets" and InitialConditions for UV/visible absorption spectra are in the folder "InitialConditions". They are already saved in an ase data base format (see: https://wiki.fysik.dtu.dk/ase/tutorials/tutorials.html if you are unfamiliar with ase). If you are curious on learning how to train a model go to the next section, otherwise, skip it and directly go to the file "Tutorial.md".
