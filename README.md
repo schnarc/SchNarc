@@ -55,7 +55,7 @@ Aftwards, please change to the "DipoleMoments_Spectra" branch via:
 
 Training or running works in the same way, SchNet works, have a look at https://github.com/atomistic-machine-learning/schnetpack or check-out the devel branch for training models for excited-state dynamics or this branch and the file "Tutorial.md" to learn about training dipole moment vectors for UV/visible absorption spectra and electrostatic potentials. The tutorial might take you approximately 2 or 3 hours. Below is a very brief example on how to get started.
 
-The data sets used for this short tutorial can be found at figshare: https://doi.org/10.6084/m9.figshare.14832396.v1
+The data sets used for this short tutorial can be found at figshare: https://doi.org/10.6084/m9.figshare.14832396.v2
 The trained model is provided in the folder "ML Models". Datasets to train the models are in the folder "Datasets" and InitialConditions for UV/visible absorption spectra are in the folder "InitialConditions". They are already saved in an ase data base format (see: https://wiki.fysik.dtu.dk/ase/tutorials/tutorials.html if you are unfamiliar with ase). If you are curious on learning how to train a model go to the next section, otherwise, skip it and directly go to the file "Tutorial.md".
 
 ## Training, validating, and testing
