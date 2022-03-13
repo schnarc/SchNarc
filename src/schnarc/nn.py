@@ -37,35 +37,38 @@ def phaseless_loss(target, predicted, dim=-1, eps=1e-6):
     return loss
 
 
-def diagonal_phaseloss(target, predicted, n_states,device,single):
-    socs_target = target['socs']
+def diagonal_phaseloss(target, predicted,p, n_states,device,single,min_loss,smooth,t1,t2):
+    socs_target = target[p]
     dtype = torch.FloatTensor
-    socs_predicted = predicted['socs'].to('cpu').detach().numpy()
+    mask_socs = n_states["mask_socs"]
+    #socs_predicted = predicted[p].to('cpu').detach().numpy()*mask_socs
     #this is a torch tensor:
-    #socs_predicted = predicted['socs']
+    socs_predicted = predicted['socs']
     diagonal_target = target['diagonal_energies']
-    energy_predicted = predicted['energy'].to('cpu').detach().numpy()
+    #energy_predicted = predicted["energy"].to('cpu').detach().numpy() #target["energy"].to("cpu").detach().numpy() #predicted["energy"].to('cpu').detach().numpy()
     #this would be a torch tensor
-    #energy_predicted = predicted['energy']
+    # use target["energy"] is you want to use the QC reference values for energies
+    energy_predicted = predicted['energy']
     nmstates=n_states['n_singlets']+3*n_states['n_triplets']
     #torch tensor
-    #hamiltonian_full = torch.zeros(energy_predicted.shape[0],nmstates,nmstates).type(dtype).to(device)
-    hamiltonian_full = np.zeros((energy_predicted.shape[0],nmstates,nmstates),dtype=complex)
+    hamiltonian_full = torch.zeros(energy_predicted.shape[0],nmstates,nmstates).type(dtype).to(device)
+    #hamiltonian_full = np.zeros((energy_predicted.shape[0],nmstates,nmstates),dtype=complex)
 
     #energies
-    all_energies = np.zeros((energy_predicted.shape[0],nmstates))
+    #all_energies = np.zeros((energy_predicted.shape[0],nmstates))
     #torch tensor
-    #all_energies = torch.zeros(energy_predicted.shape[0],nmstates).type(dtype).to(device)
+    all_energies = torch.zeros(energy_predicted.shape[0],nmstates).type(dtype).to(device)
     all_energies[:,:n_states['n_singlets']+n_states['n_triplets']] = energy_predicted[:,:]
     all_energies[:,n_states['n_singlets']+n_states['n_triplets']:n_states['n_singlets']+n_states['n_triplets']*2] = energy_predicted[:,n_states['n_singlets']:]
     all_energies[:,n_states['n_singlets']+n_states['n_triplets']*2:n_states['n_singlets']+n_states['n_triplets']*3] = energy_predicted[:,n_states['n_singlets']:]
 
     #socs
-    socs_complex = np.zeros((energy_predicted.shape[0], socs_predicted.shape[1]),dtype = complex)
     #socs_complex = np.zeros((energy_predicted.shape[0], socs_predicted.shape[1]),dtype = complex)
+    socs_complex = torch.zeros(energy_predicted.shape[0], socs_predicted.shape[1]).to(device)
     for isoc in range(int(socs_predicted.shape[1]/2)):
         #torch does not support complex numbers 
-        socs_complex[:,isoc]=np.real(socs_predicted[:,2*isoc])+(socs_predicted[:,2*isoc+1]*1j)
+        socs_complex[:,isoc] =  socs_predicted[:,2*isoc]
+        #socs_complex[:,isoc]=np.real(socs_predicted[:,2*isoc])+(socs_predicted[:,2*isoc+1]*1j)
     iterator=-1
     for istate in range(nmstates):
         for jstate in range(istate+1,nmstates):
@@ -73,22 +76,44 @@ def diagonal_phaseloss(target, predicted, n_states,device,single):
             hamiltonian_full[:,istate,jstate] = socs_complex[:,iterator]
     for i in range(hamiltonian_full.shape[0]):
         hamiltonian_full[i] = hamiltonian_full[i]+hamiltonian_full[i].conj().T
-        np.fill_diagonal(hamiltonian_full[i],all_energies[i])
+        #np.fill_diagonal(hamiltonian_full[i],all_energies[i])
+        for istate in range(nmstates):
+            hamiltonian_full[i][istate][istate]=all_energies[i][istate][istate]
 
     #get diagonal
-    eigenvalues,vec = np.linalg.eigh(hamiltonian_full)
-    eigenvalues = torch.from_numpy(eigenvalues).to(device)
+    #need numpy due to complex numbers  - cannot be treated with torch
+    #eigenvalues,vec = np.linalg.eigh(hamiltonian_full)
+    #eigenvalues = torch.from_numpy(eigenvalues).to(device)
+    eigenvalues = torch.symeig(hamiltonian_full,eigenvectors=True)[0]
     diff_diag = (diagonal_target - eigenvalues ) ** 2
-    if single==True:
-        loss = torch.mean(diff_diag.view(-1)).to(device)
+    torch_mask = torch.Tensor(mask_socs).to(device)
+    if single==True and min_loss==False:
+        diff_soc = (socs_target - predicted[p]*torch_mask ) ** 2
+        loss = torch.mean(diff_soc.view(-1)).to(device)
+    elif min_loss == False and single == False:
+        diff_soc = (socs_target - predicted[p]*torch_mask) ** 2
+        mean_a=torch.mean(diff_soc.view(-1)).to(device)
+        mean_b=torch.mean(diff_diag.view(-1)).to(device)
+        factor=mean_a/mean_b
+        loss = t1 * mean_a + t2 * mean_b * factor
     else:
-        diff_a = ( socs_target - predicted['socs'] ) ** 2
-        diff_b = ( socs_target + predicted['socs'] ) ** 2
+        diff_a = ( socs_target - predicted[p]*torch_mask ) ** 2
+        diff_b = ( socs_target + predicted[p] *torch_mask ) ** 2
         diff_soc = torch.min(diff_a,diff_b)
         mean_a=torch.mean(diff_soc.view(-1)).to(device)
         mean_b=torch.mean(diff_diag.view(-1)).to(device)
         factor=mean_a/mean_b
         loss = 0.5 * mean_a + 0.5 * factor*mean_b
+    if smooth == True:
+        #place gaussian function on loss
+        diff_a = ( torch.normal(socs_target,0.01) - torch.normal(predicted[p],0.01) ) ** 2
+        diff_b = ( torch.normal(socs_target,0.01) + torch.normal(predicted[p],0.01) ) ** 2
+        diff_soc = torch.min(diff_a,diff_b)
+        mean_a=torch.mean(diff_soc.view(-1)).to(device)
+        mean_b=torch.mean(diff_diag.view(-1)).to(device)
+        factor=mean_a/mean_b
+        loss = 0.5 * mean_a + 0.5 * factor*mean_b
+         
     return loss
 
 def min_loss_single_old(target, predicted, smooth=True, smooth_nonvec=False, loss_length=True):

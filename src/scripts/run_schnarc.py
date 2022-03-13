@@ -10,8 +10,9 @@ import torch
 import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data.sampler import RandomSampler
-from schnetpack.utils import get_loaders
 import schnetpack as spk
+from schnetpack.utils.script_utils.settings import get_environment_provider
+from schnetpack.utils import get_loaders
 import schnarc
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
@@ -30,7 +31,7 @@ def get_parser():
     cmd_parser.add_argument('--batch_size', type=int,
                             help='Mini-batch size for training and prediction (default: %(default)s)',
                             default=100)
-
+    cmd_parser.add_argument("--environment_provider", type=str,default="simple",choices=["simple","ase","torch"],help="Environment provider for dataset (default: %(defaullt)s)",)
     # training
     train_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     train_parser.add_argument('datapath', help='Path / destination of MD17 dataset')
@@ -59,37 +60,52 @@ def get_parser():
     train_parser.add_argument('--log_every_n_epochs', type=int,
                               help='Log metrics every given number of epochs (default: %(default)s)',
                               default=1)
+    train_parser.add_argument('--transfer', type=str, help='Previous training set used to compute mean', default=None)
     train_parser.add_argument('--tradeoffs', type=str, help='Property tradeoffs for training', default=None)
     train_parser.add_argument('--verbose', action='store_true', help='Print property error magnitudes')
     train_parser.add_argument('--real_socs', action='store_true',
                               help='If spin-orbit couplings are predicted, information should be given whether they are real or not.')
+    train_parser.add_argument('--no_negative_dr', action='store_true', help='Train gradients instead of forces.')
     train_parser.add_argument('--phase_loss', action='store_true', help='Use special loss, which ignores phase.')
-    train_parser.add_argument('--inverse_nacs', action='store_true', help='Weight NACs with inverse energies.')
+    train_parser.add_argument('--inverse_nacs', type=int, help='Weight NACs with inverse energies. 0 = False, 1 = first run (use QC energies), 2 = second run (use ML energies).', default = 0)
+    train_parser.add_argument('--log', action='store_true', help='Use phase independent min loss.',default=False)
     train_parser.add_argument('--min_loss', action='store_true', help='Use phase independent min loss.')
     train_parser.add_argument('--diagonal', action='store_true', help='Train SOCs via diagonal elements. Must be included in the training data base', default=None)
     train_parser.add_argument('--L1', action='store_true', help='Use L1 norm')
     train_parser.add_argument('--Huber', action='store_true', help='Use L1 norm')
+    train_parser.add_argument("--order",action="store_true",help="orders states by energy.")
+    train_parser.add_argument("--finish",action="store_true",help="assume that the dynamics will only occur between S1 and S0.")
 
     ## evaluation
     eval_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     eval_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
+    eval_parser.add_argument("--order",action="store_true",help="orders states by energy.")
     eval_parser.add_argument('modelpath', help='Path of stored model')
+    eval_parser.add_argument('--log', action='store_true', help='Use phase independent min loss.',default=False)
     eval_parser.add_argument('--split', help='Evaluate on trained model on given split',
                              choices=['train', 'validation', 'test', 'all'], default=['all'], nargs='+')
     eval_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
+    eval_parser.add_argument("--finish",action="store_true",help="assume that the dynamics will only occur between S1 and S0.")
 
     pred_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
+    pred_parser.add_argument("--order",action="store_true",help="orders states by energy.")
     pred_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
     pred_parser.add_argument('--print_uncertainty',action='store_true', help='Print uncertainty of each property',default=False)
-    pred_parser.add_argument('--thresholds',type=float,nargs=5, help='Percentage of mean predicted by NNs taken as thresholds for adaptive sampling - first value for energy, second for forces, third for dipoles, fourth for nacs, fifth for socs', default=None)
-    pred_parser.add_argument('--modelpaths',type=str, help='Path of stored models')
+    #pred_parser.add_argument('--thresholds',type=float, help='Threshold used for adaptive sampling that should not be exceeded by NNs for energy predictions in eV.', default=1)
+    pred_parser.add_argument('--thresholds',type=float,nargs=5, help='Percentage of mean predicted by NNs taken as thresholds for adaptive sampling - first value for energy, second for forces, third for dipoles, fourth for nacs, fifth for socs. Units are [eV, eV/A, Debye, a.u. and cm-1]', default=[1,1,1,1,1])
+    pred_parser.add_argument('--modelpaths',type=str,nargs="*", help='Path of stored models')
     pred_parser.add_argument('modelpath', help='Path of stored model')
     pred_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
-    pred_parser.add_argument('--adaptive',type=float, nargs=1,help='Adaptive Sampling initializer + float for reducing the step size')
-    pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
+    pred_parser.add_argument('--adaptive', action='store_true', default=None,help='Adaptive Sampling initializer, takes mean of models for dynamics')
+    pred_parser.add_argument('--emodel2', type=str, help='Path to the second model used for energies')
+    pred_parser.add_argument('--nacmodel', type=str, help='Path to the second model used for NACs',default=None)
+    pred_parser.add_argument('--socmodel', type=str, help='Path to the second model used for socs',default=None)
+    pred_parser.add_argument('--diss_tyro', action='store_true', help='Define bond distances at which the energy is set constant for X-H bonds.', default=None)
+    pred_parser.add_argument("--finish",action="store_true",help="assume that the dynamics will only occur between S1 and S0.")
+    pred_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.036,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     # model-specific parsers
     CIopt_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
-    CIopt_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.018,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
+    CIopt_parser.add_argument('--nac_approx',type=float, nargs=3, default=[1,0.036,0.036],help='Type of NAC approximation as first value and threshold for energy gap in Hartree as second value.')
     model_parser = argparse.ArgumentParser(add_help=False)
 
     #######  SchNet  #######
@@ -105,6 +121,8 @@ def get_parser():
     schnet_parser.add_argument('--n_layers', type=int, default=3,
                                help='Number of layers in output networks (default: %(default)s)')
 
+    schnet_parser.add_argument('--n_neurons', type=int, default=100,
+                              help='Number of nodes in atomic networks (default: %(default)s)')
     #######  invD  ########
     invD_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
     invD_parser.add_argument('--n_atoms', type=int, help='Number of atoms in the molecule',
@@ -187,7 +205,11 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
        else:
            socs_given=False
     for prop in tradeoffs:
-       if args.phase_loss or args.min_loss:
+        if prop=="forces" and train_args.no_negative_dr == True:
+            prop2="gradient"
+        else:
+            prop2=prop
+        if args.phase_loss or args.min_loss:
             if prop in schnarc.data.Properties.phase_properties:
                 if prop == 'nacs' and socs_given == True:
                     metrics += [
@@ -201,13 +223,13 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     ]
             else:
                 metrics += [
-                    spk.metrics.MeanAbsoluteError(prop, prop),
-                    spk.metrics.RootMeanSquaredError(prop, prop)
+                    spk.metrics.MeanAbsoluteError(prop, prop2),
+                    spk.metrics.RootMeanSquaredError(prop, prop2)
                 ]
-       else:
+        else:
           metrics += [
-              spk.metrics.MeanAbsoluteError(prop, prop),
-              spk.metrics.RootMeanSquaredError(prop, prop)
+              spk.metrics.MeanAbsoluteError(prop, prop2),
+              spk.metrics.RootMeanSquaredError(prop, prop2)
           ]
     if args.logger == 'csv':
         logger = spk.train.CSVHook(os.path.join(args.modelpath, 'log'),
@@ -234,15 +256,16 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     #already spared and mean of all values
                     prop_err = torch.mean(prop_diff.view(-1))
                 #diagonal energies included for training of socs
-                elif prop == "socs" and args.diagonal == True:
+                elif prop == "socs" and args.diagonal == True or prop=="old_socs" and args.diagonal==True:
                     #indicate true to only include the error in the diagonal for training of socs
                     #indicate false to include also the error on socs (minimum function)
-                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result, n_states,props_phase[2],False)
+                    smooth=False
+                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result,prop, n_states,props_phase[2],False,False,smooth,float(tradeoffs[prop].split()[0]),1.0)
                     prop_err = prop_diff #torch.mean(prop_diff.view(-1))
                 elif prop == "socs" and combined_phaseless_loss == False and args.diagonal==False:
                     prop_diff = schnarc.nn.min_loss_single_old(batch[prop], result[prop], smooth=False, smooth_nonvec=False, loss_length=False)
                     #prop_diff = schnarc.nn.min_loss_single(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase )
-                    prop_err = torch.mean(prop_diff.view(-1) **2 )
+                    prop_err = torch.mean(prop_diff.view(-1) )
                 elif prop == "dipoles" and combined_phaseless_loss == True:
                     prop_err = schnarc.nn.min_loss(batch[prop], result[prop], combined_phaseless_loss, n_states, props_phase, phase_vector_nacs, dipole=True )
                     #already spared and mean of all values
@@ -262,11 +285,6 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                     #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
 
-            elif prop == "socs" and args.diagonal == True and args.min_loss == False:
-                    #indicate true to only include the error in the diagonal for training of socs
-                    #indicate false to include also the error on socs (minimum function)
-                    prop_diff = schnarc.nn.diagonal_phaseloss(batch, result, n_states,props_phase[2],False)
-                    prop_err = prop_diff #torch.mean(prop_diff.view(-1))
             elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
                 prop_diff = torch.abs(batch[prop] - result[prop])
                 prop_err = torch.mean(prop_diff.view(-1) )
@@ -279,10 +297,13 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                 else:
                     prop_err = torch.mean(prop_diff.view(-1))
             else:
-                if prop=='energy' and result['forces'].shape[1]==int(1) or prop=='forces' and result['forces'].shape[1]==int(1) or prop=='dipoles' and result['forces'].shape[1]==int(1):
+                if prop=='energy' and result[prop].shape[1]==int(1) or prop=='forces' and result[prop].shape[1]==int(1) or prop=='dipoles' and result[prop].shape[1]==int(1):
                     prop_diff = batch[prop][:,0] - result[prop][:,0]
                 else:
-                    prop_diff = batch[prop] - result[prop]
+                    if prop == "forces" and args.no_negative_dr == True:
+                        prop_diff = batch[prop] - result["gradient"]
+                    else:
+                        prop_diff= batch[prop]-result[prop]
                 prop_err = torch.mean(prop_diff.view(-1) ** 2)
             err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
             if args.verbose:
@@ -295,7 +316,7 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
     trainer.train(device)
 
 
-def evaluate(args, model, train_loader, val_loader, test_loader, device):
+def evaluate(args, model, train_loader, val_loader, test_loader, device, train_args):
     # Get property names from model
     if args.parallel:
         model=model.module.to(device)
@@ -305,6 +326,10 @@ def evaluate(args, model, train_loader, val_loader, test_loader, device):
     header = ['Subset']
     metrics = []
     for prop in properties:
+        if prop == "forces" and train_args.no_negative_dr:
+            prop2="gradient"
+        else:
+            prop2=prop
         header += [f'{prop}_MAE', f'{prop}_RMSE']
         if prop in schnarc.data.Properties.phase_properties:
             header += [f'{prop}_pMAE', f'{prop}_pRMSE']
@@ -314,27 +339,27 @@ def evaluate(args, model, train_loader, val_loader, test_loader, device):
             ]
         else:
             metrics += [
-                schnarc.metrics.MeanAbsoluteError(prop, prop),
-                schnarc.metrics.RootMeanSquaredError(prop, prop)
+                schnarc.metrics.MeanAbsoluteError(prop, prop2),
+                schnarc.metrics.RootMeanSquaredError(prop, prop2)
             ]
 
     results = []
     if ('train' in args.split) or ('all' in args.split):
         logging.info('Training split...')
-        results.append(['training'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, train_loader, device,properties)])
+        results.append(['training'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, train_loader, device,properties, train_args)])
 
     if ('validation' in args.split) or ('all' in args.split):
         logging.info('Validation split...')
-        results.append(['validation'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, val_loader, device,properties)])
+        results.append(['validation'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, val_loader, device,properties, train_args)])
     if ('test' in args.split) or ('all' in args.split):
         logging.info('Testing split...')
-        results.append(['test'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, test_loader, device,properties)])
+        results.append(['test'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, test_loader, device,properties, train_args)])
     header = ','.join(header)
     results = np.array(results)
 
     np.savetxt(os.path.join(args.modelpath, 'evaluation.csv'), results, header=header, fmt='%s', delimiter=',')
 
-def evaluate_dataset(metrics, model, loader, device,properties):
+def evaluate_dataset(metrics, model, loader, device,properties, train_args):
     # TODO: Adapt for SCHNARC, copy old
     for metric in metrics:
         metric.reset()
@@ -348,30 +373,37 @@ def evaluate_dataset(metrics, model, loader, device,properties):
             for k, v in batch.items()
         }
         result = model(batch)
-
         for prop in result:
-            if prop in predicted:
-                predicted[prop] += [result[prop].cpu().detach().numpy()]
+            if train_args.no_negative_dr == True and prop == "forces":
+                if prop in predicted:
+                    predicted[prop] += [result["gradient"].cpu().detach().numpy()]
+                else:
+                    predicted[prop] = [result["gradient"].cpu().detach().numpy()]
             else:
-                predicted[prop] = [result[prop].cpu().detach().numpy()]
+                if prop in predicted:
+                    predicted[prop] += [result[prop].cpu().detach().numpy()]
+                else:
+                    predicted[prop] = [result[prop].cpu().detach().numpy()]
         for prop in batch:
             if prop in qm_values:
                 qm_values[prop] += [batch[prop].cpu().detach().numpy()]
             else:
                 qm_values[prop] = [batch[prop].cpu().detach().numpy()]
-
+                    
         for metric in metrics:
             metric.add_batch(batch, result)
     results = [
     metric.aggregate() for metric in metrics
     ]
 
-    for p in predicted.keys():
-        predicted[p]=np.vstack(predicted[p])
-    for p in qm_values.keys():
-        qm_values[p]=np.vstack(qm_values[p])
-    prediction_path = os.path.join(args.modelpath,"evaluation_values.npz")
-    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
+    prediction_path = os.path.join(args.modelpath,"evaluation_values_")
+    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues_")
+    #for p in predicted.keys():
+    #    np.savez(prediction_path+"%s"%p,predicted[p])
+    #    #predicted[p]=np.vstack(predicted[p])
+    #for p in qm_values.keys():
+    #    np.savez(prediction_path_qm+"%s"%p,qm_values[p])
+    #    #qm_values[p]=np.vstack(qm_values[p])
     np.savez(prediction_path,**predicted)
     np.savez(prediction_path_qm,**qm_values)
     logging.info('Stored model predictions in {:s} ...'.format(prediction_path))
@@ -382,6 +414,11 @@ def evaluate_dataset(metrics, model, loader, device,properties):
 def run_prediction(model, loader, device, args):
     from tqdm import tqdm
     import numpy as np
+    if args.parallel:
+        model=model.module.to(device)
+        properties=model.output_modules[0].properties
+    else:
+        properties = model.output_modules[0].properties
 
     predicted = {}
     qm_values = {}
@@ -403,12 +440,14 @@ def run_prediction(model, loader, device, args):
                 qm_values[prop] = [batch[prop].cpu().detach().numpy()]
 
 
-    for p in predicted.keys():
-        predicted[p] = np.vstack(predicted[p])
-    for p in qm_values.keys():
-        qm_values[p]=np.vstack(qm_values[p])
-    prediction_path_qm = os.path.join(args.modelpath,"evaluation_qmvalues.npz")
-    np.savez(prediction_path_qm,**qm_values)
+    prediction_path = os.path.join(args.modelpath,"pred_values_")
+    prediction_path_qm = os.path.join(args.modelpath,"pred_qmvalues_")
+    #for p in predicted.keys():
+    #    np.savez("%s%s"%(prediction_path,p),predicted[p])
+    #    #predicted[p]=np.vstack(predicted[p])
+    #for p in qm_values.keys():
+    #    np.savez("%s%s"%(prediction_path_qm,p),qm_values[p])
+    #    #qm_values[p]=np.vstack(qm_values[p])
     prediction_path = os.path.join(args.modelpath, 'predictions.npz')
     np.savez(prediction_path, **predicted)
     logging.info('Stored model predictions in {:s}...'.format(prediction_path))
@@ -420,14 +459,11 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
         representation = spk.representation.SchNet(args.features, args.features, args.interactions,
                                                    args.cutoff / units.Bohr, args.num_gaussians)
 
-        property_output = schnarc.model.MultiStatePropertyModel(args.features, n_states, properties=properties,
+        property_output = schnarc.model.MultiStatePropertyModel(args.features, n_states, n_neurons=args.n_neurons,properties=properties,
                                                                 mean=mean, stddev=stddev, atomref=atomref,
                                                                 n_layers=args.n_layers, real=args.real_socs,
                                                                 inverse_energy=args.inverse_nacs)
-
         model = spk.atomistic.AtomisticModel(representation, property_output)
-
-
     elif args.model == 'invD':
         representation = spk.representation.schnet.invD()
         n_in = (args.n_atoms*args.n_atoms-args.n_atoms)
@@ -656,12 +692,19 @@ if __name__ == '__main__':
     if args.mode != 'train':
         model = torch.load(os.path.join(args.modelpath, 'best_model'), map_location='cpu').to(device)
         if args.hessian == True:
-            model.output_modules[0].output_dict['energy'].return_hessian = [True,1,1,1,1]
+            if args.parallel==False:
+                for p in model.output_modules[0].output_dict.keys():
+                    model.output_modules[0].output_dict[p].return_hessian = [True,1,1,1,1,False]
+            else:
+                for p in model.module.output_modules[0].output_dict.keys():
+                    model.module.output_modules[0].output_dict[p].return_hessian = [True,1,1,1,1,False]
         else:
             if args.parallel==False:
-                model.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
+                for p in model.output_modules[0].output_dict.keys():
+                    model.output_modules[0].output_dict[p].return_hessian = [False,1,1,1,1,False]
             else:
-                model.module.output_modules[0].output_dict['energy'].return_hessian = [False,1,1]
+                for p in model.module.output_modules[0].output_dict.keys():
+                    model.module.output_modules[0].output_dict[p].return_hessian = [False,1,1,1,1,False]
 
     if args.mode == 'CIopt':
         orca_opt(args, model, device)
@@ -708,10 +751,10 @@ if __name__ == '__main__':
 
     # Determine the properties to load based on the tradeoffs
     properties = [p for p in tradeoffs]
-
     # Read and process the data using the properties found in the tradeoffs.
     logging.info('Loading {:s}...'.format(args.datapath))
-    dataset = spk.data.AtomsData(args.datapath, collect_triples=args.model == 'wacsf')
+    environment_provider = get_environment_provider(train_args,device=torch.device("cuda" if args.cuda else "cpu"))
+    dataset = spk.data.AtomsData(args.datapath, environment_provider=environment_provider,collect_triples=args.model == 'wacsf')
     # Determine the number of states based on the metadata
     n_states = {}
     n_states['n_singlets'] = dataset.get_metadata("n_singlets")
@@ -720,9 +763,12 @@ if __name__ == '__main__':
     else:
         n_states['n_triplets'] = dataset.get_metadata("n_triplets")
     n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
-
+    if args.log == True:
+        a=dataset.get_metadata()
+        n_states["n_socs"] = len(a["socsindex"])
     ##activate if only one state is learned or not all
-    s=tradeoffs['energy'].split()
+    for p in properties:
+        s=tradeoffs[p].split()
     if int(s[1]) > int(0):
         n_singlets = int(s[1])
         n_triplets = int(s[2])
@@ -730,29 +776,48 @@ if __name__ == '__main__':
         n_states['n_triplets'] = n_triplets
         n_states['n_states'] = n_states['n_singlets'] + n_states['n_triplets']
     n_states['states'] = dataset.get_metadata("states")
+    n_states["finish"] = args.finish
+    n_states["order"] = args.order
     logging.info('Found {:d} states... {:d} singlet states and {:d} triplet states'.format(n_states['n_states'],
                                                                                            n_states['n_singlets'],
                                                                                            n_states['n_triplets']))
 
     if args.mode == 'eval':
         split_path = os.path.join(args.modelpath, 'split.npz')
+        #data_train, data_val, data_test = dataset.create_splits(*args.split, split_file=split_path)
         train_loader, val_loader, test_loader = get_loaders(args,dataset=dataset,split_path=split_path, logging=logging)
 
+        #train_loader = spk.data.AtomsLoader(data_train, batch_size=args.batch_size, sampler=RandomSampler(data_train),
+        #                                num_workers=4, pin_memory=True)
+        #val_loader = spk.data.AtomsLoader(data_val, batch_size=args.batch_size, num_workers=2, pin_memory=True)
+
         logging.info("evaluating...")
-        evaluate(args, model, train_loader, val_loader, test_loader, device)
+        #test_loader = spk.data.AtomsLoader(data_test, batch_size=args.batch_size,
+        #                                   num_workers=2, pin_memory=True)
+        evaluate(args, model, train_loader, val_loader, test_loader, device, train_args)
         logging.info("... done!")
         exit()
-    # Splits the dataset in test, val, train sets
+     # Splits the dataset in test, val, train sets
     split_path = os.path.join(args.modelpath, 'split.npz')
-
+ 
     if args.mode == 'train':
         if args.split_path is not None:
             copyfile(args.split_path, split_path)
 
     logging.info('Creating splits...')
-    # Generate loaders for training
+    #removed outdated loader
+    #data_train, data_val, data_test = dataset.create_splits(*train_args.split, split_file=split_path)
     train_loader, val_loader, test_loader = get_loaders(args,dataset=dataset,split_path=split_path, logging=logging)
-
+    
+    # Generate loaders for training
+    #train_loader = spk.data.AtomsLoader(data_train, batch_size=args.batch_size, sampler=RandomSampler(data_train),
+    #                                    num_workers=4, pin_memory=True)
+    #val_loader = spk.data.AtomsLoader(data_val, batch_size=args.batch_size, num_workers=4, pin_memory=True)
+    if args.transfer is not None:
+        dataset_transfer = spk.data.AtomsData(args.transfer, environment_provider=environment_provider,collect_triples=args.model == 'wacsf')
+        split_path2=os.path.join(args.modelpath,'split_transfer.npz')
+        data_transfer, data_val_, data_test_ = dataset_transfer.create_splits(*train_args.split, split_file=split_path2)
+        transfer_loader = spk.data.AtomsLoader(data_transfer,batch_size=args.batch_size,num_workers=4,pin_memory=True)
     # Determine statistics for scaling
     if args.mode == 'train':
         # Set the random seed
@@ -763,21 +828,43 @@ if __name__ == '__main__':
         stddev = {}
         # Compute mean and stddev for relevant properties
         for p in properties:
-            if p in schnarc.data.Properties.normalize:
-                mean_p, stddev_p = train_loader.get_statistics(p, True)
-                mean_p = mean_p[p]
-                stddev_p = stddev_p[p]
-                mean[p] = mean_p
-                stddev[p] = stddev_p
-                logging.info('{:s} MEAN: {:20.11f} STDDEV: {:20.11f}'.format(p, mean_p.detach().cpu().numpy()[0],
-                                                                             stddev_p.detach().cpu().numpy()[0]))
+            if p in schnarc.data.Properties.normalize or p=="socs" and args.log==False:
+                if args.transfer is not None and args.diagonal is None:
+                    mean_p,stddev_p = transfer_loader.get_statistics(p,True)
+                    mean_p = mean_p[p]
+                    stddev_p = stddev_p[p]
+                    mean[p] = mean_p
+                    stddev[p] = stddev_p
+                    logging.info('{:s} MEAN: {:20.11f} STDDEV: {:20.11f}'.format(p, mean_p.detach().cpu().numpy()[0],
+                                                                          stddev_p.detach().cpu().numpy()[0]))
+                elif args.transfer is None and args.diagonal is None:
+                    mean_p, stddev_p = train_loader.get_statistics(p, True)
+                    mean_p = mean_p[p]
+                    stddev_p = stddev_p[p]
+                    mean[p] = mean_p
+                    stddev[p] = stddev_p
+                    logging.info('{:s} MEAN: {:20.11f} STDDEV: {:20.11f}'.format(p, mean_p.detach().cpu().numpy()[0],
+                                                                          stddev_p.detach().cpu().numpy()[0]))
+                else:
+                    mean_p = None
+                    stddev_p = None
+                    mean[p] = mean_p
+                    stddev[p] = stddev_p
+            else:
+                mean[p]=None
+                stddev[p]=None
     else:
         mean, stddev = None, None
-
+    #if "energy" in properties:
+    #    atomref = dataset.get_atomref("energy")
+    #else:
+    #    atomref = None
+    atomref = None
     # Construct the model.
     model = get_model(train_args,
                       n_states,
                       properties,
+                      atomref=atomref,
                       mean=mean,
                       stddev=stddev,
                       train_loader=train_loader,
@@ -792,7 +879,20 @@ if __name__ == '__main__':
         #n_nacs = int(n_states['n_singlets']*(n_states['n_singlets']-1)/2 + n_states['n_triplets']*(n_states['n_triplets']-1)/2 )
         batch_size = args.batch_size
         all_states = n_states['n_singlets'] + 3 * n_states['n_triplets']
-        n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
+        if args.log == False:
+            n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
+        if args.diagonal:
+            a=dataset.get_metadata()
+            socindex = a["socsindex"]
+            n_socs = int(all_states * (all_states - 1)) # complex so no division by zero
+            mask_socs = np.zeros((n_socs))
+            for socindex_mask,maskvalue in enumerate(socindex):
+                mask_socs[maskvalue]=1.0
+            n_states["mask_socs"]=mask_socs
+        if args.log == True:
+            a=dataset.get_metadata()
+            n_socs = len(a["socsindex"])
+            socindex = a["socsindex"]
         #min loss for a given batch size
         #vector with correct phases for a mini batch
         #number of possible phase vectors
@@ -814,7 +914,6 @@ if __name__ == '__main__':
 
         socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2 = generateAllPhaseMatrices(phase_pytorch,n_states,n_socs,all_states,device)
 
-        props_phase=[n_phases,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2]
+        props_phase=[n_phases,batch_size,device,phase_pytorch,n_socs, all_states, socs_phase_matrix_1, socs_phase_matrix_2, diag_phase_matrix_1, diag_phase_matrix_2,mean,stddev]
         train(args, model, tradeoffs, train_loader, val_loader, device, n_states, props_phase)
         logging.info("...training done!")
-

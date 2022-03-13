@@ -340,7 +340,7 @@ def get_nacs_deltaH3(hessian,energy,forces,n_states):
                     hopping_direction[jstate][istate][iatom][xyz] = -ev[iterator]
             hopping_magnitude[istate][jstate]=np.sqrt(ew)
             hopping_magnitude[jstate][istate]=np.sqrt(ew)
-    threshold_dE_S = 0.018
+    threshold_dE_S = 0.036
     threshold_dE_T = 0.036
     for istate in range(n_singlets):
         for jstate in range(istate+1, n_singlets):

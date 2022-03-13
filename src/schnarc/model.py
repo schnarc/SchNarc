@@ -78,7 +78,7 @@ class MultiStatePropertyModel(nn.Module):
     mean, stddev and atomrefs only for energies
     """
     def __init__(self, n_in, n_states, properties,n_neurons=None, mean=None, stddev=None, atomref=None, need_atomic=False, n_layers=2,
-                 inverse_energy=False, real=False ):
+                 inverse_energy=0, real=False ):
 
         super(MultiStatePropertyModel, self).__init__()
 
@@ -91,10 +91,10 @@ class MultiStatePropertyModel(nn.Module):
         self.need_atomic = need_atomic
         self.real = real
         self._init_property_flags(properties)
-
+        self.order = n_states["order"]
         # Flag for computation of nacs
         self.inverse_energy = inverse_energy
-
+        self.finish = n_states["finish"]
         self.derivative = self.need_forces
         # Construct default mean and stddevs if passed None
         if mean is None or stddev is None:
@@ -111,14 +111,14 @@ class MultiStatePropertyModel(nn.Module):
                 atomref = atomref[Properties.energy]
             except:
                 atomref = None
-
             energy_module = MultiEnergy(n_in, self.n_singlets + self.n_triplets, aggregation_mode='sum',
                                         return_force=self.need_forces,
                                         n_neurons=n_neurons,
                                         return_contributions=self.need_atomic, mean=mean[Properties.energy],
                                         stddev=stddev[Properties.energy],
-                                        atomref=atomref, create_graph=True, n_layers=n_layers)
+                                        atomref=atomref, create_graph=True, n_layers=n_layers,order=self.order,n_triplets=self.n_triplets)
 
+            #print(n_neurons)
             outputs[Properties.energy] = energy_module
 
         # Dipole moments and transition dipole moments
@@ -129,16 +129,21 @@ class MultiStatePropertyModel(nn.Module):
 
         # Nonadiabatic couplings
         if self.need_nacs:
+            self.derivative = True 
             #n_couplings = int(self.n_singlets * (self.n_singlets - 1) / 2 + self.n_triplets * (self.n_triplets - 1) / 2)  # Between all different states
             nacs_module = MultiNac(n_in, n_states, n_layers=n_layers, use_inverse=self.inverse_energy, n_neurons=n_neurons)
             outputs[Properties.nacs] = nacs_module
 
         # Spinorbit couplings
         if self.need_socs:
-            n_socs = int(
+            if "n_socs" in n_states:
+                n_socs = int(n_states["n_socs"])
+            else:
+                n_socs = int(
                 (self.n_singlets+3*self.n_triplets) * (self.n_singlets+3*self.n_triplets-1))  # Between all different states - including imaginary numbers
-            socs_module = MultiSoc(n_in, n_socs, n_layers=n_layers, real=real, mean=mean[Properties.socs],
-                                   stddev=stddev[Properties.socs], n_neurons=n_neurons)
+            socs_module = MultiSoc(n_in, n_socs, n_layers=n_layers, real=real, mean=None,
+                                   stddev=None, n_neurons=n_neurons,create_graph=False)
+            outputs[Properties.old_socs] = socs_module
             outputs[Properties.socs] = socs_module
 
         self.output_dict = nn.ModuleDict(outputs)
@@ -149,31 +154,48 @@ class MultiStatePropertyModel(nn.Module):
         self.need_dipole = Properties.dipole_moment in properties
         self.need_nacs = Properties.nacs in properties
         self.need_socs = Properties.socs in properties
+        if self.need_socs:
+            pass
+        else:
+            self.need_socs = Properties.old_socs in properties
 
     def forward(self, inputs):
 
         outputs = {}
+
         for prop, model in self.output_dict.items():
             result = model(inputs)
             outputs[prop] = result['y']
-            if prop == 'energy' and self.inverse_energy:
-                inputs['nac_energy'] = result['y'].detach()
+            if "energy" in inputs and self.inverse_energy == 1:
+                #for FULVENE 
+                #inputs['nac_energy'] = result['y'].detach()
                 # Use reference energy during training
-                #if 'energy' in inputs:
-                #   inputs['nac_energy'] = inputs['energy']
+                inputs['nac_energy'] = inputs['energy']
                 # And predicted during production
-                #else:
-                #    inputs['nac_energy'] = result['y'].detach()
+            elif prop == "energy" and self.inverse_energy == 2: # or self.inverse_energy == True:
+                inputs['nac_energy'] = result['y'].detach()
+            elif self.inverse_energy == 0:
+                pass
+            elif self.inverse_energy == 1 and ("energy" not in inputs and prop != "energy"):
+                pass
+            elif self.inverse_energy==1 and "energy" not in inputs and prop == "energy":
+                inputs['nac_energy']= result['y'].detach()
+                #print("You cannot use this method without reference energies in the Training mode.")
+            else:
+                inputs['nac_energy'] = result['y'].detach()
 
             if prop == Properties.energy and self.need_forces:
                 outputs[Properties.forces] = result['dydx']
+                #this is for evaluation function
+                outputs["gradient"] = -result['dydx']
             if prop == Properties.energy and 'd2ydx2' in result:
                 outputs[Properties.hessian] = result['d2ydx2']
 
             if prop == Properties.nacs:
                 outputs[prop] = result['dydx']
-                outputs['diab'] = result['y']
-                outputs['diab2'] = result['y2']
+                #outputs["oldnacs"] = result["dydx_old"]
+                #outputs['diab'] = result['y']
+                #outputs['diab2'] = result['y2']
         return outputs
 
 
@@ -181,15 +203,20 @@ class MultiStateError(Exception):
     pass
 
 
+
+
 class MultiState(Atomwise):
 
     def __init__(self, n_in, n_states, aggregation_mode='sum', n_layers=2, n_neurons=None,
                  activation=spk.nn.activations.shifted_softplus, return_contributions=False, create_graph=True,
                  return_force=False, mean=None, stddev=None, atomref=None, max_z=100, outnet=None,
-                 standardize_after=False, return_hessian=[False,1,0.018,1,0.036]):
+                 standardize_after=False, return_hessian=[False,1,0.018,1,0.036,False], order=None,n_triplets = 0):
 
         self.n_states = n_states
         self.return_hessian = return_hessian
+        self.n_triplets = n_triplets
+        self.order = order
+        self.finish = self.return_hessian[5]
         if self.return_hessian[0] and not return_force:
             raise MultiStateError('Computation of forces required for Hessian.')
 
@@ -203,13 +230,12 @@ class MultiState(Atomwise):
             curr_mean = mean
             curr_stddev = stddev
 
-        if return_force:
-            self.derivative = 'dydx'
-            self.negative_dr = True
-        else:
+        if return_force == False or return_force is None:
             self.derivative = None
-            self.negative_dr = False
-
+        else:
+            self.derivative = 'dydx'
+        #set negative_dr per default to False such that always gradients are trained
+        self.negative_dr = True
         if return_contributions:
             contributions = 'yi'
         else:
@@ -230,12 +256,13 @@ class MultiState(Atomwise):
             mean=curr_mean,
             stddev=curr_stddev,
             atomref=atomref,
-            outnet=outnet,
+            outnet=outnet
         )
 
 
     def forward(self, inputs):
         result = super(MultiState, self).forward(inputs)
+        self.finish = self.return_hessian[5]
         if self.derivative:
             if self.n_states==int(1):
                 i=0
@@ -276,6 +303,10 @@ class MultiState(Atomwise):
                 #  compute_hessian=True
                 #if abs(result['y'][0][3].item()-result['y'][0][5].item()) <= threshold_dE_T:
                 #  compute_hessian=True
+                if self.finish == True:
+                    compute_hessian=False
+                    if abs(result["y"][0][0].item()-result["y"][0][1].item()) <= threshold_dE_S:
+                        compute_hessian=True
                 batch, states, natoms, _ = dydr.shape
                 # BEWARE: detach makes learning of hessians impossible, but saves a LOT of memory for prediction
                 if compute_hessian==True:
@@ -288,7 +319,7 @@ class MultiState(Atomwise):
                     result['d2ydx2'] = d2ydr2
                 else:
                     #for scan enable those lines
-                    #d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[Properties.R],
+                    #d2ydr2 = torch.stack([grad(dydr.view(batch, -1)[:, i], inputs[spk.Properties.R],
                     #                      grad_outputs=torch.ones_like(dydr.view(batch, -1)[:, i]),
                     #                      create_graph=self.create_graph)[0].detach() for i in
                     #                 range(self.n_states * natoms * 3)], dim=1)
@@ -297,6 +328,7 @@ class MultiState(Atomwise):
                     d2ydr2 = torch.zeros([batch, states, 3 * natoms, 3 * natoms])
                     result['d2ydx2'] = d2ydr2
         return result
+
 
 
 class MultiEnergy(MultiState):
@@ -309,13 +341,13 @@ class MultiEnergy(MultiState):
                  activation=spk.nn.activations.shifted_softplus,
                  return_contributions=False, create_graph=True,
                  return_force=False, mean=None, stddev=None, atomref=None,
-                 max_z=100, outnet=None, return_hessian=[False,1,0,1,0]):
+                 max_z=100, outnet=None, return_hessian=[False,1,0,1,0,False], order=None,n_triplets = 0):
         super(MultiEnergy, self).__init__(n_in, n_states, aggregation_mode, n_layers,
                                           n_neurons, activation,
                                           return_contributions, return_force,
                                           create_graph, mean, stddev,
                                           atomref, max_z, outnet,
-                                          return_hessian=return_hessian)
+                                          return_hessian=return_hessian,order=order,n_triplets =n_triplets)
 
     #def __init__(self, n_in, n_states, aggregation_mode='sum', n_layers=2, n_neurons=None,
     #             activation=spk.nn.activations.shifted_softplus, return_contributions=False, create_graph=True,
@@ -327,13 +359,55 @@ class MultiEnergy(MultiState):
         predicts energy
         """
         if self.return_hessian == False:
-          self.return_hessian=[False,1,0,1,0]
+          self.return_hessian=[False,1,0,1,0,False]
+        
         result = super(MultiEnergy, self).forward(inputs)
-
         # Apply negative gradient for forces
-        if self.derivative:
+        if self.negative_dr == True:
             result['dydx'] = -result['dydx']
 
+        #order energies according to energy
+        #only for spin-diabatic states
+        if hasattr(self,"order")==True:
+            if self.n_triplets == int(0):
+                sort = torch.sort(result['y'])
+                energies_singlets = sort[0]
+                index_singlets = sort[1]
+                result['y'] = energies_singlets
+            else:
+                print("order function not implemented for triplet energies")
+                #todo 
+                #needs to be adapted for triplets
+                """self.n_singlets = result['y'].size()[1] - self.n_triplets
+                index_singlets = torch.sort(result['y'][:,:self.n_singlets])[1]
+                energies_singlets = torch.sort(result['y'][:,:self.n_singlets])[0]
+                index_triplets = torch.sort(result['y'][:,self.n_singlets:])[1]
+                energies_triplets = torch.sort(result['y'][:,self.n_singlets:])[0]
+                result['y'][:,:self.n_singlets] = energies_singlets
+                result['y'][:,self.n_singlets:] = energies_triplets
+                #energies_singlets = torch.gather(result['y'][:,:self.n_singlets],1,index_singlets)"""
+            if 'dydx' in result:
+                #print(result['dydx'].size())
+                if self.n_triplets == int(0):
+                    #sort along first axis using indices from energy-sorting
+                    d1,d2,d3,d4 = result['dydx'].size()
+                    fi=torch.ones((d1,d2,d3,d4),device=result['y'].device)
+                    fi=(fi*index_singlets[:,:,None,None]).long()
+                    forces = torch.gather(result['dydx'],1,fi)
+                    result['dydx'] = forces
+                else:
+                    print("order function not implemented for triplet forces")
+                    #TODO
+                    #needs to be adapted for triplets
+                    """d1,d2,d3,d4 = result['dydx'].size()
+                    fi=torch.ones((d1,d2,d3,d4),device=result['y'].device)
+                    #todo make this work
+                    fi=(fi*index_triplets[:,:,None,None]).long()
+                    forces_singlets = torch.gather(result['dydx'][:,:self.n_singlets],1,fi)
+                    f=result['dydx']
+                    forces_triplets = torch.gather(result['dydx'][:,self.n_singlets:],1,index_triplets)
+                    result['dydx'][:,:self.n_singlets] = forces_singlets
+                    result['dydx'][:,self.n_singlets:] = forces_triplets"""
         return result
 
 
@@ -395,6 +469,8 @@ class MultiDipole(MultiState):
         dipole_moments = torch.sum(result["yi"][:, :, :, None] * inputs[spk.Properties.R][:, :, None, :], 1)
         #print(result['yi'][0])
         #print(inputs)
+        #print(dipole_moments.shape,inputs[spk.Properties.R].shape)
+        #print(result['yi'].shape)
         result['y'] = dipole_moments #self.output_mask(dipole_moments)
 
         return result
@@ -427,7 +503,8 @@ class MultiNac(MultiState):
         """
     def __init__(self, n_in, n_states, aggregation_mode='sum', n_layers=2, n_neurons=None,
                  activation=spk.nn.activations.shifted_softplus, return_contributions=False, create_graph=True,
-                 outnet=None, use_inverse=False):
+                 outnet=None, use_inverse=0):
+
 
         n_singlets = n_states[Properties.n_singlets]
         n_triplets = n_states[Properties.n_triplets]
@@ -443,20 +520,24 @@ class MultiNac(MultiState):
                                        return_force=True,
                                        atomref=None,
                                        max_z=100,
-                                       outnet=outnet)
+                                       outnet=outnet,)
+                                       #use_inverse = use_inverse)
 
         self.use_inverse = use_inverse
 
-        if self.use_inverse:
+        if self.use_inverse != 0:
             reconsts = n_singlets + n_triplets
             self.approximate_inverse = schnarc.nn.ApproximateInverse(reconsts,n_triplets=n_triplets)
 
     def forward(self, inputs):
-        self.return_hessian=[False,1,0,1,0]
+        self.return_hessian=[False,1,0,1,0,False]
         result = super(MultiNac, self).forward(inputs)
         result['y2']=result['y']
-        if 'nac_energy' in inputs and self.use_inverse:
+        if ("energy" in inputs or "nac_energy" in inputs ) and  self.use_inverse != 0:
+            if "energy" in inputs and "nac_energy" not in inputs:
+                inputs["nac_energy"] = inputs["energy"]
             inv_ener = self.approximate_inverse(inputs['nac_energy'])
+            #result['dydx_old'] = result['dydx']
             result['dydx'] = inv_ener[:, :, None, None] * result['dydx']
             result['y'] = inv_ener * result['y']
         return result
