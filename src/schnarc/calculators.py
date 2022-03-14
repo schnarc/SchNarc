@@ -318,15 +318,19 @@ class SchNarculator:
                     hamiltonian[istate+self.n_triplets*2][istate+self.n_triplets*2] = complex(schnet_outputs['energy'][0][indext[istate-self.n_singlets]], 0.000)
                 hamiltonian_list = np.array(hamiltonian).tolist()
                 QMout['h'] = hamiltonian_list
-            elif prop == "forces":
+            elif prop == "forces" or prop=="gradients":
                 n_atoms = self.n_atoms
                 gradients = np.zeros( (self.n_singlets+self.n_triplets*3, n_atoms, 3) )
+                if prop == "forces":
+                    convert_ = -1
+                if prop=="gradients":
+                    convert_ = 1
                 for istate in range(self.n_singlets):
-                    gradients[istate] = -schnet_outputs['forces'][0][index[istate]]
+                    gradients[istate] = convert_*schnet_outputs[prop][0][index[istate]]
                 for istate in range(self.n_singlets,self.n_singlets+self.n_triplets):
-                    gradients[istate] = -schnet_outputs['forces'][0][indext[istate-self.n_singlets]]
-                    gradients[istate+self.n_triplets] = -schnet_outputs['forces'][0][indext[istate-self.n_singlets]]
-                    gradients[istate+self.n_triplets*2] = -schnet_outputs['forces'][0][indext[istate-self.n_singlets]]
+                    gradients[istate] = convert_*schnet_outputs[prop][0][indext[istate-self.n_singlets]]
+                    gradients[istate+self.n_triplets] = convert_*schnet_outputs[prop][0][indext[istate-self.n_singlets]]
+                    gradients[istate+self.n_triplets*2] = convert_*schnet_outputs[prop][0][indext[istate-self.n_singlets]]
                 QMout['grad'] = np.array(gradients).tolist()
             elif prop == "dipoles":
                 dipole_matrix = [[[0.0 for k in range(self.n_singlets+3*self.n_triplets)] for j in range(self.n_singlets+3*self.n_triplets)] for i in range(3)]
@@ -427,12 +431,18 @@ class SchNarculator:
                     if dE == 0:
                       dE=0.0000000001
                     Hj=schnet_outputs['hessian'][0][index[jstate]]
-                    GiGi=np.dot(-schnet_outputs['forces'][0][index[istate]].reshape(-1,1),-schnet_outputs['forces'][0][index[istate]].reshape(-1,1).T)
-                    GjGj=np.dot(-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1),-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1).T)
-                    GiGj=np.dot(-schnet_outputs['forces'][0][index[istate]].reshape(-1,1),-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1).T)
-                    GjGi=np.dot(-schnet_outputs['forces'][0][index[jstate]].reshape(-1,1),-schnet_outputs['forces'][0][index[istate]].reshape(-1,1).T)
+                    if "forces" in schnet_outputs:
+                        prop_="forces"
+                        convert_ = -1
+                    if "gradients" in schnet_outputs:
+                        prop_="gradients"
+                        convert_ = 1
+                    GiGi=np.dot(convert_*schnet_outputs[prop_][0][index[istate]].reshape(-1,1),convert_*schnet_outputs[prop_][0][index[istate]].reshape(-1,1).T)
+                    GjGj=np.dot(convert_*schnet_outputs[prop_][0][index[jstate]].reshape(-1,1),convert_*schnet_outputs[prop_][0][index[jstate]].reshape(-1,1).T)
+                    GiGj=np.dot(convert_*schnet_outputs[prop_][0][index[istate]].reshape(-1,1),convert_*schnet_outputs[prop_][0][index[jstate]].reshape(-1,1).T)
+                    GjGi=np.dot(convert_*schnet_outputs[prop_][0][index[jstate]].reshape(-1,1),convert_*schnet_outputs[prop_][0][index[istate]].reshape(-1,1).T)
 
-                    G_diff = 0.5*(-schnet_outputs['forces'][0][index[istate]]+schnet_outputs['forces'][0][index[jstate]])
+                    G_diff = 0.5*(convert_*schnet_outputs[prop_][0][index[istate]]-convert_*schnet_outputs[prop_][0][index[jstate]])
                     G_diff2= np.dot(G_diff.reshape(-1,1),G_diff.reshape(-1,1).T)
 
                     dH_2_ij = 0.5*(dE*(Hi-Hj) + GiGi + GjGj - 2*GiGj)
@@ -476,12 +486,18 @@ class SchNarculator:
                     Hj=schnet_outputs['hessian'][0][indext[jstate-self.n_singlets]]
                     if dE == 0:
                       dE=0.0000000001
-                    GiGi=np.dot(-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1).T)
-                    GjGj=np.dot(-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1).T)
-                    GiGj=np.dot(-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1).T)
-                    GjGi=np.dot(-schnet_outputs['forces'][0][indext[jstate-self.n_singlets]].reshape(-1,1),-schnet_outputs['forces'][0][indext[istate-self.n_singlets]].reshape(-1,1).T)
+                    if "forces" in schnet_outputs:
+                        prop_="forces"
+                        convert_ = -1
+                    if "gradients" in schnet_outputs:
+                        prop_="gradients"
+                        convert_ = 1
+                    GiGi=np.dot(convert_*schnet_outputs[prop_][0][indext[istate-self.n_singlets]].reshape(-1,1),convert_*schnet_outputs[prop_][0][indext[istate-self.n_singlets]].reshape(-1,1).T)
+                    GjGj=np.dot(convert_*schnet_outputs[prop_][0][indext[jstate-self.n_singlets]].reshape(-1,1),convert_*schnet_outputs[prop_][0][indext[jstate-self.n_singlets]].reshape(-1,1).T)
+                    GiGj=np.dot(convert_*schnet_outputs[prop_][0][indext[istate-self.n_singlets]].reshape(-1,1),convert_*schnet_outputs[prop_][0][indext[jstate-self.n_singlets]].reshape(-1,1).T)
+                    GjGi=np.dot(convert_*schnet_outputs[prop_][0][indext[jstate-self.n_singlets]].reshape(-1,1),convert_*schnet_outputs[prop_][0][indext[istate-self.n_singlets]].reshape(-1,1).T)
 
-                    G_diff = 0.5*(-schnet_outputs['forces'][0][indext[istate-self.n_singlets]]+schnet_outputs['forces'][0][indext[jstate-self.n_singlets]])
+                    G_diff = 0.5*(convert_*schnet_outputs[prop_][0][indext[istate-self.n_singlets]]-convert_*schnet_outputs[prop_][0][indext[jstate-self.n_singlets]])
                     G_diff2= np.dot(G_diff.reshape(-1,1),G_diff.reshape(-1,1).T)
 
                     dH_2_ij = 0.5*(dE*(Hi-Hj) + GiGi + GjGj - 2*GiGj)

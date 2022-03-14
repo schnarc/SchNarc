@@ -5,7 +5,7 @@ from torch.utils.data.sampler import RandomSampler
 from torch.optim import Adam
 import os
 import shutil
-from schnarc.schnarc import get_energy, get_force, get_dipoles, get_nacs, get_schnarc
+from schnarc.schnarc import get_energy, get_gradient, get_dipoles, get_nacs, get_schnarc
 from schnarc.model import MultiEnergy,MultiDipole,MultiNac,CombineProperties
 
 def train(args, model, train_loader, val_loader, device, prop_dict):
@@ -25,12 +25,12 @@ def train(args, model, train_loader, val_loader, device, prop_dict):
                                                window_length=1, stop_after_min=True)
     hooks.append(schedule)
 
-    # index into model output: [energy, forces]
+    # index into model output: [energy, gradients]
 
     metrics = [spk.metrics.MeanAbsoluteError('energy', 'energy'),
                spk.metrics.RootMeanSquaredError('energy','energy'),
-               spk.metrics.MeanAbsoluteError('forces', 'forces'),
-               spk.metrics.RootMeanSquaredError('forces', 'forces'),
+               spk.metrics.MeanAbsoluteError('gradients', 'gradients'),
+               spk.metrics.RootMeanSquaredError('gradients', 'gradients'),
                spk.metrics.MeanAbsoluteError('dipoles', 'dipoles'),
                spk.metrics.RootMeanSquaredError('dipoles', 'dipoles'),
                spk.metrics.MeanAbsoluteError('nacs','nacs'),
@@ -48,7 +48,7 @@ def train(args, model, train_loader, val_loader, device, prop_dict):
     def loss(batch, result):
         ediff = batch['energy'] - result['energy']
         ediff = ediff ** 2
-        fdiff = batch['forces'] - result['forces']
+        fdiff = batch['gradients'] - result['gradients']
         fdiff = fdiff ** 2
 
         ddiff = batch['dipoles'] - result['dipoles']
@@ -82,21 +82,21 @@ def QMout(prediction,modelpath):
     #returns predictions in QM.out format useable with SHARC
     QMout_string=''
     QMout_energy=''
-    QMout_force=''
+    QMout_gradient=''
     QMout_dipoles=''
     QMout_nacs=''
     if int(prediction['energy'].shape[0]) == int(1):
         for i,property in enumerate(prediction.keys()):
             if property == "energy":
                 QMout_energy=get_energy(prediction['energy'][0])
-            elif property == "force":
-                QMout_force=get_force(prediction['force'][0])
+            elif property == "gradient":
+                QMout_gradient=get_gradient(prediction['gradient'][0])
             elif property == "dipoles":
                 QMout_dipoles+=get_dipoles(prediction['dipoles'][0],prediction['energy'][0].shape[0])
             elif property == "nacs":
                 QMout_nacs=get_nacs(prediction['nacs'][0],prediction['energy'][0].shape[0])
         QM_out = open("%s/QM.out" %modelpath, "w")
-        QMout_string=QMout_energy+QMout_dipoles+QMout_force+QMout_nacs
+        QMout_string=QMout_energy+QMout_dipoles+QMout_gradient+QMout_nacs
         QM_out.write(QMout_string)
         QM_out.close()
 
@@ -106,14 +106,14 @@ def QMout(prediction,modelpath):
             for i,property in enumerate(prediction.keys()):
                 if property == "energy":
                     QMout_energy=get_energy(prediction['energy'][index])
-                elif property == "force":
-                    QMout_force=get_force(prediction['force'][index])
+                elif property == "gradient":
+                    QMout_gradient=get_gradient(prediction['gradient'][index])
                 elif property == "dipoles":
                     QMout_dipoles+=get_dipoles(prediction['dipoles'][index],prediction['energy'][index].shape[0])
                 elif property == "nacs":
                     QMout_nacs=get_nacs(prediction['nacs'][index],prediction['energy'][index].shape[0])
             QM_out = open("QM.out", "w")
-            QMout_string=QMout_energy+QMout_dipoles+QMout_force+QMout_nacs
+            QMout_string=QMout_energy+QMout_dipoles+QMout_gradient+QMout_nacs
             QM_out.write(QMout_string)
             QM_out.close()
             os.system("mv QM.out %s/Geom_%04d/" %(modelpath,index+1))
@@ -136,7 +136,7 @@ def run_prediction(model, loader, device, args):
         }
         result   = model(batch)
         energies = result['energy'].cpu().detach().numpy()
-        forces   = result['forces'].cpu().detach().numpy()
+        gradients   = result['gradients'].cpu().detach().numpy()
         dipoles  = result['dipoles'].cpu().detach().numpy()
         nacs     = result['nacs'].cpu().detach().numpy()
 
@@ -147,7 +147,7 @@ def run_prediction(model, loader, device, args):
         print(result)
 
         energies = result['y'].cpu().detach().numpy()
-        forces = result['dydx'].cpu().detach().numpy()
+        gradients = result['dydx'].cpu().detach().numpy()
 >>>>>>> 38e4f778d9b3a7ee5ee8af081ff16cd09b98dd05
 
         if 'energy' in predicted.keys():
@@ -155,10 +155,10 @@ def run_prediction(model, loader, device, args):
         else:
             predicted['energy'] = [energies]
 
-        if 'force' in predicted.keys():
-            predicted['force'].append(forces)
+        if 'gradient' in predicted.keys():
+            predicted['gradient'].append(gradients)
         else:
-            predicted['force'] = [forces]
+            predicted['gradient'] = [gradients]
 
 <<<<<<< HEAD
         if 'dipoles' in predicted.keys():
@@ -222,7 +222,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr_min', type=float, help='Minimal learning rate (default: %(default)s)',
                         default=1e-6)
     parser.add_argument('--rho', type=float,
-                        help='Energy-force trade-off. For rho=0, use forces only. (default: %(default)s)',
+                        help='Energy-gradient trade-off. For rho=0, use gradients only. (default: %(default)s)',
                         default=0.9)
     parser.add_argument('--rho_dipole',type=float,
                         help='Weighing factor of dipoles. For rho_dipole=1, properties are equally weighted. (default: %(default)s)',
@@ -236,8 +236,8 @@ if __name__ == '__main__':
     parser.add_argument('--log_every_n_epochs', type=int,
                         help='Log metrics every given number of epochs (default: %(default)s)',
                         default=1)
-    choices = ['energy', 'force', 'dipoles', 'nacs']
-    parser.add_argument('--properties', type=str, help="Possible properties: energy, force, dipoles, nacs", default=choices)
+    choices = ['energy', 'gradient', 'dipoles', 'nacs']
+    parser.add_argument('--properties', type=str, help="Possible properties: energy, gradient, dipoles, nacs", default=choices)
     parser.add_argument('--overwrite', action='store_true', help='Overwrite old directories')
     parser.add_argument('--n_features', default=256, type=int, help='Number of features used by SchNet.')
     parser.add_argument('--n_interactions', default=6, type=int, help='Number of interactions used by SchNet.')
@@ -250,7 +250,7 @@ if __name__ == '__main__':
 
     # Load data
     data = spk.data.AtomsData(args.database, required_properties=['energy',
-                                                                  'forces',
+                                                                  'gradients',
                                                                   'dipoles',
                                                                   'nacs'])
     if args.schnarc:
@@ -311,31 +311,31 @@ if __name__ == '__main__':
 
     # New convention
     # mod = {
-    #     'energy': HiddenStatesEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_force=True, create_graph=True)
+    #     'energy': HiddenStatesEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_gradient=True, create_graph=True)
     # }
-    # map = {'forces': ('energy', 'dydx')}
+    # map = {'gradients': ('energy', 'dydx')}
 
     # model = StateModel(representation, mod, mapping=map).to(device)
 
     if args.model == 'standard':
-        atomwise_output = MultiEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_force=True,
+        atomwise_output = MultiEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_gradient=True,
                                       create_graph=True)
     elif args.model == 'sort':
-        atomwise_output = HiddenStatesEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_force=True,
+        atomwise_output = HiddenStatesEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_gradient=True,
                                              create_graph=True)
     else:
         raise NotImplementedError
 >>>>>>> 38e4f778d9b3a7ee5ee8af081ff16cd09b98dd05
 
-    #atomwise_output = [MultiEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_force=True,
+    #atomwise_output = [MultiEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_gradient=True,
     #                              create_graph=True),MultiNac()]
     prop_dict ={
-    'energy' : MultiEnergy(args.n_features,n_states,mean=mean,stddev=stddev,return_force=True,create_graph=True),
-    'dipoles': MultiDipole(args.n_features,n_dipole,mean=None,stddev=None,return_force=False),
-    'nacs'   : MultiNac(args.n_features,n_states,mean=None,stddev=None,return_force=True,create_graph=True)}
+    'energy' : MultiEnergy(args.n_features,n_states,mean=mean,stddev=stddev,return_gradient=True,create_graph=True),
+    'dipoles': MultiDipole(args.n_features,n_dipole,mean=None,stddev=None,return_gradient=False),
+    'nacs'   : MultiNac(args.n_features,n_states,mean=None,stddev=None,return_gradient=True,create_graph=True)}
     atomwise = [prop_dict[p] for p in prop_dict.keys()]
-    #atomwise_output=[MultiEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_force=True, create_graph=True),
-    #                  MultiDipole(args.n_features, n_dipole, mean=None, stddev=None, return_force=False,create_graph=True)]
+    #atomwise_output=[MultiEnergy(args.n_features, n_states, mean=mean, stddev=stddev, return_gradient=True, create_graph=True),
+    #                  MultiDipole(args.n_features, n_dipole, mean=None, stddev=None, return_gradient=False,create_graph=True)]
     model = CombineProperties(representation,atomwise,prop_dict).to(device)
     #model = spk.atomistic.AtomisticModel(representation, atomwise_output).to(device)
     #model = spk.atomistic.AtomisticModel(representation, atomwise).to(device)

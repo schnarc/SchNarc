@@ -1165,7 +1165,7 @@ def get_SchNet(INFOS):
       INFOS['modelpath2'] = pathNN2
       INFOS['adaptive_model'] = "--modelpaths"
       threshold_E=question('Specify the threshold for energies in a.u.',float)[0]
-      threshold_F=question('Specify the threshold for forcess in a.u.',float)[0]
+      threshold_F=question('Specify the threshold for gradients in a.u.',float)[0]
       threshold_Mu=question('Specify the threshold for dipoles in a.u.',float)[0]
       threshold_NAC=question('Specify the threshold for nacs in a.u.',float)[0]
       threshold_SOC=question('Specify the threshold for socs in a.u.',float)[0]

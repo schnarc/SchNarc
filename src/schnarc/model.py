@@ -150,7 +150,14 @@ class MultiStatePropertyModel(nn.Module):
 
     def _init_property_flags(self, properties):
         self.need_energy = Properties.energy in properties
-        self.need_forces = Properties.forces in properties
+        if Properties.forces in properties or Properties.gradients in properties:
+            self.need_forces = True
+            self.need_gradients = False 
+            if Properties.gradients in properties:
+                self.need_gradients = True
+        else:
+            self.need_forces = False
+            self.need_gradients = False
         self.need_dipole = Properties.dipole_moment in properties
         self.need_nacs = Properties.nacs in properties
         self.need_socs = Properties.socs in properties
@@ -184,10 +191,11 @@ class MultiStatePropertyModel(nn.Module):
             else:
                 inputs['nac_energy'] = result['y'].detach()
 
-            if prop == Properties.energy and self.need_forces:
+            if prop == Properties.energy and self.need_forces and self.need_gradients == False:
                 outputs[Properties.forces] = result['dydx']
+            if prop == Properties.energy and self.need_gradients:
                 #this is for evaluation function
-                outputs["gradient"] = -result['dydx']
+                outputs[Properties.gradients] = -result['dydx']
             if prop == Properties.energy and 'd2ydx2' in result:
                 outputs[Properties.hessian] = result['d2ydx2']
 

@@ -36,8 +36,8 @@ def read_dataset(path,numberofgeoms,filename):
         energy = np.zeros((1))
         _soc = False
         soc = np.zeros((1))
-        _force = False
-        force = np.zeros((1))
+        _gradient = False
+        gradient = np.zeros((1))
         _dipole = False
         dipole = np.zeros((1))
         _nac = False
@@ -69,25 +69,25 @@ def read_dataset(path,numberofgeoms,filename):
                     property_list.append('socs')
             elif line.startswith("Grad"):
                 if int(line.split()[-1])==int(1):
-                    _force = True
+                    _gradient = True
                     property_list.append('gradients')
-                    property_list.append('has_gradients') 
-                    property_list.append('forces')
-                    property_list.append('has_forces')
+                    property_list.append('has_gradients')
+                    property_list.append("has_forces")
+                    property_list.append("forces")
             elif line.startswith("Given_grad"):
-                has_force=[]
                 has_gradient=[]
+                has_force = []
                 if int(line.split()[-1])==int(1):
-                    _has_forces = True
-                    has_force.append(1)
-                    has_gradient.append(0)
-                    property_list.append('has_forces')
-                    property_list.append('has_gradient')
-                else:
+                    _has_gradients = True
+                    has_gradient.append(1)
                     has_force.append(0)
+                    property_list.append('has_gradients')
+                    property_list.append("has_forces")
+                else:
                     has_gradient.append(0)
-                has_force=np.array(has_force)
+                    has_force.append(0)
                 has_gradient=np.array(has_gradient)
+                has_force=np.array(has_force)
             elif line.startswith("NAC"):
                 if int(line.split()[-1])==int(1):
                     _nac = True
@@ -141,19 +141,19 @@ def read_dataset(path,numberofgeoms,filename):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
-                            force[istate][iatom][xyz] = -float(gline[index])
+                            gradient[istate][iatom][xyz] = float(gline[index])
                 index+=(natom*3*doublets)
                 for istate in range(singlets+doublets,singlets+doublets+triplets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
-                            force[istate][iatom][xyz] = -float(gline[index])
+                            gradient[istate][iatom][xyz] = float(gline[index])
                 index+=(2*natom*3*triplets)
                 for istate in range(singlets+doublets+triplets,singlets+doublets+triplets+quartets):
                     for iatom in range(natom):
                         for xyz in range(3):
                             index+=1
-                            force[istate][iatom][xyz] = -float(gline[index])
+                            gradient[istate][iatom][xyz] = float(gline[index])
             #nonadiabatic couplings are also defined as vectors
             elif line.startswith("! Nonadiabatic coupling"):
                 n_nac = int(int(line.split()[3])/3/natom)
@@ -178,10 +178,10 @@ def read_dataset(path,numberofgeoms,filename):
 
         available_properties = { 'energy' : energy,
                         'socs'    : soc,
-                        'forces'  : force,
+                        'gradients'  : gradient,
+                        'has_gradients': has_gradient,
                         'has_forces': has_force,
-                        'has_gradients' : has_gradient,
-                        'gradients' : gradient,
+                        'forces': force,
                         'nacs'    : nac,
                         'dipoles' : dipole,
                         'dyson'   : property_matrix }
@@ -221,7 +221,7 @@ if __name__ == "__main__":
         print("USAGE: Script.py path_to_trainingset numberofgeometries filename")
 
 #units should be atomic units always!
-#forces are -gradients!
+
 path = argv[1]
 numberofgeoms = int(argv[2])
 filename = str(argv[3])

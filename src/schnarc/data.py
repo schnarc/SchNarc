@@ -4,6 +4,7 @@ class Properties:
     """
     energy = 'energy'
     forces = 'forces'
+    gradients = 'gradients'
     socs = 'socs'
     old_socs = "old_socs"
     nacs = 'nacs'
@@ -17,6 +18,7 @@ class Properties:
     properties = [
         energy,
         forces,
+        gradients,
         socs,
         old_socs,
         nacs,
@@ -48,6 +50,7 @@ class Properties:
     mappings = {
         energy: (energy, 'y'),
         forces: (energy, 'dydx'),
+        gradients: (energy, 'dydx'),
         socs: (socs, 'y'),
         old_socs: (old_socs, "y"),
         dipole_moment: (dipole_moment, 'y'),

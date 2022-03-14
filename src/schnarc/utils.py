@@ -15,7 +15,7 @@ import os
 #SHARC="/user/julia/software/SchNarc/sharc/source/../bin/"
 
 from schnarc.data import Properties
-
+from schnarc.schnarc import get_energy, get_force, get_nacs, get_dipoles, get_socs
 
 def generate_default_tradeoffs(yamlpath):
     tradeoffs = {p: 1.0 for p in Properties.properties}
@@ -24,7 +24,7 @@ def generate_default_tradeoffs(yamlpath):
 
 def read_tradeoffs(yamlpath):
     with open(yamlpath, 'r') as tf:
-        tradeoffs = yaml.load(tf,Loader=yaml.Loader)
+        tradeoffs = yaml.safe_load(tf)
     
     logging.info('Read loss tradeoffs from {:s}.'.format(yamlpath))
     return tradeoffs
@@ -42,21 +42,23 @@ def QMout(prediction,modelpath):
     """
     QMout_string=''
     QMout_energy=''
-    QMout_force=''
+    QMout_gradient=''
     QMout_dipoles=''
     QMout_nacs=''
     if int(prediction['energy'].shape[0]) == int(1):
         for i,property in enumerate(prediction.keys()):
             if property == "energy":
                 QMout_energy=get_energy(prediction['energy'][0])
-            elif property == "force":
-                QMout_force=get_force(prediction['force'][0])
+            elif property == "gradient":
+                QMout_gradient=-1*get_force(prediction['gradient'][0])
+            elif property == "forces":
+                QMout_gradient = get_force(prediction['forces'][0])
             elif property == "dipoles":
                 QMout_dipoles+=get_dipoles(prediction['dipoles'][0],prediction['energy'][0].shape[0])
             elif property == "nacs":
                 QMout_nacs=get_nacs(prediction['nacs'][0],prediction['energy'][0].shape[0])
         QM_out = open("%s/QM.out" %modelpath, "w")
-        QMout_string=QMout_energy+QMout_dipoles+QMout_force+QMout_nacs
+        QMout_string=QMout_energy+QMout_dipoles+QMout_gradient+QMout_nacs
         QM_out.write(QMout_string)
         QM_out.close()
 
@@ -66,14 +68,16 @@ def QMout(prediction,modelpath):
             for i,property in enumerate(prediction.keys()):
                 if property == "energy":
                     QMout_energy=get_energy(prediction['energy'][index])
-                elif property == "force":
-                    QMout_force=get_force(prediction['force'][index])
+                elif property == "gradient":
+                    QMout_gradient=-1*get_force(prediction['gradient'][index])
+                elif property=="forces":
+                    QMout_gradient = get_force(prediction['forces'][index])
                 elif property == "dipoles":
                     QMout_dipoles+=get_dipoles(prediction['dipoles'][index],prediction['energy'][index].shape[0])
                 elif property == "nacs":
                     QMout_nacs=get_nacs(prediction['nacs'][index],prediction['energy'][index].shape[0])
             QM_out = open("QM.out", "w")
-            QMout_string=QMout_energy+QMout_dipoles+QMout_force+QMout_nacs
+            QMout_string=QMout_energy+QMout_dipoles+QMout_gradient+QMout_nacs
             QM_out.write(QMout_string)
             QM_out.close()
             os.system("mv QM.out %s/Geom_%04d/" %(modelpath,index+1))
@@ -100,8 +104,8 @@ def read_QMout(filename,natoms,soc_flag,nsinglets,ntriplets,threshold):
             found_overlap=False
             #each data point gets one entry in the dictionary
             data={}
-            #each data point contains forces, so we set the following key to 1:
-            data["has_forces"]=np.array([1]).reshape(-1)
+            #each data point contains gradients, so we set the following key to 1:
+            data["has_gradients"]=np.array([1]).reshape(-1)
             
             #this iterator will tell us the line number we are in
             iterator=-1
@@ -130,15 +134,15 @@ def read_QMout(filename,natoms,soc_flag,nsinglets,ntriplets,threshold):
                                 socs[sociterator]=float(socsline[jstate])
                         data["socs"] = socs
                     
-                # Getting forces
+                # Getting gradients
                 if line.startswith("! 3 Gradient Vectors "):
-                    forces = np.zeros((nsinglets+ntriplets,natoms,3))
+                    gradients = np.zeros((nsinglets+ntriplets,natoms,3))
                     for istate in range(nsinglets+ntriplets):
                         for iatom in range(natoms):
-                            forceline = file[iterator+2+istate+istate*natoms+iatom].split()
+                            gradientline = file[iterator+2+istate+istate*natoms+iatom].split()
                             for xyz in range(3):
-                                forces[istate][iatom][xyz]=float(forceline[xyz])
-                    data["forces"]=forces
+                                gradients[istate][iatom][xyz]=float(gradientline[xyz])
+                    data["gradients"]=gradients
                 
                 # Getting nonadiabatic couplings (NACs)
                 # Only take the ones that are between different states, so in this case: skip NAC(1,1)=0
@@ -202,7 +206,7 @@ def read_QMout(filename,natoms,soc_flag,nsinglets,ntriplets,threshold):
                             for jstate in range(nsinglets+ntriplets):
                                 if np.abs(float(overlapline[2*jstate])) >= threshold:
                                     found_overlap = True
-                                    if float(overlapline[2*jstate]) >= thresholds:
+                                    if float(overlapline[2*jstate]) >= threshold:
                                         phasevector[istate] = +1
                                     else:
                                         phasevector[istate] = -1     
@@ -210,9 +214,9 @@ def read_QMout(filename,natoms,soc_flag,nsinglets,ntriplets,threshold):
                         data["phases"]=phasevector
             # convert the geometries into bohr
             #atoms=ase.atoms.Atoms(geoms.get_atomic_numbers(),geoms.get_positions()/Bohr)
-        if "forces" not in data:
-            data["has_forces"]=np.array[0].reshape(-1)
-            data["forces"]= np.zeros((nsinglets+ntriplets,natoms,3))
+        if "gradients" not in data:
+            data["has_gradients"]=np.array([0]).reshape(-1)
+            data["gradients"]= np.zeros((nsinglets+ntriplets,natoms,3))
 
         return data
 
@@ -384,38 +388,39 @@ def correct_phases(data,nsinglets,ntriplets):
         else:
             dataiterator+=1 
             corrected_data[dataiterator]={}
-            #Energies and forces do not need to be corrected
+            #Energies and gradients do not need to be corrected
             if "energy" in data[i]:
                 corrected_data[dataiterator]["energy"] = data[i]["energy"]
                 
-            if "forces" in data[i]:
-                corrected_data[dataiterator]["forces"] = data[i]["forces"]
-                corrected_data[dataiterator]["has_forces"] = data[i]["has_forces"]
+            if "gradients" in data[i]:
+                corrected_data[dataiterator]["gradients"] = data[i]["gradients"]
+                corrected_data[dataiterator]["has_gradients"] = data[i]["has_gradients"]
             
             #socs
             if "socs" in data[i]:
                 corrected_data[dataiterator]["socs"] = data[i]["socs"]
                 sociterator=-1
-                
+                # correct complex valued socs (real and imag part -> 2*nstates), use istatehalf to get corresponding state
                 for istate in range(nstates*2):
-
+                    istatehalf=int(istate/2)
                     for jstate in range(2+istate*2,nstates*2):
-                        if istate < (nsinglets+ntriplets): 
-                            state1 = istate
-                        if jstate < (nsinglets+ntriplets):
-                            state2 = jstate
-                        if istate >= (nsinglets+ntriplets) and istate < (nsinglets+2*ntriplets):
-                            state1 = istate - ntriplets
-                        if istate >= (nsinglets+ntriplets*2):
-                            state1 = istate - 2*ntriplets
-                        if jstate >= (nsinglets+ntriplets) and istate < (nsinglets+2*ntriplets):
-                            state2 = jstate - ntriplets
-                        if jstate >= (nsinglets+2*ntriplets):
-                            state2 = jstate - ntriplets*2
+                        jstatehalf=int(jstate/2)
+                        if istatehalf < (nsinglets+ntriplets): 
+                            state1 = istatehalf
+                        elif istatehalf >= (nsinglets+ntriplets) and istatehalf < (nsinglets+2*ntriplets):
+                            state1 = istatehalf - ntriplets
+                        elif istatehalf >= (nsinglets+ntriplets*2):
+                            state1 = istatehalf - 2*ntriplets
+                        if jstatehalf < (nsinglets+ntriplets):
+                            state2 = jstatehalf
+                        elif jstatehalf >= (nsinglets+ntriplets) and jstatehalf < (nsinglets+2*ntriplets):
+                            state2 = jstatehalf - ntriplets
+                        elif jstatehalf >= (nsinglets+2*ntriplets):
+                            state2 = jstatehalf - ntriplets*2
                         sociterator+=1
-                        corrected[data]["socs"][sociterator] = data[i]["socs"] * phases[state1] * phases[state2]
-            # Nonadiabatic couplings
-            
+                        corrected_data[dataiterator]["socs"][sociterator] = data[i]["socs"][sociterator] * phases[state1] * phases[state2]
+
+            # Nonadiabatic couplings            
             if "nacs" in data[i]:
                 naciterator=-1
                 corrected_data[dataiterator]["nacs"] = data[i]["nacs"]
@@ -503,19 +508,19 @@ def read_traj(path,nsinglets,ntriplets,threshold):
         
         if line.startswith("! 0 Step"):
             
-            has_forces = False
+            has_gradients = False
             has_nacs = False
             istep+=1
             found_overlap=False
             #each data point gets one entry in the dictionary
             data[istep] = {}
-            data[istep]["has_forces"]=np.array([1]).reshape(-1)
-     
+            data[istep]["has_gradients"]=np.array([1]).reshape(-1)
+
         if line.startswith("! 1 Hamiltonian (MCH) in a.u."):
             energies = np.zeros((nsinglets+ntriplets,1))
             for istate in range(nsinglets+ntriplets):
                 energyline = trajfile[iterator+1+istate].split()
-                energies[istate]=float(energyline[2*istate])
+                energies[istate]=float(energyline[2*istate]) + ezero
             data[istep]["energy"]=energies.reshape(-1)
             
 
@@ -533,15 +538,15 @@ def read_traj(path,nsinglets,ntriplets,threshold):
                 data[istep]["socs"] = socs
 
             
-        if line.startswith("! 15 Gradients (MCH)") and has_forces == False:
-            has_forces = True
-            forces = np.zeros((nsinglets+ntriplets,natoms,3))
+        if line.startswith("! 15 Gradients (MCH)") and has_gradients == False:
+            has_gradients = True
+            gradients = np.zeros((nsinglets+ntriplets,natoms,3))
             for istate in range(nsinglets+ntriplets):
                 for iatom in range(natoms):
-                    forceline = trajfile[iterator+1+istate+istate*natoms+iatom].split()
+                    gradientline = trajfile[iterator+1+istate+istate*natoms+iatom].split()
                     for xyz in range(3):
-                        forces[istate][iatom][xyz]=float(forceline[xyz])
-            data[istep]["forces"]=forces
+                        gradients[istate][iatom][xyz]=float(gradientline[xyz])
+            data[istep]["gradients"]=gradients
 
         if line.startswith("! 16 NACdr matrix element (MCH)") and has_nacs == False:
             has_nacs = True
@@ -601,6 +606,9 @@ def read_traj(path,nsinglets,ntriplets,threshold):
                         phasevector[istate] = +1
                     else:
                         phasevector[istate] = -1
+                        #in starting point of trajectory overlap is written as -123.0 (no reference existes yet)
+                        if float(overlapline[2*istate]) == -123.0:
+                            phasevector[istate] = +1
                 else:
                     # if the overlap are not large enough for one state, then it could be that states have switched.
                     # we will check for this below

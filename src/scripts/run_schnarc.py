@@ -65,7 +65,6 @@ def get_parser():
     train_parser.add_argument('--verbose', action='store_true', help='Print property error magnitudes')
     train_parser.add_argument('--real_socs', action='store_true',
                               help='If spin-orbit couplings are predicted, information should be given whether they are real or not.')
-    train_parser.add_argument('--no_negative_dr', action='store_true', help='Train gradients instead of forces.')
     train_parser.add_argument('--phase_loss', action='store_true', help='Use special loss, which ignores phase.')
     train_parser.add_argument('--inverse_nacs', type=int, help='Weight NACs with inverse energies. 0 = False, 1 = first run (use QC energies), 2 = second run (use ML energies).', default = 0)
     train_parser.add_argument('--log', action='store_true', help='Use phase independent min loss.',default=False)
@@ -92,7 +91,7 @@ def get_parser():
     pred_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
     pred_parser.add_argument('--print_uncertainty',action='store_true', help='Print uncertainty of each property',default=False)
     #pred_parser.add_argument('--thresholds',type=float, help='Threshold used for adaptive sampling that should not be exceeded by NNs for energy predictions in eV.', default=1)
-    pred_parser.add_argument('--thresholds',type=float,nargs=5, help='Percentage of mean predicted by NNs taken as thresholds for adaptive sampling - first value for energy, second for forces, third for dipoles, fourth for nacs, fifth for socs. Units are [eV, eV/A, Debye, a.u. and cm-1]', default=[1,1,1,1,1])
+    pred_parser.add_argument('--thresholds',type=float,nargs=5, help='Percentage of mean predicted by NNs taken as thresholds for adaptive sampling - first value for energy, second for forces/gradients, third for dipoles, fourth for nacs, fifth for socs. Units are [eV, eV/A, Debye, a.u. and cm-1]', default=[1,1,1,1,1])
     pred_parser.add_argument('--modelpaths',type=str,nargs="*", help='Path of stored models')
     pred_parser.add_argument('modelpath', help='Path of stored model')
     pred_parser.add_argument('--hessian', action='store_true', help='Gives back the hessian of the PES.')
@@ -121,7 +120,7 @@ def get_parser():
     schnet_parser.add_argument('--n_layers', type=int, default=3,
                                help='Number of layers in output networks (default: %(default)s)')
 
-    schnet_parser.add_argument('--n_neurons', type=int, default=100,
+    schnet_parser.add_argument('--n_neurons', type=int, default=None,
                               help='Number of nodes in atomic networks (default: %(default)s)')
     #######  invD  ########
     invD_parser = argparse.ArgumentParser(add_help=False, parents=[model_parser])
@@ -205,31 +204,21 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
        else:
            socs_given=False
     for prop in tradeoffs:
-        if prop=="forces" and train_args.no_negative_dr == True:
-            prop2="gradient"
-        else:
-            prop2=prop
-        if args.phase_loss or args.min_loss:
+       if args.phase_loss or args.min_loss:
             if prop in schnarc.data.Properties.phase_properties:
-                if prop == 'nacs' and socs_given == True:
-                    metrics += [
-                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-                    ]
-                else:
-                    metrics += [
-                        schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
-                        schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
-                    ]
+                metrics += [
+                    schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
+                    schnarc.metrics.PhaseRootMeanSquaredError(prop, prop)
+                ]
             else:
                 metrics += [
-                    spk.metrics.MeanAbsoluteError(prop, prop2),
-                    spk.metrics.RootMeanSquaredError(prop, prop2)
+                    spk.metrics.MeanAbsoluteError(prop, prop),
+                    spk.metrics.RootMeanSquaredError(prop, prop)
                 ]
-        else:
+       else:
           metrics += [
-              spk.metrics.MeanAbsoluteError(prop, prop2),
-              spk.metrics.RootMeanSquaredError(prop, prop2)
+              spk.metrics.MeanAbsoluteError(prop, prop),
+              spk.metrics.RootMeanSquaredError(prop, prop)
           ]
     if args.logger == 'csv':
         logger = spk.train.CSVHook(os.path.join(args.modelpath, 'log'),
@@ -285,25 +274,28 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                     #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
 
-            elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and prop == schnarc.data.Properties.forces:
+            elif args.L1 and prop == schnarc.data.Properties.energy or args.L1 and (prop == schnarc.data.Properties.gradients or prop == schnarc.data.Properties.forces):
                 prop_diff = torch.abs(batch[prop] - result[prop])
+                if prop==schnarc.data.Properties.forces or prop==schnarc.data.Properties.gradients:
+                    prop_diff = prop_diff.view(-1) * batch["has_"+str(prop)] 
                 prop_err = torch.mean(prop_diff.view(-1) )
-            elif args.Huber and prop == schnarc.data.Properties.energy or args.Huber and prop == schnarc.data.Properties.forces:
+            elif args.Huber and prop == schnarc.data.Properties.energy or args.Huber and (prop == schnarc.data.Properties.gradients or  prop==schnarc.data.Properties.forces):
                 prop_diff = torch.abs(batch[prop]-result[prop])
-                if torch.mean(prop_diff.view(-1)) <= 0.005 and prop == schnarc.data.Properties.forces:
+                if prop==schnarc.data.Properties.forces or prop==schnarc.data.Properties.gradients:
+                    prop_diff = prop_diff.view(-1) * batch["has_"+str(prop)] 
+                if torch.mean(prop_diff.view(-1)) <= 0.005 and (prop == schnarc.data.Properties.forces or prop == schnarc.data.Properties.gradients ):
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                 elif torch.mean(prop_diff.view(-1)) <= 0.05 and prop == schnarc.data.Properties.energy:
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                 else:
                     prop_err = torch.mean(prop_diff.view(-1))
             else:
-                if prop=='energy' and result[prop].shape[1]==int(1) or prop=='forces' and result[prop].shape[1]==int(1) or prop=='dipoles' and result[prop].shape[1]==int(1):
+                if prop=='energy' and result[prop].shape[1]==int(1) or (prop == "forces" or prop=='gradients') and result[prop].shape[1]==int(1) or prop=='dipoles' and result[prop].shape[1]==int(1):
                     prop_diff = batch[prop][:,0] - result[prop][:,0]
                 else:
-                    if prop == "forces" and args.no_negative_dr == True:
-                        prop_diff = batch[prop] - result["gradient"]
-                    else:
-                        prop_diff= batch[prop]-result[prop]
+                    prop_diff= batch[prop]-result[prop]
+                if prop==schnarc.data.Properties.forces or prop==schnarc.data.Properties.gradients:
+                    prop_diff = prop_diff.view(-1) * batch["has_"+str(prop)] 
                 prop_err = torch.mean(prop_diff.view(-1) ** 2)
             err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
             if args.verbose:
@@ -316,7 +308,7 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
     trainer.train(device)
 
 
-def evaluate(args, model, train_loader, val_loader, test_loader, device, train_args):
+def evaluate(args, model, train_loader, val_loader, test_loader, device):
     # Get property names from model
     if args.parallel:
         model=model.module.to(device)
@@ -326,10 +318,6 @@ def evaluate(args, model, train_loader, val_loader, test_loader, device, train_a
     header = ['Subset']
     metrics = []
     for prop in properties:
-        if prop == "forces" and train_args.no_negative_dr:
-            prop2="gradient"
-        else:
-            prop2=prop
         header += [f'{prop}_MAE', f'{prop}_RMSE']
         if prop in schnarc.data.Properties.phase_properties:
             header += [f'{prop}_pMAE', f'{prop}_pRMSE']
@@ -339,27 +327,27 @@ def evaluate(args, model, train_loader, val_loader, test_loader, device, train_a
             ]
         else:
             metrics += [
-                schnarc.metrics.MeanAbsoluteError(prop, prop2),
-                schnarc.metrics.RootMeanSquaredError(prop, prop2)
+                schnarc.metrics.MeanAbsoluteError(prop, prop),
+                schnarc.metrics.RootMeanSquaredError(prop, prop)
             ]
 
     results = []
     if ('train' in args.split) or ('all' in args.split):
         logging.info('Training split...')
-        results.append(['training'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, train_loader, device,properties, train_args)])
+        results.append(['training'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, train_loader, device,properties)])
 
     if ('validation' in args.split) or ('all' in args.split):
         logging.info('Validation split...')
-        results.append(['validation'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, val_loader, device,properties, train_args)])
+        results.append(['validation'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, val_loader, device,properties)])
     if ('test' in args.split) or ('all' in args.split):
         logging.info('Testing split...')
-        results.append(['test'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, test_loader, device,properties, train_args)])
+        results.append(['test'] + ['%.7f' % i for i in evaluate_dataset(metrics, model, test_loader, device,properties)])
     header = ','.join(header)
     results = np.array(results)
 
     np.savetxt(os.path.join(args.modelpath, 'evaluation.csv'), results, header=header, fmt='%s', delimiter=',')
 
-def evaluate_dataset(metrics, model, loader, device,properties, train_args):
+def evaluate_dataset(metrics, model, loader, device,properties):
     # TODO: Adapt for SCHNARC, copy old
     for metric in metrics:
         metric.reset()
@@ -373,23 +361,18 @@ def evaluate_dataset(metrics, model, loader, device,properties, train_args):
             for k, v in batch.items()
         }
         result = model(batch)
+
         for prop in result:
-            if train_args.no_negative_dr == True and prop == "forces":
-                if prop in predicted:
-                    predicted[prop] += [result["gradient"].cpu().detach().numpy()]
-                else:
-                    predicted[prop] = [result["gradient"].cpu().detach().numpy()]
+            if prop in predicted:
+                predicted[prop] += [result[prop].cpu().detach().numpy()]
             else:
-                if prop in predicted:
-                    predicted[prop] += [result[prop].cpu().detach().numpy()]
-                else:
-                    predicted[prop] = [result[prop].cpu().detach().numpy()]
+                predicted[prop] = [result[prop].cpu().detach().numpy()]
         for prop in batch:
             if prop in qm_values:
                 qm_values[prop] += [batch[prop].cpu().detach().numpy()]
             else:
                 qm_values[prop] = [batch[prop].cpu().detach().numpy()]
-                    
+
         for metric in metrics:
             metric.add_batch(batch, result)
     results = [
@@ -502,7 +485,7 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
     # TODO: rework, can not use Behler SFs?, tedious for elemental networks...
     #     atomwise_output = spk.atomistic.ElementalEnergy(representation.n_symfuncs, n_hidden=args.n_nodes,
     #                                                     n_layers=args.n_layers, mean=mean, stddev=stddev,
-    #                                                     atomref=atomref, return_force=True, create_graph=True,
+    #                                                     atomref=atomref, return_gradient=True, create_graph=True,
     #                                                     elements=elements)
     #     model = spk.atomistic.AtomisticModel(representation, atomwise_output)
 
@@ -794,7 +777,7 @@ if __name__ == '__main__':
         logging.info("evaluating...")
         #test_loader = spk.data.AtomsLoader(data_test, batch_size=args.batch_size,
         #                                   num_workers=2, pin_memory=True)
-        evaluate(args, model, train_loader, val_loader, test_loader, device, train_args)
+        evaluate(args, model, train_loader, val_loader, test_loader, device)
         logging.info("... done!")
         exit()
      # Splits the dataset in test, val, train sets
@@ -855,11 +838,11 @@ if __name__ == '__main__':
                 stddev[p]=None
     else:
         mean, stddev = None, None
-    #if "energy" in properties:
-    #    atomref = dataset.get_atomref("energy")
-    #else:
-    #    atomref = None
-    atomref = None
+    if "energy" in properties:
+        atomref = dataset.get_atomref("energy")
+    else:
+        atomref = None
+    # atomref=None
     # Construct the model.
     model = get_model(train_args,
                       n_states,
