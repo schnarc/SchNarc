@@ -65,13 +65,13 @@ def get_parser():
     train_parser.add_argument('--verbose', action='store_true', help='Print property error magnitudes')
     train_parser.add_argument('--real_socs', action='store_true',
                               help='If spin-orbit couplings are predicted, information should be given whether they are real or not.')
-    train_parser.add_argument('--phase_loss', action='store_true', help='Use special loss, which ignores phase.')
     train_parser.add_argument('--inverse_nacs', type=int, help='Weight NACs with inverse energies. 0 = False, 1 = first run (use QC energies), 2 = second run (use ML energies).', default = 0)
     train_parser.add_argument('--log', action='store_true', help='Use phase independent min loss.',default=False)
     train_parser.add_argument('--min_loss', action='store_true', help='Use phase independent min loss.')
     train_parser.add_argument('--diagonal', action='store_true', help='Train SOCs via diagonal elements. Must be included in the training data base', default=None)
     train_parser.add_argument('--L1', action='store_true', help='Use L1 norm')
     train_parser.add_argument('--Huber', action='store_true', help='Use L1 norm')
+    train_parser.add_argument("--diabatic",action="store_true",help="Produces latent Hamiltonian for diabatization with ML.")
     train_parser.add_argument("--order",action="store_true",help="orders states by energy.")
     train_parser.add_argument("--finish",action="store_true",help="assume that the dynamics will only occur between S1 and S0.")
 
@@ -204,7 +204,7 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
        else:
            socs_given=False
     for prop in tradeoffs:
-       if args.phase_loss or args.min_loss:
+       if args.min_loss:
             if prop in schnarc.data.Properties.phase_properties:
                 metrics += [
                     schnarc.metrics.PhaseMeanAbsoluteError(prop, prop),
@@ -445,7 +445,7 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
         property_output = schnarc.model.MultiStatePropertyModel(args.features, n_states, n_neurons=args.n_neurons,properties=properties,
                                                                 mean=mean, stddev=stddev, atomref=atomref,
                                                                 n_layers=args.n_layers, real=args.real_socs,
-                                                                inverse_energy=args.inverse_nacs)
+                                                                inverse_energy=args.inverse_nacs, diabatic = args.diabatic)
         model = spk.atomistic.AtomisticModel(representation, property_output)
     elif args.model == 'invD':
         representation = spk.representation.schnet.invD()
@@ -454,7 +454,7 @@ def get_model(args, n_states, properties, atomref=None, mean=None, stddev=None, 
         property_output = schnarc.model.MultiStatePropertyModel(n_in, n_states,n_neurons=args.n_neurons, properties=properties,
                                                                 mean=mean, stddev=stddev, atomref=atomref,
                                                                 n_layers=args.n_layers, real=args.real_socs,
-                                                                inverse_energy=args.inverse_nacs)
+                                                                inverse_energy=args.inverse_nacs, diabatic = args.diabatic)
 
         model = spk.atomistic.AtomisticModel(representation, property_output)
     elif args.model == 'wacsf':
@@ -811,7 +811,7 @@ if __name__ == '__main__':
         stddev = {}
         # Compute mean and stddev for relevant properties
         for p in properties:
-            if p in schnarc.data.Properties.normalize or p=="socs" and args.log==False:
+            if p in schnarc.data.Properties.normalize  and args.diabatic != True or p=="socs" and args.log==False:
                 if args.transfer is not None and args.diagonal is None:
                     mean_p,stddev_p = transfer_loader.get_statistics(p,True)
                     mean_p = mean_p[p]
