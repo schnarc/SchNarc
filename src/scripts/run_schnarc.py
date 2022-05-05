@@ -198,11 +198,11 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
 
     # Build metrics based on the properties in the model
     metrics = []
+    socs_given=False
     for prop in tradeoffs:
        if prop=="socs":
            socs_given=True
-       else:
-           socs_given=False
+           
     for prop in tradeoffs:
        if args.phase_loss or args.min_loss:
             if prop in schnarc.data.Properties.phase_properties:
