@@ -369,6 +369,7 @@ class MultiState(Atomwise):
 class MultiDiab(MultiState):
     """
     Basic output module for energies and forces on multiple states
+    based on SHARC_LVC.py getQMout()
     """
 
     def __init__(self, n_in, n_states, aggregation_mode='avg', n_layers=2,
@@ -395,6 +396,139 @@ class MultiDiab(MultiState):
 
 
         super(MultiDiab, self).__init__(n_in, (self.n_singlets+self.n_triplets)**2, aggregation_mode, n_layers,
+                                          n_neurons, activation,
+                                          return_contributions, return_force,
+                                          create_graph, mean, stddev,
+                                          atomref, max_z, outnet,return_nacs,
+                                          return_hessian=return_hessian, n_triplets = self.n_triplets)
+        self.approximate_inverse = schnarc.nn.ApproximateInverse(self.n_ener,n_triplets=self.n_triplets)
+
+    def forward(self, inputs):
+        """
+        predicts energy
+        """
+        # y = values for diabatic Hamiltonian
+        y = super(MultiDiab, self).forward(inputs)['y']
+        
+        # fill diabatic hamiltonian with singlets and 3 times triplets
+        y = y.reshape(y.shape[0],self.n_hamiltonian,self.n_hamiltonian)
+        device=y.device
+
+        # symmetrize - the matrix is hermitian, i.e., symmetric but complex values are antisymmetric, we don't consider complex values here
+        # can handle complex values in principle
+
+        # version 2 : only use upper triangular and ignore lower triangular values. 
+        # symmetrizing 
+        #torch.add(y,torch.transpose(y,1,2)) #* self.H_antisymm[None,:,:].to(device)
+                
+        # adapt this for triplets later by doing it separately for singlets and triplets
+        # get eigenvalues and eigenvectors
+        # first dimension is batch size
+        y_s = y[:,:self.n_singlets,:self.n_singlets]
+        if self.n_triplets == 0:
+            eigenvalues, eigenvectors = torch.linalg.eigh(y, UPLO='U')
+        else:
+            
+            # make the triplets degenerate
+            y_t = y[:,self.n_singlets:, self.n_singlets:]
+            #y_t[:,self.n_triplets:2*self.n_triplets,self.n_triplets:2*self.n_triplets]=y_t[:,:self.n_triplets,:self.n_triplets]
+            #y_t[:,2*self.n_triplets:,2*self.n_triplets:]=y_t[:,:self.n_triplets,:self.n_triplets]
+            # use a mask and ignore all couplings except for between different states and same multiplicity 
+            y_t = y_t*self.H_diag_0[None,:,:].to(device)
+
+            eigenvalues_s, eigenvectors_s = torch.linalg.eigh(y_s, UPLO='U')
+            eigenvalues_t, eigenvectors_t = torch.linalg.eigh(y_t,UPLO='U')
+        
+            eigenvalues = torch.cat( (eigenvalues_s, eigenvalues_t), 1)
+            # this needs more thoughts.
+            # triplet eigenvalues are ordered according to energy
+            # currently we assume that it's enough to consider one multiplicity - uncomment the code above to consider all multiplicities if needed - SCHNARC uses one multiplicity for the loss function. 
+            
+        result={
+                'diabaticH': y,
+                'y': eigenvalues
+                }
+
+        if self.return_force == True:
+            # derive diabatic states
+            batch,Dim1,Dim2,Na,xyz = y.shape[0],y.shape[1],y.shape[2],len(inputs[spk.Properties.R][0]),3
+            #one could also use dydx from deriving not y but the diabatic energies to get diabatic gradients, but this seems better and ensures energy conservation
+            dydx = torch.stack([grad (result['y'][:,istate],
+                    inputs[spk.Properties.R],
+                    grad_outputs=torch.ones_like(result['y'][:,istate]),
+                    create_graph = True,
+                    retain_graph = True)[0] for istate in range(self.n_ener)],dim=1)
+            result['dydx'] = - dydx
+            # derive all states
+
+        if self.return_nacs == True:
+            diab_dydx = torch.zeros(batch,Dim1,Dim2,Na,xyz).to(device)
+            for istate in range(Dim1):
+                diab_dydx[:,istate,istate:,:,:] = torch.stack([grad(y[:,istate,jstate],
+                            inputs[spk.Properties.R],
+                            grad_outputs=torch.ones_like(y[:,istate,jstate]),
+                            create_graph = True,
+                            retain_graph = True)[0] for jstate in range(istate,self.n_ener)],dim=1)
+                for jstate in range(istate+1,Dim2):
+                    diab_dydx[:,jstate,istate,:,:] = -diab_dydx[:,istate,jstate,:,:]
+
+            # transform to adiabatic basis 
+            adydx = torch.zeros(batch,Dim1,Dim2,Na,xyz).to(device)
+            for iatom in range(Na):
+                for ixyz in range(3):
+                    adydx[:,:,:,iatom,ixyz] = torch.bmm(eigenvectors.transpose(1,2),torch.bmm(diab_dydx[:,:,:,iatom,ixyz],eigenvectors))
+            # would be for forces
+            #result['dydx'] = torch.zeros(batch,Dim1,Na,xyz).to(device)
+            #for istate in range(Dim1):
+            #    result['dydx'][:,istate,:,:] = - dydx[:,istate,istate,:,:]
+            
+            # multiply with adiabatic 1 / dE
+            # get inverse energies
+            inv_ener = self.approximate_inverse(result['y'])            
+            # define nac matrix, dimension batch x NCouplings x Na x 3
+            nacs = torch.zeros(batch,self.n_couplings,Na,xyz).to(device)
+
+            # fill empty NACs tensor with ddiabH/dR * 1/dE
+            naciterator = -1
+            for istate in range(Dim1):
+                for jstate in range(istate+1,Dim2):
+                    naciterator += 1 
+                    nacs[:,naciterator,:,:] = inv_ener[:, naciterator, None, None] * adydx[:,istate,jstate,:,:]
+
+            result['nacs'] = nacs
+ 
+        return result
+
+class MultiDiab_v1(MultiState):
+    """
+    Basic output module for energies and forces on multiple states
+    derives NACs from dU/dR
+    """
+
+    def __init__(self, n_in, n_states, aggregation_mode='avg', n_layers=2,
+                 n_neurons=None,
+                 activation=spk.nn.activations.shifted_softplus,
+                 return_contributions=False, create_graph=True,
+                 return_force=False, mean=None, stddev=None, atomref=None,
+                 max_z=100, outnet=None, return_hessian=[False,1,0,1,0,False], return_nacs = True, n_triplets = 0):
+        self.n_states = n_states
+        self.n_singlets = n_states["n_singlets"]
+        self.n_triplets =n_states["n_triplets"]
+        self.n_couplings = int( ((self.n_singlets+self.n_triplets)**2-(self.n_singlets+self.n_triplets))/2)
+        self.n_ener = int( self.n_singlets + self.n_triplets) #*3)
+        self.n_hamiltonian = int( self.n_singlets + self.n_triplets ) #*3)
+        self.return_force = return_force
+        self.return_nacs = return_nacs
+        self.H_diag_0 = torch.zeros(self.n_triplets,self.n_triplets)
+        for i in range(self.n_triplets):#*3):
+            self.H_diag_0[i][i]=1
+            for j in range(i+1,self.n_triplets):
+                self.H_diag_0[i][j]=1
+                #self.H_diag_0[i+self.n_triplets][j+self.n_triplets]=1
+                #self.H_diag_0[i+2*self.n_triplets][j+2*self.n_triplets]=1
+
+
+        super(MultiDiab_v1, self).__init__(n_in, (self.n_singlets+self.n_triplets)**2, aggregation_mode, n_layers,
                                           n_neurons, activation,
                                           return_contributions, return_force,
                                           create_graph, mean, stddev,
