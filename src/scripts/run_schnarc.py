@@ -74,7 +74,7 @@ def get_parser():
     train_parser.add_argument('--Huber', action='store_true', help='Use L1 norm')
     train_parser.add_argument("--order",action="store_true",help="orders states by energy.")
     train_parser.add_argument("--finish",action="store_true",help="assume that the dynamics will only occur between S1 and S0.")
-
+    train_parser.add_argument("--variable_states", action="store_true", help = "If a data set contains molecules with different number of states, use this option to use a mask that masks all vlaues that are not available for a certain atom type. needs to contain entrie, i.e., 'states' and 'nacs_states'")
     ## evaluation
     eval_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     eval_parser.add_argument('datapath', help='Path / destination of MD17 dataset directory')
@@ -268,9 +268,13 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                 elif prop == "nacs" and combined_phaseless_loss == True:
                     #for nacs regardless of any other available phase-property
                     prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                    if args.variable_states:
+                        prop_diff = prop_diff * batch["nacs_states"]
                     prop_err = torch.mean(prop_diff.view(-1)) / (2*n_states['n_states']**2)
                 else:
                     prop_diff, phase_vector_nacs = schnarc.nn.min_loss(batch[prop], result[prop], False, n_states, props_phase)
+                    if args.variable_states and prop == "nacs":
+                        prop_diff = prop_diff * batch["nacs_states"]
                     prop_err = torch.mean(prop_diff.view(-1) **2 )
                     #prop_err = schnarc.nn.min_loss_single(batch[prop], result[prop],loss_length=False)
 
@@ -293,9 +297,16 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                 if prop=='energy' and result[prop].shape[1]==int(1) or (prop == "forces" or prop=='gradients') and result[prop].shape[1]==int(1) or prop=='dipoles' and result[prop].shape[1]==int(1):
                     prop_diff = batch[prop][:,0] - result[prop][:,0]
                 else:
+                  if prop == "energy": 
                     prop_diff= batch[prop]-result[prop]
-                if prop==schnarc.data.Properties.forces or prop==schnarc.data.Properties.gradients:
+                    if args.variable_states:
+                        #only for energy, attention!
+                        prop_diff = prop_diff * batch["states"]
+                  if prop==schnarc.data.Properties.forces or prop==schnarc.data.Properties.gradients:
+                    prop_diff = batch[prop] - result[prop]
                     prop_diff = prop_diff.view(-1) * batch["has_"+str(prop)] 
+                    if args.variable_states:
+                        prop_diff = prop_diff * batch["grad_states"].view(-1)#reshape(prop_diff.shape[0],prop_diff.shape[1])#[:,:,None]
                 prop_err = torch.mean(prop_diff.view(-1) ** 2)
             err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
             if args.verbose:
