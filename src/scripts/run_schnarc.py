@@ -850,7 +850,10 @@ if __name__ == '__main__':
     else:
         mean, stddev = None, None
     if "energy" in properties:
-        atomref = dataset.get_atomref("energy")
+        try:
+            atomref = dataset.get_atomref("energy")
+        except:
+            atomref = None
     else:
         atomref = None
     # atomref=None
