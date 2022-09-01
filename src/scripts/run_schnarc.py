@@ -31,7 +31,7 @@ def get_parser():
     cmd_parser.add_argument('--batch_size', type=int,
                             help='Mini-batch size for training and prediction (default: %(default)s)',
                             default=100)
-    cmd_parser.add_argument("--environment_provider", type=str,default="simple",choices=["simple","ase","torch"],help="Environment provider for dataset (default: %(defaullt)s)",)
+    cmd_parser.add_argument("--environment_provider", type=str,default="simple",choices=["simple","ase","torch"],help="Environment provider for dataset (default: %(default)s)",)
     # training
     train_parser = argparse.ArgumentParser(add_help=False, parents=[cmd_parser])
     train_parser.add_argument('datapath', help='Path / destination of MD17 dataset')
