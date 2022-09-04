@@ -302,11 +302,13 @@ def train(args, model, tradeoffs, train_loader, val_loader, device, n_states, pr
                     if args.variable_states:
                         #only for energy, attention!
                         prop_diff = prop_diff * batch["states"]
-                  if prop==schnarc.data.Properties.forces or prop==schnarc.data.Properties.gradients:
+                  elif prop==schnarc.data.Properties.forces or prop==schnarc.data.Properties.gradients:
                     prop_diff = batch[prop] - result[prop]
                     prop_diff = prop_diff.view(-1) * batch["has_"+str(prop)] 
                     if args.variable_states:
                         prop_diff = prop_diff * batch["grad_states"].view(-1)#reshape(prop_diff.shape[0],prop_diff.shape[1])#[:,:,None]
+                  else:
+                    prop_diff = batch[prop] - result[prop]
                 prop_err = torch.mean(prop_diff.view(-1) ** 2)
             err_sq = err_sq + float(tradeoffs[prop].split()[0]) * prop_err
             if args.verbose:
