@@ -67,8 +67,8 @@ class SHARC_NN(SHARC_INTERFACE):
         Gradient and NACs are real
         """
         QMout = self.schnarc_init.calculate(Crd)
-        print("Compare prediction:")
-        print(QMout)
+        #print("Compare prediction:")
+        #print(QMout)
         return QMout
 
     def final_print(self):
