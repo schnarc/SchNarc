@@ -19,8 +19,8 @@ Once you have miniconda installed, mamba is installed via
 If a package that you need, cannot be found, you can use different channels with the option -c or add channels (in this example conda-forge) with:  
 ``conda config --append channels conda-forge``  
 It is recommended to create an environment (in this example the environment is called ml) with:  
-*Note: Leave out the ``gfortran_linux-64`` and the commenting of gcc and gfortran below if you have a reasonably up-to-date gfortran compiler installed*  
-``mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter gfortran_linux-64``  
+*Note: Leave out the ``gfortran_linux-64 gcc_impl_linux-64 sysroot_linux-64=2.17`` and the commenting of gcc and gfortran below if you have a reasonably up-to-date gfortran compiler installed*  
+``mamba create -n ml python h5py tensorboardX pytorch ase numpy six protobuf scipy matplotlib python-dateutil pyyaml tqdm pyparsing kiwisolver cycler netcdf4 hdf5 h5utils jupyter gfortran_linux-64 gcc_impl_linux-64 sysroot_linux-64=2.17``  
 For some tasks, it is useful to install openbabel:  
 ``mamba install -n ml -c openbabel openbabel``  
 Then activate the environment:  
@@ -43,7 +43,7 @@ Edit Makefile and make the following changes:
 ``  LD= -L$(MKLROOT) -lmkl_rt -lpthread -lm -lgfortran $(NETCDF_LIB)``  
 i.e., delete ``/lib/intel64`` after ``-L$(MKLROOT)``. The 4th change is a line that needs to be added (about MKLROOT). The 5rd and 6th change mean that you have to comment out the definition of CC and F90 and rather use the CC and F90 variables provided by the environment, which is set by anaconda to something like ``<your-anaconda-path>/x86_64-conda_cos6-linux-gnu-cc`` instead of gcc.  
 
-Got to the pysharc/sharc folder:
+Go to the pysharc/sharc folder:
 ``cd ../pysharc/sharc`` 
 Edit \_\_init\_\_.py  there and make the following changes:  
 ``    #import sharc as sharc``
@@ -51,7 +51,7 @@ Edit \_\_init\_\_.py  there and make the following changes:
 Go to the pysharc/netcdf folder:  
 ``cd ../netcdf``  
 Edit Makefile  there and make the following changes:  
-``    ANACONDA := <path/to/anaconda>/anaconda3/envs/pysharc``  
+``    ANACONDA := <path/to/anaconda>/anaconda3/envs/ml``  
 ``    #CC=gcc``  (<- not of you have gcc and gfortran)  
 Then go to the pysharc folder and run the installation procedure:  
 ``cd ..``  
@@ -59,6 +59,12 @@ Then go to the pysharc folder and run the installation procedure:
 Afterwards, go to the source folder and run the installation procedure:  
 ``cd ../source``  
 ``make install``  
+As last step goto pysharc/lib  
+``cd ../pysharc/lib``  
+``cp libsharc.so <path/to/anaconda>/anaconda3/envs/ml/lib``  
+then go to pysharc/sharc  
+``cd ../sharc``  
+``cp sharc.cpython-...-gnu.so <path/to/anaconda>/anaconda3/envs/ml/lib/sharc.so``  
 
 ### SchNet
 
@@ -90,6 +96,9 @@ Edit \_\_init\_\_.py there and make the following changes:
 ``  from . import sharc ``
 and try to reinstall.
 
-Make sure you have a  "sharc.cpython-...-gnu.so" file in the same folder after installation. 
-
-Before you run the dynamics with sharc, source the sharcvars.sh file in the folder "sharc/bin/".
+Make sure you have a  "sharc.cpython-...-gnu.so" file in the same folder after installation.  
+  
+Before you run the dynamics with sharc, source the sharcvars.sh file in the folder "sharc/bin/".  
+  
+If you compiled sharc with compilers in your conda environment, make sure to add the anaconda path to your ``$LD_LIBRARY_PATH``  
+``LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path/to/anaconda>/anaconda3/envs/ml/lib``
