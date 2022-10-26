@@ -450,9 +450,9 @@ class MultiDiab(MultiState):
                 }
 
         if self.return_force == True:
-            # derive diabatic states
+            # derive adiabatic states
             batch,Dim1,Dim2,Na,xyz = y.shape[0],y.shape[1],y.shape[2],len(inputs[spk.Properties.R][0]),3
-            #one could also use dydx from deriving not y but the diabatic energies to get diabatic gradients, but this seems better and ensures energy conservation
+            #one could also use dydx to derive the diabatic energies to get diabatic gradients, but this seems better and ensures energy conservation
             dydx = torch.stack([grad (result['y'][:,istate],
                     inputs[spk.Properties.R],
                     grad_outputs=torch.ones_like(result['y'][:,istate]),
@@ -476,6 +476,7 @@ class MultiDiab(MultiState):
             adydx = torch.zeros(batch,Dim1,Dim2,Na,xyz).to(device)
             for iatom in range(Na):
                 for ixyz in range(3):
+                    # batch matrix multiplication, U.T * (d/dR H(diab) * U)
                     adydx[:,:,:,iatom,ixyz] = torch.bmm(eigenvectors.transpose(1,2),torch.bmm(diab_dydx[:,:,:,iatom,ixyz],eigenvectors))
             # would be for forces
             #result['dydx'] = torch.zeros(batch,Dim1,Na,xyz).to(device)
